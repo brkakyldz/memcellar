@@ -36,9 +36,9 @@ degree per note, weekly log-mention reuse proxy, `raw/` citation rate, and the
 `AGENTS.md` § Session-log rule: the share of logs from the last 30 days
 referenced by no other file, and, in a sample of up to 20 such logs, the share
 of bullets that duplicate a note or narrate steps — compare both with the
-previous audit. Run the frozen retrieval eval
-(`node scripts/retrieval-eval.mjs`) only when its cost fits the requested
-audit; otherwise name the latest dated result and mark it not rerun.
+previous audit. If the vault keeps an answer eval in `.claude/eval/`, name
+its latest dated result; rerun it only when the owner asks, since each
+question costs a fresh session (ADR 0057).
 
 Meaning (what only a full read catches): **contradiction stacking** — two
 live statements that cannot both be true, neither carrying `valid_to` or a
@@ -57,13 +57,13 @@ the ledger). Nothing runs them on its own: besides the audit, only
 `node scripts/maintenance.mjs run` does, after the owner says yes to the
 maintenance notice (ADR 0049). Report each finding like any other. Run
 `node scripts/vault-metrics.mjs` too (stdout only) and carry its check-fire,
-correction-recurrence and retrieval-failure counts into the numbers table.
+and correction-recurrence counts into the numbers table.
 
 ## How
 
 Mechanical counts come from read-only shell one-liners and the read-only
-scripts named above (`checks.mjs` without `--record`, `vault-metrics.mjs`,
-`retrieval-eval.mjs`) — no new script file; the growth-control gate applies to
+scripts named above (`checks.mjs` without `--record`, `vault-metrics.mjs`)
+— no new script file; the growth-control gate applies to
 machinery too (ADR 0032). Do not run a report-writing helper such as
 `link-sweep.mjs` during the audit; read its latest report or reproduce the
 count without writes.

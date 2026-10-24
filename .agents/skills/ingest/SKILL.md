@@ -55,9 +55,9 @@ not the goal; not re-reading the source is.
 Never decide in one pass: in the reference instance, single-step freshness
 judging measured ~54% correct, the two-step split ~82-93%.
 
-**3a. List candidates.** Search for what this source touches, following the
-four layers in `/recall`: `INDEX.md` first, then `grep` over `notes/`, then
-`core/MEMORY.md`, then `logs/`. Write down the pages that could conflict or
+**3a. List candidates.** Search for what this source touches: `INDEX.md`
+first, then `grep` over `notes/` in English and in the owner's language,
+then `core/MEMORY.md`, then `logs/`. Write down the pages that could conflict or
 absorb this material.
 
 **3b. Decide per fact** against that list — ADD / MERGE / SUPERSEDE / NARROW /

@@ -1,7 +1,6 @@
 // Coverage for the brain-doctor checks added with the provenance work:
-// Provenance (the corroboration gate), Retired terms, Tier-0 integrity, the
-// Recall contract (/recall is a vault skill, ADR 0052), and User-level skills
-// (only closeout and lesson may be linked outside the vault).
+// Provenance (the corroboration gate), Retired terms, Tier-0 integrity, and
+// User-level skills (only closeout and lesson may be linked outside the vault).
 //
 // Every case builds a throwaway vault and kit in the OS temp dir and points the
 // doctor at them with BRAIN_DIR / BRAIN_KIT_DIR, with the runtime homes
@@ -112,33 +111,21 @@ function diagnose(fx, ...args) {
 
 const verdict = (run, area) => `${area}: ${run.rows[area]?.status} ${run.rows[area]?.detail}`;
 
-test('a clean vault and kit pass Provenance, Tier-0 integrity, Retired terms and Recall contract', (t) => {
-  const recall = '.agents/skills/recall/SKILL.md';
+test('a clean vault and kit pass Provenance, Tier-0 integrity and Retired terms', (t) => {
   const fx = fixture(t, {
     vaultFiles: {
-      [recall]: '---\nname: recall\n---\nRun `node scripts/retrieval-eval.mjs --query "q"`.\n',
+      '.agents/skills/ingest/SKILL.md': '---\nname: ingest\n---\nRead the source, then write the page.\n',
       '.claude/hooks/append-signal.mjs': '// logger\n',
-      '.claude/eval/golden-set.md': '# golden\n',
     },
     kitFiles: { 'skills/adr/SKILL.md': '---\nname: adr\n---\nNothing retired here.\n' },
   });
   const run = diagnose(fx);
-  for (const area of ['Provenance', 'Tier-0 integrity', 'Retired terms', 'Recall contract']) {
+  for (const area of ['Provenance', 'Tier-0 integrity', 'Retired terms']) {
     assert.equal(run.rows[area]?.status, 'PASS', verdict(run, area));
   }
   assert.match(run.stdout, /Read-only: no repair or write was attempted\./);
   assert.equal(git(fx.vault, 'status', '--porcelain'), '', 'the doctor must not write into the vault');
   assert.equal(git(fx.kit, 'status', '--porcelain'), '', 'the doctor must not write into the kit');
-});
-
-test('Recall contract reads the skill from the vault, not the kit (ADR 0052)', (t) => {
-  const fx = fixture(t, {
-    // present in the kit, absent from the vault: the old location must not count
-    kitFiles: { 'skills/recall/SKILL.md': 'scripts/retrieval-eval.mjs --query\n' },
-  });
-  const run = diagnose(fx);
-  assert.equal(run.rows['Recall contract'].status, 'FAIL', verdict(run, 'Recall contract'));
-  assert.ok(run.rows['Recall contract'].detail.includes(path.join('.agents', 'skills', 'recall', 'SKILL.md')), run.rows['Recall contract'].detail);
 });
 
 test('Provenance FAILs when MEMORY.md links a confidence: low note', (t) => {
@@ -301,7 +288,7 @@ test('Retired terms WARNs on stale references and reports path:line term', (t) =
       'hooks/tests/nested.mjs': '// .access.json in a subfolder is not scanned\n',
     },
     vaultFiles: {
-      '.agents/skills/recall/SKILL.md': 'searches the vault at {{VAULT}}\n',
+      '.agents/skills/ingest/SKILL.md': 'searches the vault at {{VAULT}}\n',
       '.claude/hooks/lib.mjs': '// retrieval-rollup lines stay in logs/signals/ as history\n// the old /flywheel pass\n',
     },
   });
@@ -361,9 +348,9 @@ test('an unknown argument exits 2 with the usage line', (t) => {
   assert.match(result.stderr, /Usage: node scripts\/brain-doctor\.mjs/);
 });
 
-test('User-level skills: closeout and lesson may be linked; recall and harvest may not (ADR 0052)', (t) => {
+test('User-level skills: closeout and lesson may be linked; note and harvest may not (ADR 0052)', (t) => {
   const skill = (name) => `---\nname: ${name}\n---\n`;
-  const vaultFiles = Object.fromEntries(['closeout', 'lesson', 'recall', 'harvest']
+  const vaultFiles = Object.fromEntries(['closeout', 'lesson', 'note', 'harvest']
     .map((name) => [`.agents/skills/${name}/SKILL.md`, skill(name)]));
   const link = (fx, dir, name) => {
     mkdirSync(dir, { recursive: true });
@@ -383,12 +370,12 @@ test('User-level skills: closeout and lesson may be linked; recall and harvest m
   assert.match(okRun.rows['User-level skills'].detail, /Codex lesson/);
 
   const wrong = fixture(t, { vaultFiles, git: false });
-  link(wrong, path.join(wrong.home, '.claude', 'skills'), 'recall');
+  link(wrong, path.join(wrong.home, '.claude', 'skills'), 'note');
   link(wrong, path.join(wrong.home, '.codex', 'skills'), 'harvest');
   link(wrong, path.join(wrong.home, '.claude', 'skills'), 'closeout');
   const wrongRun = diagnose(wrong);
   assert.equal(wrongRun.rows['User-level skills'].status, 'WARN', verdict(wrongRun, 'User-level skills'));
-  assert.match(wrongRun.rows['User-level skills'].detail, /Claude Code recall/);
+  assert.match(wrongRun.rows['User-level skills'].detail, /Claude Code note/);
   assert.match(wrongRun.rows['User-level skills'].detail, /Codex harvest/);
   assert.doesNotMatch(wrongRun.rows['User-level skills'].detail, /closeout,|Claude Code closeout/);
 });

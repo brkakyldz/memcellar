@@ -573,13 +573,15 @@ export const SIGNAL_TYPES = [
   // 'session' was retired in ADR 0032, and its sidecar replacement went with
   // the flush mechanism in 2026-09. Nothing counts turns any more.
   'correction',
-  'retrieval-failure',
   'acceptance',
   'rejection',
   'check-fire',
   // Historical: the weekly access rollup of the reuse telemetry, removed by
   // ADR 0039 (see below). Nothing writes it any more; kept so old lines parse.
   'retrieval-rollup',
+  // Historical: a failed lookup in the old recall skill. Retrieval was retired by
+  // ADR 0057; nothing writes this any more, kept so old lines parse.
+  'retrieval-failure',
   // Historical: one line per session the retired flush mechanism handled.
   // Nothing writes this any more; the type stays listed so the existing lines
   // remain valid ledger content rather than becoming unparseable history.

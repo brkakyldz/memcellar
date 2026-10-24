@@ -13,7 +13,6 @@ the whole query engine.
 Example:
 
 ```
-- 2026-08-25T13:02Z | retrieval-failure | query:"vault lifecycle" | cause:wrong-term | sid:abc-123
 - 2026-08-26T09:40Z | correction | class:wrong-procedure | note:lesson-wrong-procedure.md | "no — the other order" | sid:def-456
 ```
 
@@ -25,13 +24,13 @@ Timestamps are UTC and end in `Z` — unlike the local-time filenames in
 | type | written by | means |
 |---|---|---|
 | `correction` | `/lesson` skill | the owner corrected the agent; payload is verbatim |
-| `retrieval-failure` | `/recall`, on a failed lookup | the vault had it and search missed it; carries `cause:` |
 | `acceptance` / `rejection` | agent, by hand, for a decision worth recording | a suggestion was taken or refused |
 | `check-fire` | `.claude/hooks/checks.mjs`, when a caller runs the checks | an enforced rule caught a repeat attempt |
 | `retrieval-rollup` — **historical** | the retired reuse telemetry (ADR 0039) | one week of note re-use; nothing writes it since v1.1 |
 | `session-digest` — **historical** | the retired flush mechanism (ADR 0038) | one line per flushed session; nothing writes it since v1.1 |
+| `retrieval-failure` — **historical** | the retired `/recall` skill (ADR 0057) | a lookup the search missed; nothing writes it since v1.3 |
 
-The two historical types stay listed in `SIGNAL_TYPES` so that a ledger
+The historical types stay listed in `SIGNAL_TYPES` so that a ledger
 carried over from v1.0 stays valid content rather than becoming unparseable
 history.
 
@@ -51,11 +50,6 @@ history.
 
 ## Required payload fields
 
-- **`retrieval-failure`** carries `cause:` — one of `paraphrase-miss`,
-  `wrong-term`, `typo`, `not-exists` (`/recall` defines them). Without it the
-  line cannot argue for anything, and `scripts/vault-metrics.mjs` counts it as
-  `uncaused`. Only a cluster of `paraphrase-miss` reopens the
-  lexical-only-retrieval decision (`docs/DECISIONS.md`, 0018).
 - **`acceptance` / `rejection`** carry `feature:` — which suggestion feature
   was judged (`curator-merge`, `link-suggestion`, …) — plus `ref:`. These used
   to be swept out of `PROPOSALS.md` by a script and scored as an acceptance

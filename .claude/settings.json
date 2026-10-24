@@ -8,14 +8,12 @@
     "allow": [
       "Bash(node scripts/vault-metrics.mjs:*)",
       "Bash(node scripts/link-sweep.mjs:*)",
-      "Bash(node scripts/retrieval-eval.mjs:*)",
       "Bash(node scripts/brain-doctor.mjs:*)",
       "Bash(node scripts/project-doctor.mjs:*)",
       "Bash(node scripts/maintenance.mjs:*)",
       "Bash(node scripts/tests/brain-doctor.test.mjs:*)",
       "Bash(node scripts/tests/index-coverage.test.mjs:*)",
       "Bash(node scripts/tests/project-doctor.test.mjs:*)",
-      "Bash(node scripts/tests/retrieval-eval.test.mjs:*)",
       "Bash(node scripts/tests/session-start.test.mjs:*)",
       "Bash(node .claude/hooks/append-signal.mjs:*)",
       "Bash(node .claude/hooks/checks.mjs:*)"

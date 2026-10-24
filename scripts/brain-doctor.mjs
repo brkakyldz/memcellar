@@ -14,14 +14,14 @@
 //
 // Checks, in output order: Claude Code and Codex hook topology, the
 // .claude/skills link, user-level skill links (only closeout and lesson may be
-// linked there; /recall and /harvest are vault-only, ADR 0052), Tier-0
+// linked there; /harvest is vault-only, ADR 0052), Tier-0
 // budgets, Tier-0 integrity (invisible or bidirectional control characters in
 // core/*.md; uncommitted changes under the hook and core folders), Provenance
 // (the corroboration gate: no `confidence: low` note linked from MEMORY.md,
 // `source:` notes carry a confidence, MEMORY bullets are dated or pointers),
-// recent SessionStart evidence, the /recall contract, Retired terms (stale
-// references in skill and hook files), retrieval score, top-level entries
-// against the folder map, and Git delivery state.
+// recent SessionStart evidence, Retired terms (stale references in skill and
+// hook files), top-level entries against the folder map, and Git delivery
+// state.
 //
 // Paths are derived, never hard-coded: the vault is this script's own location
 // (or BRAIN_DIR, which the tests use for fixture vaults); the user-level
@@ -77,8 +77,11 @@ const kits = kitDirs.map((dir) => ({
 const RETIRED_TERMS = [
   { term: '.access.json', why: 'access telemetry retired (ADR 0039)', scope: 'all', allow: [] },
   { term: 'retrieval-rollup', why: 'access telemetry retired (ADR 0039)', scope: 'all', allow: ['.claude/hooks/lib.mjs'] }, // lib.mjs keeps the type so old ledger lines still parse
-  // logs/signals/ is not retired: /recall and /lesson still append retrieval-failure
-  // and correction lines through append-signal.mjs. Only the acceptance ledger went.
+  // logs/signals/ is not retired: /lesson still appends correction lines through
+  // append-signal.mjs. The acceptance ledger and retrieval-failure lines went.
+  { term: 'retrieval-eval', why: 'retrieval machinery retired (ADR 0057)', scope: 'all', allow: [] },
+  { term: 'golden-set', why: 'retrieval machinery retired (ADR 0057)', scope: 'all', allow: [] },
+  { term: '/recall', why: 'retrieval machinery retired (ADR 0057)', scope: 'all', allow: [] },
   { term: '/flywheel', why: 'deleted 2026-09-06', scope: 'all', allow: [] },
   { term: 'acceptance rate', why: 'suggestion ledger and its rate retired (ADR 0039)', scope: 'all', allow: [], ignoreCase: true },
   { term: 'scripts/proposals.mjs', why: 'deleted 2026-09-06', scope: 'all', allow: [] },
@@ -107,14 +110,13 @@ if (help) {
     '',
     'Read-only checks: Claude Code and Codex hook topology (exactly one',
     'SessionStart per runtime, no retired git-writing hook), the .claude/skills',
-    'link, user-level skill links (closeout and lesson only; recall and harvest',
-    'are vault-only), Tier-0 budgets, Tier-0 integrity (invisible control',
+    'link, user-level skill links (closeout and lesson only; the other vault',
+    'skills are vault-only), Tier-0 budgets, Tier-0 integrity (invisible control',
     'characters in core/, uncommitted core and hook changes), Provenance',
     '(low-confidence notes in MEMORY.md, source notes without confidence,',
-    'undated MEMORY bullets), recent SessionStart evidence, recall contract and',
-    'resource paths, retired terms in skill and hook files (RETIRED_TERMS),',
-    'retrieval score, top-level entries against the folder map, and Git',
-    'delivery state.',
+    'undated MEMORY bullets), recent SessionStart evidence, retired terms in',
+    'skill and hook files (RETIRED_TERMS), top-level entries against the',
+    'folder map, and Git delivery state.',
     '--kit DIR  also scan a separate skills kit (DIR/skills if it exists, else',
     '           DIR itself, plus DIR/hooks) for retired terms and uncommitted',
     '           hooks; BRAIN_KIT_DIR does the same',
@@ -415,8 +417,8 @@ if (!existsSync(skillsTarget)) {
 
 // --- User-level skill links (ADR 0052). closeout and lesson write into the
 // current project's repo, never the vault, so linking them at user level is an
-// optional convenience. Every other vault skill — /recall and /harvest above
-// all — reads or writes the vault and runs only in a vault session; a link at
+// optional convenience. Every other vault skill — /harvest above all — reads
+// or writes the vault and runs only in a vault session; a link at
 // user level would hand it to every project session, which is the wall broken.
 // Claude Code reads CLAUDE_CONFIG_DIR/skills; Codex builds differ in the
 // folder they read (CODEX_HOME/skills or ~/.agents/skills), so all three count.
@@ -559,25 +561,6 @@ if (!evidence) {
   );
 }
 
-// /recall is a vault-only skill (ADR 0052: a project session never reads the
-// vault, so the skill that searches it lives there and is never linked at user
-// level); the skill and its resources below are all vault files.
-const recallSkillPath = path.join(repoRoot, '.agents', 'skills', 'recall', 'SKILL.md');
-const recallText = readText(recallSkillPath);
-const recallResources = [
-  path.join(repoRoot, '.claude', 'hooks', 'append-signal.mjs'),
-  path.join(repoRoot, '.claude', 'eval', 'golden-set.md'),
-];
-if (!recallText) {
-  add(results, 'Recall contract', 'FAIL', `missing ${recallSkillPath}`);
-} else if (recallResources.some((file) => !existsSync(file))) {
-  add(results, 'Recall contract', 'FAIL', 'the signal logger or the golden set is missing');
-} else if (!recallText.includes('scripts/retrieval-eval.mjs --query')) {
-  add(results, 'Recall contract', 'WARN', 'ranked lookup is not wired into the skill');
-} else {
-  add(results, 'Recall contract', 'PASS', 'logger, golden set, and ranked lookup resolve');
-}
-
 // Stale references: skill and hook files that still name something retired.
 // RETIRED_TERMS at the top of the file is the list.
 const staleHits = retiredTermHits();
@@ -590,24 +573,6 @@ if (missingKits.length > 0) {
 } else {
   add(results, 'Retired terms', 'WARN',
     `${staleHits.length} hit(s): ${staleHits.slice(0, 5).join('; ')}${staleHits.length > 5 ? '; ...' : ''}`);
-}
-
-function parseRecallScores(text) {
-  for (const line of text?.split(/\r?\n/) || []) {
-    const cells = line.split('|').slice(1, -1).map((cell) => cell.trim());
-    if (cells.length !== 3 || !cells.every((cell) => /^\d+% \(\d+\/\d+\)$/.test(cell))) continue;
-    return { at1: cells[0], at3: cells[1], at5: cells[2] };
-  }
-  return null;
-}
-
-const retrieval = run(process.execPath, [path.join(repoRoot, 'scripts', 'retrieval-eval.mjs')]);
-const scores = retrieval.status === 0 ? parseRecallScores(retrieval.stdout) : null;
-if (!scores) {
-  const blocked = retrieval.error?.code === 'EPERM';
-  add(results, 'Retrieval eval', blocked ? 'WARN' : 'FAIL', blocked ? 'subprocess blocked by current sandbox' : retrieval.stderr?.trim() || retrieval.error?.message || 'score output unavailable');
-} else {
-  add(results, 'Retrieval eval', 'PASS', `fielded · @1 ${scores.at1} · @3 ${scores.at3} · @5 ${scores.at5}`);
 }
 
 // The folder map in AGENTS.md is prose, and prose did not stop sessions in the

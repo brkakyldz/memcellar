@@ -37,7 +37,7 @@ tells you what it was protecting.
 | 0007 | amended by 0029 | Agent-first installation — the agent installs the brain from the repo link |
 | 0008 | superseded by 0042 | Global brain mode — hooks live at user level, the brain follows you into every project *(the global SessionStart survived in 0042/0044; since 0052 it does nothing outside the vault)* |
 | 0009 | amended by 0029 | The installer offers global mode as the recommended choice *(no longer offered since 0052)* |
-| 0010 | superseded by 0018 | Hybrid retrieval as a derived index — lexical first, vectors on a named trigger |
+| 0010 | superseded by 0018; reversed by 0057 | Hybrid retrieval as a derived index — lexical first, vectors on a named trigger |
 | 0011 | amended by 0019, 0024, 0039 | Enforcement-first memory gates — scoped PreToolUse denial alongside fail-open automation *(the template wires no PreToolUse gate; see 0023)* |
 | 0012 | amended by 0019 | A write rubric, independent corroboration, delta-only curation |
 | 0013 | amended by 0019 | Self-improvement flywheel on manufactured feedback; survival replaces acceptance as the outcome anchor *(the `/flywheel` pass itself was retired by 0038)* |
@@ -45,13 +45,13 @@ tells you what it was protecting.
 | 0015 | amended by 0029, 0036, 0046 | The vault is a personal tool first; this template is updated in batches, behind a two-week bar |
 | 0016 | amended by 0028 | The working record lives in the private vault, not the template |
 | 0017 | amended by 0028 | The reporting contract is a global standard, not a vault-local habit *(reference instance only — the template ships no reporting contract)* |
-| 0018 | amended by 0024 | Retrieval is lexical + links + conventions; a retrieval-failure ledger is the only trigger to revisit it |
+| 0018 | amended by 0024; reversed by 0057 | Retrieval is lexical + links + conventions; a retrieval-failure ledger is the only trigger to revisit it |
 | 0019 | amended by 0022, 0023, 0026, 0038, 0048 | The flywheel is capture → corroborate → enforce-or-retire; the escalation ladder is the mechanism |
-| 0020 | amended by 0024, 0025, 0026, 0027, 0032 | One append-only signal ledger plus a machine-written session trace *(the session trace went with 0038; the ledger stays)* |
+| 0020 | amended by 0024, 0025, 0026, 0027, 0032, 0057 | One append-only signal ledger plus a machine-written session trace *(the session trace went with 0038; the ledger stays)* |
 | 0021 | amended by 0033 | No off-site git bundle job — the local clone plus the remote are the backup |
 | 0022 | accepted | Seed checks compile standing conventions into enforced rules *(since 0042 no hook runs them; `node .claude/hooks/checks.mjs` runs them by hand, and `scripts/maintenance.mjs run` on the owner's yes since 0049)* |
 | 0023 | accepted | The PreToolUse write gate is reinstated, scoped to vault paths and the control plane *(no PreToolUse gate is wired since v1.1 — protected files are a convention, `notes/lifecycle-policy.md` §8)* |
-| 0024 | amended by 0032, 0038, 0039 | Instrument what the policy claims to measure — reuse sidecar, rollup, caused retrieval failures, computed acceptance rate *(of these, only the retrieval-failure ledger remains)* |
+| 0024 | amended by 0032, 0038, 0039, 0057 | Instrument what the policy claims to measure — reuse sidecar, rollup, caused retrieval failures, computed acceptance rate *(of these, only the retrieval-failure ledger remains)* |
 | 0025 | superseded by 0038 | The session log gets a mechanism — transcript flush on SessionEnd, swept at SessionStart |
 | 0026 | amended by 0032 | One approval surface (`PROPOSALS.md`); resurfacing is question-framed and inbound-poor *(proposal production was retired by 0038; `PROPOSALS.md` is kept by hand)* |
 | 0027 | superseded by 0042 | Stop checkpoints skip trace-only commits and debounce the push |
@@ -81,6 +81,9 @@ tells you what it was protecting.
 | 0052 | accepted | Projects and the vault are walled off: the hook does nothing outside the vault, a project keeps its own lessons, `/harvest` reads a project on request, `/recall` is vault-only (amends 0045, 0048) — [full record](decisions/0052-projects-and-the-vault-are-walled-off.md) |
 | 0053 | amended by 0054 | A project that goes public stays one public repo with its private material kept apart *(reference instance only — project publishing lives in its separate skills kit)* |
 | 0054 | accepted | A new project repo is chosen public-ready or private when it is created; a public-ready repo pairs with a private sibling repo *(reference instance only)* |
+| 0055 | proposed | A note is typed by its lifetime when it is written: topic pages live in `notes/`, reports are dated in `reports/`, deliverables expire in `outputs/`; neighbours are closed in the same commit (amends 0035) — [full record](decisions/0055-notes-are-typed-by-lifetime-at-write-time.md) |
+| 0056 | proposed | Three homes — the repo, the user-level kit, the vault: owner-wide lessons and cross-project technical knowledge live in the kit, `/harvest` is retired for a read-only project board (amends 0048, 0052) — [full record](decisions/0056-three-homes-repo-user-kit-vault.md) |
+| 0057 | accepted | The retrieval machinery is retired — ranker eval, golden set, `/recall` and the retrieval-failure ledger; the agent reads `INDEX.md` and the notes, and quality is measured by owner-confirmed answers (reverses 0010, 0018) — [full record](decisions/0057-retrieval-machinery-retired.md) |
 
 There is no 0031: the number was allocated to a decision that was abandoned
 before it was written. Gaps are left in place rather than renumbered — a
