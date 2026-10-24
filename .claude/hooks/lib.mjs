@@ -907,6 +907,130 @@ function frontmatterOf(text) {
   return m ? m[1] : '';
 }
 
+// --- Lifetime findings (ADR 0055) -------------------------------------------
+// What time has made stale, computed at read time and never stored: a
+// deliverable past `expires:`, a report no living page links, a topic page
+// older than its newest report or untouched for TOPIC_STALE_DAYS, a fact whose
+// `valid_to` passed with nothing superseding it, a `-v2` beside its original,
+// and — in the always-loaded files and project cards — a line that says
+// "until <date>" for a date already gone, or cites an ADR range that newer
+// ADRs have outrun. In the reference instance every one of these had happened
+// by 2026-10-24, and none was caught: `review_by` was the only date anything
+// read. One implementation, two readers: the maintenance notice counts these,
+// and the `lifetime-sweep` check in checks.mjs lists them file by file.
+const TOPIC_STALE_DAYS = 90;
+const UNTIL_RE = /\b(?:until|till)\s+(\d{4}-\d{2}-\d{2}|\d{2}-\d{2})\b/gi;
+const ADR_RANGE_RE = /\bADRs?\b[^0-9\n]{0,12}(\d{4})\s*[–-]\s*(\d{4})/g;
+
+function dateField(fm, key) {
+  return (fm.match(new RegExp(`^${key}:\\s*["']?(\\d{4}-\\d{2}-\\d{2})`, 'm')) || [])[1] || null;
+}
+
+// "10-18" in a line written this year means this year's 18 October; a month
+// more than six ahead of today means it was written last year.
+function fullDay(token, today) {
+  if (token.length === 10) return token;
+  const year = Number(today.slice(0, 4));
+  const candidate = `${year}-${token}`;
+  return candidate > `${year}-${String(Number(today.slice(5, 7)) + 6).padStart(2, '0')}-31` ? `${year - 1}-${token}` : candidate;
+}
+
+export function lifetimeFindings(repoRoot, { now = new Date() } = {}) {
+  const today = localDay(now);
+  const found = [];
+  const list = (dir) => {
+    try { return readdirSync(path.join(repoRoot, dir)); } catch { return []; }
+  };
+  const read = (rel) => readFileSafe(path.join(repoRoot, rel)) || '';
+  const linksIn = (text) => [...text.matchAll(/\[\[([^\]|#]+)/g)].map((m) => m[1].trim().replace(/\\$/, ''));
+
+  for (const n of list('outputs')) {
+    if (!n.endsWith('.md') || n === 'README.md') continue;
+    const expires = dateField(frontmatterOf(read(`outputs/${n}`)), 'expires');
+    if (expires && expires < today) found.push({ file: `outputs/${n}`, detail: 'deliverable-expired', message: `expired ${expires}` });
+  }
+
+  const noteNames = list('notes').filter((n) => n.endsWith('.md'));
+  const notes = new Map(noteNames.map((n) => [n, read(`notes/${n}`)]));
+  const linked = new Set();
+  for (const text of notes.values()) for (const slug of linksIn(text)) linked.add(slug);
+
+  const newestReport = new Map();
+  for (const r of list('reports')) {
+    if (!/^\d{4}-\d{2}-\d{2}_.+\.md$/.test(r)) continue;
+    const topic = (frontmatterOf(read(`reports/${r}`)).match(/^topic:\s*["']?\[\[([^\]|#]+)/m) || [])[1]?.trim();
+    const day = r.slice(0, 10);
+    if (topic && (!newestReport.has(topic) || newestReport.get(topic) < day)) newestReport.set(topic, day);
+    if (!linked.has(r.replace(/\.md$/, ''))) found.push({ file: `reports/${r}`, detail: 'report-unlinked' });
+  }
+
+  let maxAdr = 0;
+  for (const dir of ['docs/decisions', 'archive', 'notes']) {
+    for (const n of list(dir)) {
+      const m = n.match(/^(\d{4})-[a-z]/);
+      if (m) maxAdr = Math.max(maxAdr, Number(m[1]));
+    }
+  }
+
+  const stems = new Map();
+  const scanLines = [];
+  for (const [n, text] of notes) {
+    const slug = n.replace(/\.md$/, '');
+    const fm = frontmatterOf(text);
+    const type = (fm.match(/^type:\s*(\S+)/m) || [])[1];
+    const status = (fm.match(/^status:\s*(\S+)/m) || [])[1] || '';
+    if (type === 'topic') {
+      const updated = dateField(fm, 'updated');
+      const newest = newestReport.get(slug);
+      if (updated && newest && newest > updated) {
+        found.push({ file: `notes/${n}`, detail: 'topic-behind-report', message: `updated ${updated}, newest report ${newest}` });
+      }
+      const age = daysBetween(updated, now);
+      if (age !== null && age > TOPIC_STALE_DAYS) found.push({ file: `notes/${n}`, detail: 'topic-untouched', message: `updated ${updated}` });
+    }
+    const validTo = dateField(fm, 'valid_to');
+    if (validTo && validTo < today && !/^superseded_by:/m.test(fm) && !/^(superseded|reversed|done)$/.test(status)) {
+      found.push({ file: `notes/${n}`, detail: 'valid-to-passed', message: `valid_to ${validTo}, nothing supersedes it` });
+    }
+    if (!n.startsWith('lesson-') && type !== 'report') {
+      const stem = slug.replace(/[-_](?:v\d+|\d{4}-\d{2}(?:-\d{2})?)$/, '');
+      if (!stems.has(stem)) stems.set(stem, []);
+      stems.get(stem).push(n);
+    }
+    if (type === 'project' || type === 'topic') scanLines.push([`notes/${n}`, text]);
+  }
+  for (const group of stems.values()) {
+    if (group.length < 2) continue;
+    for (const n of group) {
+      found.push({ file: `notes/${n}`, detail: 'version-name', message: `same subject as ${group.filter((g) => g !== n).join(', ')}` });
+    }
+  }
+
+  for (const rel of ['core/USER.md', 'core/MEMORY.md']) scanLines.push([rel, read(rel)]);
+  for (const [rel, raw] of scanLines) {
+    const body = stripHtmlComments(raw.replace(/^---\r?\n[\s\S]*?\r?\n---/, ''));
+    for (const line of body.split(/\r?\n/)) {
+      for (const m of line.matchAll(UNTIL_RE)) {
+        const day = fullDay(m[1], today);
+        if (day < today) found.push({ file: rel, detail: 'date-passed', message: `"${line.trim().slice(0, 80)}"` });
+      }
+      for (const m of line.matchAll(ADR_RANGE_RE)) {
+        if (maxAdr && Number(m[2]) < maxAdr && Number(m[2]) > Number(m[1])) {
+          found.push({ file: rel, detail: 'adr-range-stale', message: `cites ADRs up to ${m[2]}; the newest is ${String(maxAdr).padStart(4, '0')}` });
+        }
+      }
+    }
+  }
+  // One finding per (file, detail): the dedup key of the ledger, and enough to act on.
+  const seen = new Set();
+  return found.filter((f) => {
+    const k = `${f.file}|${f.detail}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+
 export function maintenanceDue(repoRoot, { now = new Date() } = {}) {
   const items = [];
   const today = localDay(now);
@@ -985,6 +1109,24 @@ export function maintenanceDue(repoRoot, { now = new Date() } = {}) {
       run: 'node scripts/maintenance.mjs run',
       why: `last link sweep ${ago(lastSweep)}; it also runs the compiled checks`,
     });
+  }
+
+  // What time made stale (ADR 0055). It is judgment work — close, merge,
+  // archive or extend — so it rides on the /curator item, added to it when
+  // curator is already due for its logs, and raised on its own otherwise.
+  let stale = [];
+  try {
+    stale = lifetimeFindings(repoRoot, { now });
+  } catch {
+    stale = [];
+  }
+  if (stale.length > 0) {
+    const counts = new Map();
+    for (const f of stale) counts.set(f.detail, (counts.get(f.detail) || 0) + 1);
+    const why = [...counts].map(([detail, n]) => `${n} ${detail}`).join(', ');
+    const curator = items.find((i) => i.id === 'curator');
+    if (curator) curator.why += `; stale: ${why}`;
+    else items.push({ id: 'curator', run: '/curator', why: `stale: ${why}` });
   }
 
   if (lessonWaiting.length > 0) {

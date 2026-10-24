@@ -1,6 +1,6 @@
 ---
 name: curator
-description: Maintenance pass that reconciles the vault's live memory, distills due logs, archives stale evidence, and verifies Tier-0 budgets without touching my-notes. Run only when the owner types /curator or says yes to the session-start "Maintenance due" notice (ADR 0049) — never on the agent's own initiative.
+description: Maintenance pass that reconciles the vault's live memory, closes what time and recent decisions made stale (expired deliverables, unlinked reports, topic pages behind their reports, -v2 pages, pages contradicting a new decision), distills due logs, archives stale evidence, and verifies Tier-0 budgets without touching my-notes. Run only when the owner types /curator or says yes to the session-start "Maintenance due" notice (ADR 0049) — never on the agent's own initiative.
 ---
 
 # Curator
@@ -79,6 +79,50 @@ unsourced beliefs poisons every session after it.
    every removed line with where it went — merged into `<line>`, moved to
    `notes/<x>`, archived, or superseded by `<x>`. A line with no destination
    is not removed.
+
+3a. **Close what time and decisions made stale (ADR 0055).** Two lists, one
+   pass. Every change here goes through `.agents/write-gate.md` like any
+   other write.
+
+   **What time made stale** — `node .claude/hooks/checks.mjs --all` and read
+   the `lifetime-sweep` findings (the session-start notice already counted
+   them). One verdict each:
+
+   | Finding | Verdict to propose |
+   |---|---|
+   | `deliverable-expired` | archive it, or extend `expires:` if the owner still uses it; a fact in it that still matters goes to its topic page first |
+   | `report-unlinked` | link it from its `topic:` page, or archive it with a dead topic |
+   | `topic-behind-report` | carry the report's changed lines onto the topic page and bump `updated:` |
+   | `topic-untouched` | ask whether it still holds: bump `updated:`, or archive |
+   | `valid-to-passed` | add `superseded_by` to what replaced it, or archive it |
+   | `version-name` | merge into one topic page, archive the rest |
+   | `date-passed`, `adr-range-stale` | fix the line; in `core/` only on the owner's yes |
+
+   **What decisions made stale.** The cause of most contradictions in the
+   reference instance was a decision that changed while the pages describing
+   the old state kept saying it. Examples: a runtime paused, a project dropped,
+   a week-long rule that ended. Find the last 30 days of changes to what is
+   true:
+
+   ```
+   git log --since=30.days --name-only --format='%h %s' -- notes/ docs/decisions/ archive/
+   ```
+
+   Read the decision notes, ADRs, owner's page and project cards in it. For
+   each changed fact, list the pages that might still say the old thing:
+   `node scripts/note-neighbours.mjs --slug <changed page>`, plus a `grep` for
+   the old wording. Then decide per page. Evidence first, then the verdict
+   (two steps, as in `/ingest`). A page that contradicts the decision is
+   closed: `valid_to`, `superseded_by` and a visible first line. Annotating it
+   is not enough, because a stale stored claim outweighs fresh evidence at
+   answer time. A page that only needs a line changed gets that line changed.
+
+   **Split lessons.** Vault lesson topics that describe one behaviour from
+   opposite directions ("ask more", "ask less", "give options") are one topic.
+   Propose the merge: entries are moved verbatim, in date order, never edited.
+
+   Everything here is a proposal, applied on the owner's yes in this
+   conversation. Nothing is closed on inference alone.
 
 4. **Distill old logs.** For every file directly in `logs/` whose name starts
    with `YYYY-MM-DD` — any suffix, `_HHMM`, `-<slug>`, `_link-sweep`, `_audit`

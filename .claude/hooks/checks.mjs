@@ -45,6 +45,7 @@ import {
   summarizeError,
   getRepoRoot,
   thisDir,
+  lifetimeFindings,
 } from './lib.mjs';
 
 // The `type:` values valid in notes/. `my-note` is left out on purpose: it is
@@ -246,6 +247,27 @@ const noteLifetime = {
   },
 };
 
+// --- lifetime-sweep -----------------------------------------------------
+
+// The time half of ADR 0055, file by file: what `lifetimeFindings` in lib.mjs
+// finds, limited to the files this run was handed. On a commit that is the
+// pages the task touched; under `--all` (what `maintenance.mjs run` passes)
+// it is the whole vault, which is the list /curator works from.
+//
+// Canary: `outputs/2020-01-01_x.md` with `expires: 2020-01-31` must fire
+// `deliverable-expired`; with `expires: 2999-01-01` it must not.
+const lifetimeSweep = {
+  id: 'lifetime-sweep',
+  added: '2026-10-24',
+  source: 'ADR 0055 (lifetimes are checked at read time)',
+  scope: 'changed',
+  run({ repoRoot, changedFiles }) {
+    const wanted = new Set(changedFiles);
+    return lifetimeFindings(repoRoot).filter((f) => wanted.has(f.file))
+      .map((f) => ({ file: f.file, detail: f.detail, message: `${f.file}: ${f.detail} — ${f.message ?? ''}`.trim() }));
+  },
+};
+
 // The 'uncaptured-correction' check lived here, with the transcript readers it
 // needed: it scanned the owner's own messages for correction phrases and, finding
 // one, told the agent to run /lesson. Removed 2026-09-06 (ADR 0038) — it is
@@ -294,6 +316,7 @@ export const CHECKS = [
   wikilinkShortForm,
   noteConventions,
   noteLifetime,
+  lifetimeSweep,
   indexCoverage,
 ];
 

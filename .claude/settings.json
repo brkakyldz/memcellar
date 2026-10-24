@@ -14,6 +14,7 @@
       "Bash(node scripts/maintenance.mjs:*)",
       "Bash(node scripts/tests/brain-doctor.test.mjs:*)",
       "Bash(node scripts/tests/index-coverage.test.mjs:*)",
+      "Bash(node scripts/tests/lifetime-sweep.test.mjs:*)",
       "Bash(node scripts/tests/note-lifetime.test.mjs:*)",
       "Bash(node scripts/tests/note-neighbours.test.mjs:*)",
       "Bash(node scripts/tests/project-doctor.test.mjs:*)",

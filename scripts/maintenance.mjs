@@ -81,14 +81,19 @@ if (mode === 'due') {
 console.log('# Maintenance run');
 runNode('Link sweep', [path.join('scripts', 'link-sweep.mjs')]);
 
-console.log('\n## Compiled checks (every note)\n');
+console.log('\n## Compiled checks (every page)\n');
 try {
-  const files = readdirSync(path.join(repoRoot, 'notes'))
-    .filter((n) => n.endsWith('.md'))
-    .map((n) => `notes/${n}`);
+  // The living layer, the dated layers and the always-loaded files: every
+  // place a type or a lifetime can go wrong (ADR 0055).
+  const files = [];
+  for (const dir of ['notes', 'reports', 'outputs', 'core']) {
+    let names = [];
+    try { names = readdirSync(path.join(repoRoot, dir)); } catch { names = []; }
+    for (const n of names) if (n.endsWith('.md') && n !== 'README.md') files.push(`${dir}/${n}`);
+  }
   const { fired } = runChecks(repoRoot, { logTag: 'maintenance', changedFiles: files });
   if (fired.length === 0) {
-    console.log(`No new findings across ${files.length} notes (repeats this month are not re-reported).`);
+    console.log(`No new findings across ${files.length} pages (repeats this month are not re-reported).`);
   } else {
     for (const f of fired) console.log(`- ${f.check}: ${f.file} — ${f.detail}`);
   }
@@ -97,6 +102,7 @@ try {
 }
 
 runNode('Brain doctor', [path.join('scripts', 'brain-doctor.mjs')]);
+runNode('Project board', [path.join('scripts', 'project-doctor.mjs'), '--board']);
 
 console.log('');
 printDue();
