@@ -54,9 +54,16 @@ Three kinds of knowledge were sharing one bridge:
      and it hit, or plainly would hit, a second one. Otherwise it stays in
      the repository's own docs. If no repository owns it, it is a vault
      topic page.
-   - *A rule for one project only* (for example, copy rules for one site)
-     goes in that repository's `AGENTS.md`. It is not a lesson and not a
-     kit rule.
+   - *A rule or decision for one project only* goes in that repository: a
+     rule in its `AGENTS.md`, a decision in its `docs/decisions/`. Copy rules
+     for one site are an example. It is not a lesson, not a kit rule and not a
+     vault decision. If the project has no repository yet, its card holds the
+     rule until it does.
+   - *A pattern versus a trap.* A trap, meaning a library, tool or machine
+     that behaves in a way you would not expect, goes to the kit on first
+     sight, because it will hit any repository using the same thing. A
+     design pattern read off one repository stays in that repository's docs
+     until a second repository uses it, and then it moves to the kit.
 
    **A working rule lives where it is enforced.** A rule the owner wants in
    every session ("never use model X", "ask at the start, with options") is

@@ -103,8 +103,9 @@ PKM method had a class for agent-produced deliverables.
    program. A registry that the vault's own skills read (source roots, for
    example) is a topic page. The reasons behind a rule live in the decision
    record that made the rule. The policy pages that `AGENTS.md` names as the
-   full rationale for its rules are that record. They are kept as they are
-   and never restated elsewhere.
+   full rationale for its rules are that record. They keep their type, are
+   never restated elsewhere, and are updated in the same commit as the rule
+   they explain, like any other neighbour.
 
 3. **A page that holds two lifetimes is split.**
    - Research that ends in a choice becomes a report plus a decision.
