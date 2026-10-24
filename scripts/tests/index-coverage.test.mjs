@@ -105,6 +105,18 @@ writeFileSync(path.join(work, 'INDEX.md'), INDEX_TABLE);
   check('every finding says why', findings.every((f) => f.detail === 'missing-from-index'));
 }
 
+// --- my-notes/: the owner's own notes are outside every check ------------
+{
+  mkdirSync(path.join(work, 'my-notes'), { recursive: true });
+  writeFileSync(
+    path.join(work, 'my-notes', 'Kendi Notum.md'),
+    '---\ntype: my-note\ncreated: 2026-10-23\n---\n\nNo outbound link, see [[archive/x]].\n'
+  );
+  const found = CHECKS.flatMap((c) => c.run({ repoRoot: work, changedFiles: ['my-notes/Kendi Notum.md'] }) || []);
+  check('a type: my-note file in my-notes/ trips no check', found.length === 0, JSON.stringify(found));
+  rmSync(path.join(work, 'my-notes'), { recursive: true, force: true });
+}
+
 // --- the sweep, which sees notes nobody is committing right now ----------
 {
   const git = (cwd, args) =>

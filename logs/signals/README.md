@@ -14,7 +14,7 @@ Example:
 
 ```
 - 2026-08-25T13:02Z | retrieval-failure | query:"vault lifecycle" | cause:wrong-term | sid:abc-123
-- 2026-08-26T09:40Z | correction | class:wrong-procedure | note:lesson-2026-08-26-wrong-procedure.md | "no — the other order" | sid:def-456
+- 2026-08-26T09:40Z | correction | class:wrong-procedure | note:lesson-wrong-procedure.md | "no — the other order" | sid:def-456
 ```
 
 Timestamps are UTC and end in `Z` — unlike the local-time filenames in
@@ -45,9 +45,9 @@ history.
 - **`check-fire` lines are deduplicated** — one line per (check, file, detail)
   per month file, so a stuck violation cannot flood the ledger.
 - **Skills write lines via the CLI, never by hand-formatting:**
-  `node .claude/hooks/append-signal.mjs <type> <field>... [--sid <id>]`. From
-  another repo, call it by the vault's path — it resolves the vault from its
-  own location.
+  `node .claude/hooks/append-signal.mjs <type> <field>... [--sid <id>]`, from
+  a vault session. A project session writes no signal lines: its lessons stay
+  in its own repo (ADR 0052).
 
 ## Required payload fields
 

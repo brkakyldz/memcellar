@@ -7,8 +7,8 @@ user's behalf, not as something pre-authorized. In particular:
 
 - **Confirm before creating the GitHub repo** (Step 2) — that is an
   account-affecting action. Show the exact command first.
-- **Confirm before writing user-level settings** (Step 5) — those affect every
-  project on the machine, not just this one.
+- **Confirm before writing user-level settings or links** (Step 5) — those
+  affect every project on the machine, not just this one.
 - **Never enter credentials yourself.** If `gh` needs authentication, tell the
   user how to run it and wait for them.
 - **If anything here doesn't match what you observe** — a missing file, an
@@ -59,10 +59,12 @@ short list, whichever fits the conversation:
 10. Which agent runtimes they use: Claude Code, Codex, or both. Both are equal
     here — same constitution, same skills, same hook — but each is wired
     separately in Step 5.
-11. Brain scope — **global (recommended)** or project-only. Explain it briefly:
-    global means the brain loads in *every* session on this machine, which is
-    the system's core premise — a brain that grows from everything they work
-    on. Project-only means it is active inside the vault folder alone.
+11. Whether they want `/closeout` and `/lesson` in their other projects.
+    Explain it briefly: the brain itself loads only in sessions inside the
+    vault, and a project never reads or writes it — each project keeps its own
+    state, decisions and lessons in its own repo, and the brain learns from a
+    project only when they run `/harvest` on it from a vault session. The two
+    skills help a project do that bookkeeping; they never touch the vault.
 
 **Leave anything they skip blank rather than guessing.** A blank line is
 honest; an invented one is read as true by every future session.
@@ -107,15 +109,10 @@ In the new clone:
   with their answer to question 6, and delete the instruction comment above it.
   If they converse in English, simplify that section to a single line rather
   than leaving a split that doesn't apply to them.
-- **`notes/`** — create a card for each project they named, using
-  `.claude/templates/project.md`: `project_id` equal to the filename, `repo`
-  (the absolute path of its checkout, forward slashes, or `none`), `remote`
-  and `state_file` (`docs/CURRENT_STATE.md`, or `none` until the project
-  has one). A card says why the project exists and where it lives; it never
-  carries status — that lives in the project's own repo. Give each at least
-  one outbound wikilink before you close it, and add a row to `INDEX.md`
-  under **Projects**. `node scripts/link-sweep.mjs` reports any note you
-  forget to catalog.
+- **Projects they named** stay plain text under `## Current focus` in
+  `USER.md` for now — no `[[links]]` yet, and no cards. Project cards are
+  written only by `/harvest` (ADR 0052), which reads the project's repo; Step 7
+  tells your user how to run it for each project once setup is done.
 - **`core/MEMORY.md`** — leave it empty. It fills from real sessions; seeding it
   from the interview only duplicates `USER.md`.
 - **Link the skills.** Run `node install.mjs --link-skills`. It makes
@@ -163,21 +160,12 @@ which looks like a vault problem and is not one.
 
 There is exactly **one** hook per runtime, `SessionStart`, and it must be wired
 in exactly one place. No hook commits: nothing is wired at Stop, SessionEnd or
-PreCompact. Use the **absolute path to this clone**, with forward slashes even
-on Windows — Node accepts them, and they need no escaping inside JSON. Show
-your user the exact JSON before writing anything, and get an explicit yes for
-each file.
-
-**What global mode costs and does**, for when your user asks. Every session
-on the machine pays a small `git pull` at start — skipped whenever the vault
-has uncommitted changes to tracked files, because those belong to a live
-task. The scripts resolve the brain root themselves (their own location, or
-`BRAIN_DIR` if it is set), so they are correct from any working directory. In
-a project session the hook also injects standing rules: the project's state
-lives in its own repo, so read its `AGENTS.md`, `docs/CURRENT_STATE.md` and
-the last lines of `docs/WORKLOG.md` before planning, and end substantial work
-with `/closeout`. On the manual path, `node install.mjs` prints both blocks
-below with the vault's path filled in.
+PreCompact. The hook works only inside the vault — in any other folder it
+exits at once, without a pull and without injecting anything (ADR 0052) — so
+there is no "global mode" to choose any more. Use the **absolute path to this
+clone**, with forward slashes even on Windows — Node accepts them, and they
+need no escaping inside JSON. Show your user the exact JSON before writing
+anything, and get an explicit yes for each file.
 
 **Merging into an existing settings file:** read it (start from `{}` if there
 is none), preserve every existing key untouched, and **append** to an existing
@@ -187,59 +175,38 @@ it doesn't, stop and tell your user rather than leaving a broken file.
 
 ### Claude Code
 
-- **Project-only:** nothing to do — this repo's `.claude/settings.json` already
-  wires SessionStart through `${CLAUDE_PROJECT_DIR}`.
-- **Global:** merge this into `~/.claude/settings.json`, then remove the
-  `hooks` block from the vault's own `.claude/settings.json` (keep its
-  `permissions` block) and commit that one file, or the hook fires twice
-  inside the vault:
-
-  ```json
-  {
-    "hooks": {
-      "SessionStart": [
-        { "hooks": [ { "type": "command", "command": "node \"<VAULT>/.claude/hooks/session-start.mjs\"", "timeout": 60 } ] }
-      ]
-    }
-  }
-  ```
+Nothing to do — this repo's `.claude/settings.json` already wires SessionStart
+through `${CLAUDE_PROJECT_DIR}`. (A v1.1 install that wired it in
+`~/.claude/settings.json` instead keeps working: outside the vault it now does
+nothing. Keep exactly one of the two.)
 
 ### Codex
 
-Codex wiring is user-level, through the thin adapter in `.codex/hooks/`:
+Codex wiring goes through the thin adapter in `.codex/hooks/`. Merge this into
+`~/.codex/hooks.json`, then ask your user to re-trust the changed hook
+definition in Codex. It fires in every Codex session but exits at once outside
+the vault, so other projects pay nothing for it. Do **not** also add a
+project-level `.codex/hooks.json` — Codex adds the layers together, so the hook
+would fire twice. `brain-doctor.mjs` fails the check when both layers carry it.
 
-- **Global:** merge this into `~/.codex/hooks.json`, then ask your user to
-  re-trust the changed hook definition in Codex. Do **not** also add a
-  project-level `.codex/hooks.json` — Codex adds the layers together, so the
-  hook would fire twice.
-
-  ```json
-  {
-    "hooks": {
-      "SessionStart": [
-        { "hooks": [ { "type": "command", "command": "node \"<VAULT>/.codex/hooks/session-start.mjs\"", "timeout": 60 } ] }
-      ]
-    }
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "node \"<VAULT>/.codex/hooks/session-start.mjs\"", "timeout": 60 } ] }
+    ]
   }
-  ```
+}
+```
 
-- **Project-only:** the template ships no project-level `.codex/hooks.json`,
-  on purpose. Codex adds the project and user layers together, so a shipped
-  one would fire twice the moment its user wired global mode, the recommended
-  setup. Codex still reads `AGENTS.md` and `.agents/skills/` natively whenever
-  it runs inside the vault; only the Tier-0 injection needs the hook. If your
-  user wants it for this folder alone, write the same block into the vault's
-  own `.codex/hooks.json` instead, have them trust it in Codex, commit that
-  file, and tell them to empty it again if they ever wire the hook globally.
-  `brain-doctor.mjs` fails the check when both layers carry it.
+Codex still reads `AGENTS.md` and `.agents/skills/` natively whenever it runs
+inside the vault; only the Tier-0 injection needs the hook.
 
-### Project sessions (global mode only)
+### Project skills (optional)
 
-In global mode a session in any project is told to end its work with
-`/closeout`, which keeps the project's state in its own repo and leaves a
-short log in the brain. For `/closeout`, `/lesson` and `/recall` to load
-there, offer to link them at user level. It writes into the user-level skills
-folders, so show the command and get a yes first:
+If your user answered yes to question 11, offer to link `/closeout` and
+`/lesson` at user level. It writes into the user-level skills folders, so
+show the command and get a yes first:
 
 ```
 node install.mjs --link-global-skills
@@ -249,15 +216,22 @@ It creates one link per skill in `~/.claude/skills` and `~/.codex/skills`
 (or `CLAUDE_CONFIG_DIR` / `CODEX_HOME`) for each runtime that is installed,
 pointing back into the vault. The only thing it ever replaces is a broken
 link; a real folder, or a link that still points somewhere else, is left
-alone. `node install.mjs --unlink-global-skills` removes exactly its own
-links again. The linked skills find the vault from the hook's "The brain
-lives at …" line.
+alone. It also removes a `recall` link a v1.1 install left behind — recall
+works on the vault, so it is vault-only now. `node install.mjs
+--unlink-global-skills` removes exactly its own links again.
+
+In a project, `/closeout` brings `docs/CURRENT_STATE.md` up to date, writes
+the run report of an autonomous run, removes the task's merged worktrees and
+commits exactly the paths the task wrote; `/lesson` appends a correction to
+`docs/lessons/lesson-<topic>.md` and, on a second entry for the same
+behaviour, proposes a rule for that repo. The formats they expect:
+`.claude/templates/project-repo/README.md`.
 
 **Check that Codex sees them.** Some Codex builds read user-level skills from
 `~/.agents/skills` rather than `~/.codex/skills`. Start Codex in any folder
-outside the vault and ask it to list the skills it has loaded. If `closeout`,
-`lesson` and `recall` are missing, link them into `~/.agents/skills` by
-hand, one per skill, with `<VAULT>` as above:
+outside the vault and ask it to list the skills it has loaded. If `closeout`
+and `lesson` are missing, link them into `~/.agents/skills` by hand, one
+per skill, with `<VAULT>` as above:
 
 - Git Bash / macOS / Linux:
   `mkdir -p ~/.agents/skills && ln -s "<VAULT>/.agents/skills/closeout" ~/.agents/skills/closeout`
@@ -289,22 +263,23 @@ From inside the clone:
 2. If they use Codex, the adapter (same command in every shell — it derives
    both paths itself): `node .codex/hooks/session-start.mjs`. Same check.
 
-3. Global mode only — the hook as a project session sees it. Run it with
+3. The wall — the hook as a project session sees it. Run it with
    `CLAUDE_PROJECT_DIR` pointing anywhere outside the vault:
    - Git Bash / macOS / Linux:
      `CLAUDE_PROJECT_DIR="$HOME" node .claude/hooks/session-start.mjs`
    - Windows PowerShell:
      `$env:CLAUDE_PROJECT_DIR = $HOME; node .claude/hooks/session-start.mjs`
 
-   The context should contain "Global brain mode — standing rules", naming
-   the vault path and `/closeout`. Reset the variable afterwards in
-   PowerShell (`Remove-Item Env:CLAUDE_PROJECT_DIR`).
+   Expect **no output and exit code 0**: a project session gets nothing from
+   the brain (ADR 0052). Reset the variable afterwards in PowerShell
+   (`Remove-Item Env:CLAUDE_PROJECT_DIR`).
 
 4. The whole brain path: `node scripts/brain-doctor.mjs`. Expect **PASS** for
    the hooks of each runtime they wired, the skills link, Tier-0 budgets,
-   SessionStart evidence (step 1 just produced it), recall and retrieval — and,
-   in global mode, **Global skills** once the project-session skills are
-   linked. A **WARN** for a runtime they don't use is fine. Any **FAIL** — stop
+   SessionStart evidence (step 1 just produced it), recall and retrieval — and
+   **User-level skills** if they linked `/closeout` and `/lesson`. A **WARN**
+   for a runtime they don't use is fine, and so is **Git delivery FAIL** before
+   the first push (no upstream yet) — push, then re-run. Any **FAIL** — stop
    and investigate before reporting success.
 
 ## Step 7 — hand-off summary
@@ -312,7 +287,8 @@ From inside the clone:
 Tell your user, concretely:
 
 - What you created: the repo name, its URL, and that you verified it private.
-- Which runtimes and which scope they chose, and what it means day to day.
+- Which runtimes they wired, and that the brain loads only in sessions inside
+  the vault.
 - **How things get in.** Two inlets: talk to the agent and the note gets written
   there and then; or drop something they read into `raw/` and run `/ingest`.
   There is no inbox to triage — that was tried and removed.
@@ -320,23 +296,33 @@ Tell your user, concretely:
   work is committed by the session that did it, with explicit paths — so two
   sessions (or Claude Code and Codex side by side) never sweep up each other's
   files. If a session ends without committing, `git status` shows what it left.
-- **Project work lives in the project's repo.** Its status, direction log
-  and run reports are committed there (`docs/CURRENT_STATE.md`,
-  `docs/WORKLOG.md`, `docs/runs/`); the brain keeps a thin card, what the
-  project taught, and one short log per piece of substantial work, written by
-  `/closeout`. To give a project those files:
-  `.claude/templates/project-repo/README.md`.
+- **Bring in their projects.** For each project they named in Step 1, they
+  can open a session in the vault and run `/harvest <path to its repo>`. It
+  writes the project's card in `notes/` with its `INDEX.md` row; they can
+  then turn the plain focus line in `USER.md` into a `[[link]]` to it.
+- **Projects and the brain are walled off.** A project's status, decisions,
+  lessons and run reports are committed in its own repo
+  (`docs/CURRENT_STATE.md`, `docs/decisions/`, `docs/lessons/`,
+  `docs/runs/`), and `git log` is its history. A project session never reads
+  or writes the brain. When they want the brain to learn from a project, they
+  open a session in the vault and run `/harvest <path to the repo>`: it reads
+  the repo and writes a thin card and a short log, never touching the repo.
+  To give a project those files: `.claude/templates/project-repo/README.md`.
+- **`my-notes/` is theirs.** A note they ask for in so many words ("note this
+  down") goes there, in their own language, through `/note`. No pass ever
+  edits, distills or archives it.
 - **`INDEX.md` is the map.** One line per page; it is what makes retrieval
   cheap, and `link-sweep.mjs` reports any note missing from it.
 - **`PROPOSALS.md` is theirs.** A hand-kept list of open work; no pass writes
   to it. Findings are reported in the conversation, acted on or dropped.
-- The commands: `/ingest`, `/file`, `/lesson`, `/recall`, `/closeout`,
-  `/curator`, `/audit`.
+- The commands: `/ingest`, `/file`, `/note`, `/lesson`, `/recall`,
+  `/harvest`, `/curator`, `/audit` — and `/closeout` in projects.
   Mention `/lesson` specifically — the first time the agent gets something
-  wrong is the most useful thing that will happen this week, and it only
-  becomes an enforced check if it is captured.
+  wrong is the most useful thing that will happen this week. One file per
+  recurring behaviour collects the corrections, and the second one on the same
+  behaviour is where the agent proposes a rule or a check.
 - `node scripts/brain-doctor.mjs` whenever something feels off, and
-  `node scripts/project-doctor.mjs` before resuming old project work — it
+  `node scripts/project-doctor.mjs` from the vault before a `/harvest` — it
   reads every repo a project card names and reports uncommitted project
   memory, stale STATE and leftover worktrees.
 - **Secret scanning is opt-in.** Recommend `pip install pre-commit`, then
@@ -344,9 +330,10 @@ Tell your user, concretely:
   GitHub's secret-scanning push protection on the repo.
 - That `core/OPEN_QUESTIONS.md` is a routing table for open questions, empty and
   waiting for real ones.
-- That nothing runs on a schedule, on purpose, and nothing nags about an
-  overdue pass. The one thing a session start volunteers is commits that never
-  left the machine.
+- That nothing runs on a schedule, on purpose. A session start volunteers at
+  most two lines: commits that never left the machine, and once a day a
+  "Maintenance due" line saying which pass has real work waiting and why. The
+  agent asks; nothing runs until they say yes.
 
 That's the full install. Nothing else in this repo needs to run for first-time
 setup.
@@ -365,8 +352,8 @@ section: Steps 0–7 above are the whole install.
 3. Run `node install.mjs`. It interviews you, writes `core/USER.md`, fills the
    language line in `core/IDENTITY.md`, creates `core/.vault-active`, links
    `.claude/skills` to `.agents/skills`, enables `git rerere`, and prints the
-   global-mode wiring for both runtimes for you to paste. It does not touch
-   your user-level settings itself, and it does not commit.
+   Codex wiring for you to paste. It does not touch your user-level settings
+   itself, and it does not commit.
 4. Commit the personalization yourself:
    `git add core/USER.md core/IDENTITY.md` then
    `git commit -m "setup: personalize brain"` and `git push`.
@@ -374,5 +361,5 @@ section: Steps 0–7 above are the whole install.
 6. `cd` in, run `claude` or `codex`, say hello. Claude Code loads the rules
    (`CLAUDE.md` → `AGENTS.md`) and `core/` through this repo's own hook.
    Codex reads `AGENTS.md` natively but gets `core/` only once its
-   user-level hook is wired — see [Step 5](#step-5--runtime-wiring).
+   hook is wired — see [Step 5](#step-5--runtime-wiring).
 7. Check the wiring: `node scripts/brain-doctor.mjs`.

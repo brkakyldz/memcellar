@@ -16,6 +16,7 @@ import {
   isVaultActive,
   logLine as libLogLine,
   backupNotice,
+  maintenanceNotice,
   emitNotices,
 } from './lib.mjs';
 
@@ -28,7 +29,7 @@ const HEADER = '## Second Brain — session context (auto-injected)';
 // own location. This file always lives at
 // <vault>/.claude/hooks/session-start.mjs, so its location is always the
 // vault root — this makes the same script correct when invoked from any cwd
-// by user-level hooks (global mode) as well as from inside the vault itself.
+// by a user-level hook as well as from inside the vault itself.
 // CLAUDE_PROJECT_DIR is never the brain root here: it names the session's
 // project (below).
 function getRepoRoot() {
@@ -42,9 +43,9 @@ function getRepoRoot() {
 
 // The session's own project dir — the cwd the runtime is actually working
 // in for this session. Claude Code sets CLAUDE_PROJECT_DIR; the Codex adapter
-// (.codex/hooks/session-start.mjs) sets it from its cwd. Distinct from the
-// brain root above: in global mode this differs from the brain root for
-// every project except the vault itself.
+// (.codex/hooks/session-start.mjs) sets it from its cwd. If the hook is wired
+// at user level it fires in every project; outside the vault it does nothing
+// at all (ADR 0052).
 function getProjectDir() {
   const fromEnv = process.env.CLAUDE_PROJECT_DIR;
   if (fromEnv && fromEnv.trim() !== '') {
@@ -155,7 +156,26 @@ function trackedChanges(repoRoot) {
   }
 }
 
+// A rebase, merge, cherry-pick or revert that another task left stopped can
+// have a clean tree, so the dirty check passes it. Pulling on top of it fails,
+// and the failure path below used to run `git rebase --abort` on that task's
+// state (2026-10-06 review, fixture T6). Anything already in progress is
+// someone else's, so the pull is skipped outright.
+function operationInProgress(repoRoot) {
+  const gitDir = getGitDir(repoRoot);
+  if (!gitDir) return null;
+  for (const marker of ['rebase-merge', 'rebase-apply', 'MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD']) {
+    if (existsSync(path.join(gitDir, marker))) return marker;
+  }
+  return null;
+}
+
 function pullUnderLock(repoRoot) {
+  const inProgress = operationInProgress(repoRoot);
+  if (inProgress) {
+    logLine(repoRoot, `pull skipped: ${inProgress} present — another task's git operation is in progress`);
+    return { ok: false, skipped: true, warning: null };
+  }
   const dirty = trackedChanges(repoRoot);
   if (dirty) {
     const count = dirty === 'unknown' ? '?' : dirty.split(/\r?\n/).length;
@@ -226,68 +246,43 @@ function readFileSafe(p) {
 // ~600 bytes of a payload measured against a threshold that turns Tier 0 off.
 // Stripped here so what is counted and what is delivered are the same text.
 function stripWriterComments(text) {
-  return text.replace(/<!--[\s\S]*?-->/g, "");
+  return text.replace(/<!--[\s\S]*?-->/g, "").replace(/\r\n?/g, "\n");
 }
 
 function normalizeForCompare(p) {
   return path.resolve(p).replace(/[\\/]+$/, '').toLowerCase();
 }
 
+// Inside means the vault root or a folder under it. A vault worktree elsewhere
+// counts as outside, which is the safe side: it gets nothing injected.
+function isInsideVault(projectDir, repoRoot) {
+  const dir = normalizeForCompare(projectDir);
+  const root = normalizeForCompare(repoRoot);
+  return dir === root || dir.startsWith(root + path.sep) || dir.startsWith(root + '/');
+}
+
 function section(text, { label = 'section', optional = false } = {}) {
   return { text, label, optional };
 }
 
-function buildContext(repoRoot, pullResult, projectDir) {
+function buildContext(repoRoot, pullResult) {
   const sections = [];
-  const isOutsideVault = normalizeForCompare(projectDir) !== normalizeForCompare(repoRoot);
 
   let header = HEADER;
-  if (isOutsideVault) {
-    header += `\nCurrent project: ${projectDir}`;
-  }
   // A skipped pull is not a failure worth a warning - the lock holder is
   // pulling the same repo. Only a real failure gets surfaced to the model.
   if (!pullResult.ok && !pullResult.skipped) {
     header += `\n⚠ git pull failed (${pullResult.warning}) — working from local state`;
   }
   // Sections carry a label and whether they may be dropped when the payload
-  // is over the limit. Core content (Tier-0 files, the standing rules a
-  // global-mode session needs) is never optional.
+  // is over the limit. Core content (the Tier-0 files) is never optional.
   sections.push(section(header, { label: 'header' }));
-
-  if (isOutsideVault) {
-    sections.push(
-      section(
-      [
-        '### Global brain mode — standing rules',
-        `You are working outside the brain vault. The brain lives at ${repoRoot}.`,
-        "This project's execution state lives in its own repo (ADR 0045): read AGENTS.md,",
-        'docs/CURRENT_STATE.md and the last 10 lines of docs/WORKLOG.md, where they exist,',
-        'before planning. End substantial work with /closeout. Its vault half is a short',
-        `session log at ${path.join(repoRoot, 'logs', 'YYYY-MM-DD_HHMM-<slug>.md')} with`,
-        '`project: <card id>` (a notes/<project_id>.md card), `runtime: claude-code|codex`,',
-        'at most ten body lines tagged decision|bugfix|feature|discovery|preference|change,',
-        'and one `outcome |` line pointing at repo refs. No log for ordinary conversation,',
-        'questions, brainstorming, status checks or planning-only work.',
-        `Touch ${path.join(repoRoot, 'core', 'MEMORY.md')} only for a cross-project`,
-        'durable fact (one line, 4000-char budget, pointer style). Never copy live project',
-        "status into the brain, never write brain content into the project's repo, and",
-        "never commit the project's files into the brain. Brain commits are task-owned:",
-        'stage only the brain files you wrote.',
-      ].join('\n'),
-      { label: 'global-brain-rules' }
-      )
-    );
-  }
 
   // Payload budget: the harness persists hook output above ~10KB to a side
   // file and injects only a ~2KB preview — an oversized payload silently
-  // un-loads Tier 0. Outside the vault only USER + MEMORY are inlined
-  // (IDENTITY and OPEN_QUESTIONS are vault-internal); inside, OPEN_QUESTIONS
-  // is a pointer rather than inlined, to stay under the threshold.
-  const coreFiles = isOutsideVault
-    ? ['USER.md', 'MEMORY.md']
-    : ['IDENTITY.md', 'USER.md', 'MEMORY.md'];
+  // un-loads Tier 0. OPEN_QUESTIONS is a pointer rather than inlined, to stay
+  // under the threshold.
+  const coreFiles = ['IDENTITY.md', 'USER.md', 'MEMORY.md'];
   // Each budgeted file is headed by its own usage, so the agent knows how much
   // room it has left *before* it writes (ADR 0030). A warning after the write
   // arrives after the damage; this arrives before it. Fail-open (ADR 0004):
@@ -310,41 +305,63 @@ function buildContext(repoRoot, pullResult, projectDir) {
     sections.push(section(`### ${name}${meter}\n${stripWriterComments(content).trim()}`));
   }
 
-  if (!isOutsideVault) {
-    sections.push(
-      section(
-        `### OPEN_QUESTIONS.md\nNot inlined — read ${path.join(repoRoot, 'core', 'OPEN_QUESTIONS.md')} before planning vault work.`,
-        { label: 'open-questions-pointer' }
-      )
-    );
+  sections.push(
+    section(
+      `### OPEN_QUESTIONS.md\nNot inlined — read ${path.join(repoRoot, 'core', 'OPEN_QUESTIONS.md')} before planning vault work.`,
+      { label: 'open-questions-pointer' }
+    )
+  );
+
+  // Two things a session start volunteers, through the shared daily notice
+  // budget. Backup failures are priority 0, because they are the one thing no
+  // later session can recover. The maintenance-due line (ADR 0049) is
+  // priority 3 and shown once a day: it says what is due and why, and the
+  // agent asks the owner before running any of it.
+  //
+  // A notice is only recorded as shown once it is in the final payload. The
+  // first pass asks which notices the daily budget allows without writing the
+  // sidecar; fitPayload may then drop optional sections; only the survivors
+  // are recorded. Recording first and fitting second marked a dropped notice
+  // as shown, so every later session that day suppressed a notice nobody had
+  // seen — precisely on the days core/ was near budget (2026-10-06 review).
+  const candidates = [backupNotice(repoRoot), maintenanceNotice(repoRoot)];
+  const allowed = emitNotices(repoRoot, candidates, { record: false, logTag: 'SessionStart' });
+  const noticeLabel = (line) => (line.startsWith('Maintenance due') ? 'maintenance' : 'backup');
+  for (const line of allowed) {
+    const label = noticeLabel(line);
+    const title = label === 'maintenance' ? 'Maintenance' : 'Backup';
+    sections.push(section(`### ${title}\n${line}`, { label: `${label}-notice`, optional: true }));
   }
 
-  // The only thing a session start volunteers now: whether the vault's work
-  // is actually backed up. The maintenance due line that stood here — curator
-  // 14d ago, audit never run — was removed on 2026-09-06 along with the passes
-  // that fed it: it measured staleness against a schedule nothing runs, and a
-  // reminder to run a pass is not a finding. Backup failures are priority 0 in
-  // the shared daily notice budget, because they are the one thing no later
-  // session can recover.
-  const backup = emitNotices(repoRoot, [backupNotice(repoRoot)], { logTag: 'SessionStart' });
-  for (const line of backup) {
-    sections.push(section(`### Backup\n${line}`, { label: 'backup-notice', optional: true }));
-    logLine(repoRoot, `backup notice shown: ${line}`);
+  const { payload, kept } = fitPayload(repoRoot, sections);
+  const delivered = allowed.filter((line) => kept.includes(`${noticeLabel(line)}-notice`));
+  if (delivered.length > 0) {
+    const deliveredCandidates = candidates.filter((c) => c && delivered.includes(c.text));
+    emitNotices(repoRoot, deliveredCandidates);
+    for (const line of delivered) logLine(repoRoot, `${noticeLabel(line)} notice shown: ${line}`);
+  }
+  for (const line of allowed.filter((l) => !delivered.includes(l))) {
+    logLine(repoRoot, `${noticeLabel(line)} notice not shown (dropped for payload size) — left unrecorded so a later session can deliver it`, 'warn');
   }
 
-  return fitPayload(repoRoot, sections);
+  return payload;
 }
 
-// Above roughly 10KB the harness is believed to persist hook output to a side
-// file and inject only a preview, which would silently un-load Tier 0. That
-// number is a **hypothesis** from the 2026-09-06 audit, not a documented
-// product guarantee — so this measures the whole serialized hook output, JSON
-// envelope included, logs the figure on every run so the real threshold can be
-// observed rather than assumed, and never truncates anything silently.
+// Both harnesses now document the cap this guards (checked 2026-10-13).
+// Claude Code: an `additionalContext`
+// string over 10,000 characters is saved to a side file and the model sees only
+// a 2,000-character preview, with no setting to raise it
+// (code.claude.com/docs/en/hooks). Codex: about 2,500 tokens per hook message
+// unless `additionalContextLimit` says otherwise (learn.chatgpt.com/docs/hooks).
+// Over either cap Tier 0
+// silently un-loads, so this measures the whole serialized hook output, JSON
+// envelope included: always at least the character count Claude measures and
+// the UTF-8 bytes Codex's estimate divides by four. It logs the figure on every
+// run and never truncates anything silently.
 //
 // Over the limit, optional sections are dropped whole, newest first: the
-// backup notice, today the only optional one, loses its space before a
-// Tier-0 file does. If only core content is left it is delivered oversized
+// backup and maintenance notices lose their space before a Tier-0 file
+// does. If only core content is left it is delivered oversized
 // and loudly logged — half a MEMORY.md is worse than a payload the harness
 // may or may not shorten.
 const PAYLOAD_SOFT_LIMIT_BYTES = 9500;
@@ -375,7 +392,7 @@ function fitPayload(repoRoot, sections) {
     size = serializedSize(join());
   }
 
-  logLine(repoRoot, `context payload ${size}B serialized (soft limit ${PAYLOAD_SOFT_LIMIT_BYTES}B, a hypothesis)`);
+  logLine(repoRoot, `context payload ${size}B serialized (soft limit ${PAYLOAD_SOFT_LIMIT_BYTES}B under the documented 10,000-character cap)`);
   if (dropped.length > 0) {
     logLine(repoRoot, `payload over the limit — dropped optional section(s): ${dropped.join(', ')}`, 'warn');
   }
@@ -386,7 +403,7 @@ function fitPayload(repoRoot, sections) {
       'warn'
     );
   }
-  return join();
+  return { payload: join(), kept: kept.map((x) => x.label) };
 }
 
 function emit(additionalContext) {
@@ -407,6 +424,11 @@ async function main() {
   await readStdin();
   const repoRoot = getRepoRoot();
   const projectDir = getProjectDir();
+  // Projects and the vault are walled off (ADR 0052): a session outside the
+  // vault gets no pull, no context and no log line — the hook touches nothing.
+  if (!isInsideVault(projectDir, repoRoot)) {
+    process.exit(0);
+  }
   logLine(repoRoot, 'run started');
 
   if (!isVaultActive(repoRoot)) {
@@ -415,7 +437,7 @@ async function main() {
   }
 
   const pullResult = runGitPull(repoRoot);
-  const context = buildContext(repoRoot, pullResult, projectDir);
+  const context = buildContext(repoRoot, pullResult);
 
   emit(context);
   process.exit(0);

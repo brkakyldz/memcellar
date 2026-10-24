@@ -1,7 +1,6 @@
 ---
 name: audit
-description: Explicit report-only structural and semantic audit of the vault; writes one pointer-backed audit log, changes nothing else, and never opens a proposal queue.
-disable-model-invocation: true
+description: Report-only structural and semantic audit of the vault; writes one pointer-backed audit log, changes nothing else, and never opens a proposal queue. Run only when the owner types /audit or says yes to the session-start "Maintenance due" notice (ADR 0049) — never on the agent's own initiative.
 ---
 
 # Audit
@@ -33,7 +32,11 @@ note do not count as metadata.
 
 Also record the `notes/` size distribution and files over 150 lines, inbound
 degree per note, weekly log-mention reuse proxy, `raw/` citation rate, and the
-30-day log projection. Run the frozen retrieval eval
+30-day log projection. Log quality against the write-time gate in
+`AGENTS.md` § Session-log rule: the share of logs from the last 30 days
+referenced by no other file, and, in a sample of up to 20 such logs, the share
+of bullets that duplicate a note or narrate steps — compare both with the
+previous audit. Run the frozen retrieval eval
 (`node scripts/retrieval-eval.mjs`) only when its cost fits the requested
 audit; otherwise name the latest dated result and mark it not rerun.
 
@@ -45,10 +48,14 @@ the pointer claims); facts that appear in two places with different dates or
 wording; a `MEMORY.md` line whose detail note has since moved on; an ADR
 whose `status:` no longer matches what later ADRs did to it.
 
+Not read and not reported: anything in `my-notes/`, the owner's own notes,
+which no automated pass touches.
+
 Run the compiled checks over the whole vault, read-only:
 `node .claude/hooks/checks.mjs --all` (never `--record` here — that writes
-the ledger). Since v1.1 nothing runs them on its own, so the audit is where a
-violation surfaces; report each finding like any other. Run
+the ledger). Nothing runs them on its own: besides the audit, only
+`node scripts/maintenance.mjs run` does, after the owner says yes to the
+maintenance notice (ADR 0049). Report each finding like any other. Run
 `node scripts/vault-metrics.mjs` too (stdout only) and carry its check-fire,
 correction-recurrence and retrieval-failure counts into the numbers table.
 
@@ -90,3 +97,4 @@ finding resolved / still open / regressed.
   wrong, not the ADR whose status is stale. Report, propose, stop.
 - No fact is inferred by combining two others; no claim enters the report
   without the line it was read from.
+- `my-notes/` is out of scope entirely.

@@ -25,7 +25,7 @@ export function thisDir(importMetaUrl) {
 // Brain-root resolution precedence (ADR 0008): BRAIN_DIR env → the script's
 // own location. Hooks live at <vault>/.claude/hooks/<name>.mjs, so their
 // location is always the vault root — this makes the same code correct when
-// invoked from any cwd by user-level hooks (global mode) as well as from
+// invoked from any cwd by a user-level hook as well as from
 // inside the vault itself. Every caller passes its location; the
 // CLAUDE_PROJECT_DIR → cwd tail below is reached only by a caller that
 // passes none.
@@ -472,8 +472,11 @@ function stripHtmlComments(text) {
 
 // HTML comments are the file's own instructions to the writer, not stored
 // facts, so they are excluded — the same exclusion the line count made.
+// Line endings are normalised first: with `core.autocrlf=true` any git
+// rewrite (restore, checkout, merge) turns LF into CRLF, and counting the
+// `\r` put identical content 34 characters over budget (2026-10-06 review).
 function countBudgetChars(text) {
-  return stripHtmlComments(text).trim().length;
+  return stripHtmlComments(text).replace(/\r\n?/g, '\n').trim().length;
 }
 
 // Usage for every budgeted core file, over budget or not: the session-start
@@ -703,13 +706,14 @@ function writeJsonAtomic(file, data) {
   }
 }
 
-// --- Session-start notices (ADR 0033, 0038) ------------------------------
-// Scheduled maintenance was retired on 2026-08-30: the trigger is the owner
-// opening a session. A "pass X is overdue" due line stood here until
-// 2026-09-06 and went with the passes that fed it — nothing is scheduled, so
-// nothing is late, and a reminder to run a pass is not a finding. What is left
-// is one shared daily notice budget and the one notice a session start still
-// volunteers: commits that never left this machine.
+// --- Session-start notices (ADR 0033, 0038, 0049) ------------------------
+// Scheduled maintenance was retired: the trigger is the owner opening a
+// session. A "pass X is overdue" line computed against a schedule was removed
+// with the passes that fed it (ADR 0038). What a session start volunteers now
+// goes through one shared daily notice budget: commits that never left this
+// machine (priority 0), and once a day a maintenance-due line computed from
+// outstanding work, which asks before anything runs (priority 3, ADR 0049 —
+// maintenanceDue below).
 //
 // Everything here is local: the pull that precedes it has already refreshed
 // the remote ref, so nothing in this path touches the network.
@@ -729,9 +733,9 @@ export function maintenanceSidecarPath(repoRoot) {
 }
 
 // v1 held `ran` stamps for the maintenance passes plus two "shown today"
-// flags. The stamps went with the due line they fed (2026-09-06): reminding
-// the owner that a pass is 14 days old is manufacturing maintenance work, which is
-// the thing this cleanup removes. An old v1 file is read for nothing but its
+// flags. The stamps went with the schedule-based due line they fed (ADR 0038);
+// the ADR 0049 line reads last-run dates from the logs the passes write, so it
+// needs no stamp here. An old v1 file is read for nothing but its
 // notice state and is rewritten in v2 shape on the next write.
 function readMaintenanceSidecar(repoRoot) {
   const empty = {
@@ -848,16 +852,161 @@ function unpushedBacklog(repoRoot, now) {
   return `${backlog.count} commit(s) unpushed for ${Math.floor(ageMs / DAY_MS)}d`;
 }
 
-// The only thing left that a session start volunteers: whether the vault's
-// work is actually backed up. The maintenance due line that used to live here
-// — "curator 14d ago", "audit never run" — was removed on 2026-09-06 with the
-// passes that fed it. It reported staleness against a schedule nothing runs,
-// and a reminder to run a pass is not a finding.
+// Whether the vault's work is actually backed up — the one notice that
+// outranks everything else in the daily budget.
 export function backupNotice(repoRoot, { now = new Date() } = {}) {
   try {
     const line = unpushedBacklog(repoRoot, now);
     if (!line) return null;
     return { key: 'backup', priority: 0, text: `Backup: ${line}` };
+  } catch {
+    return null;
+  }
+}
+
+// --- Maintenance due (ADR 0049) ------------------------------------------
+//
+// The 2026-09-06 cleanup removed a due line that reported staleness against a
+// schedule ("curator 14d ago"). It came back on 2026-10-06 in a different
+// shape: the system notices when maintenance is needed, tells the owner, and
+// runs it only when the owner says yes. Nothing here runs a pass.
+//
+// Each item is judged from state the tree already shows wherever it can —
+// logs past their 30-day distillation age, `review_by` dates in the past,
+// lesson topics waiting for a routing decision — and from time only where no
+// state exists (the report-only audit, the deterministic sweep). Last-run
+// dates come from the files the passes write (`logs/*_curator.md`,
+// `logs/*_audit.md`, `logs/*_link-sweep.md`), so there is no stamp to keep.
+
+const LOG_DISTILL_AGE_DAYS = 30;
+const CURATOR_MIN_OLD_LOGS = 10;
+const AUDIT_DUE_DAYS = 30;
+const SWEEP_DUE_DAYS = 7;
+
+function daysBetween(fromDay, now) {
+  if (!fromDay) return null;
+  const from = Date.parse(`${fromDay}T00:00:00`);
+  if (!Number.isFinite(from)) return null;
+  return Math.floor((now.getTime() - from) / DAY_MS);
+}
+
+function latestDay(names, suffix) {
+  let best = null;
+  for (const n of names) {
+    if (!n.endsWith(suffix)) continue;
+    const day = n.slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(day) && (best === null || day > best)) best = day;
+  }
+  return best;
+}
+
+function frontmatterOf(text) {
+  const m = String(text).match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  return m ? m[1] : '';
+}
+
+export function maintenanceDue(repoRoot, { now = new Date() } = {}) {
+  const items = [];
+  const today = localDay(now);
+  let logNames = [];
+  try {
+    logNames = readdirSync(path.join(repoRoot, 'logs')).filter((n) => n.endsWith('.md'));
+  } catch {
+    logNames = [];
+  }
+  const ago = (day) => (day ? `${daysBetween(day, now)}d ago` : 'never');
+  // A pass that has never run is due only once the vault has been live as
+  // long as the pass's interval — otherwise a fresh clone would open its very
+  // first session with "audit never run". The activation marker's date is the
+  // baseline; a vault without one is inert and never gets here.
+  let activatedDay = null;
+  try {
+    activatedDay = localDay(statSync(path.join(repoRoot, 'core', '.vault-active')).mtime);
+  } catch {
+    activatedDay = null;
+  }
+  const neverRunAge = daysBetween(activatedDay, now);
+
+  // /curator — logs past distillation age are outstanding work, not a clock.
+  const oldLogs = logNames.filter((n) => {
+    const d = daysBetween(n.slice(0, 10), now);
+    return d !== null && d > LOG_DISTILL_AGE_DAYS && n !== 'README.md';
+  }).length;
+  const lastCurator = latestDay(logNames, '_curator.md');
+  const lessonWaiting = [];
+  let overdueReviews = 0;
+  try {
+    const notesDir = path.join(repoRoot, 'notes');
+    for (const n of readdirSync(notesDir)) {
+      if (!n.endsWith('.md')) continue;
+      const text = readFileSafe(path.join(notesDir, n)) || '';
+      const fm = frontmatterOf(text);
+      const review = (fm.match(/^review_by:\s*(\d{4}-\d{2}-\d{2})/m) || [])[1];
+      if (review && review < today) overdueReviews += 1;
+      if (n.startsWith('lesson-')) {
+        const routing = (fm.match(/^routing:\s*(\S+)/m) || [])[1] || 'none';
+        const entries = (text.match(/^### \d{4}-\d{2}-\d{2}/gm) || []).length;
+        if (routing === 'pending' || (routing === 'none' && entries >= 2)) {
+          lessonWaiting.push(n.replace(/\.md$/, ''));
+        }
+      }
+    }
+  } catch {
+    // An unreadable notes/ folder costs the lesson and review items, nothing else.
+  }
+
+  if (oldLogs >= CURATOR_MIN_OLD_LOGS) {
+    items.push({
+      id: 'curator',
+      run: '/curator',
+      why: `${oldLogs} logs past ${LOG_DISTILL_AGE_DAYS} days await distillation; last curator ${ago(lastCurator)}`,
+    });
+  }
+
+  // /audit — report-only, so time is the only signal, plus overdue reviews.
+  const lastAudit = latestDay(logNames, '_audit.md');
+  const auditAge = daysBetween(lastAudit, now);
+  const auditDue = auditAge === null ? (neverRunAge === null || neverRunAge >= AUDIT_DUE_DAYS) : auditAge >= AUDIT_DUE_DAYS;
+  if (auditDue || overdueReviews > 0) {
+    const why = [`last audit ${ago(lastAudit)}`];
+    if (overdueReviews > 0) why.push(`${overdueReviews} note(s) past review_by`);
+    items.push({ id: 'audit', run: '/audit', why: why.join('; ') });
+  }
+
+  // The deterministic sweep: link sweep, compiled checks, retrieval eval.
+  const lastSweep = latestDay(logNames, '_link-sweep.md');
+  const sweepAge = daysBetween(lastSweep, now);
+  const sweepDue = sweepAge === null ? (neverRunAge === null || neverRunAge >= SWEEP_DUE_DAYS) : sweepAge >= SWEEP_DUE_DAYS;
+  if (sweepDue) {
+    items.push({
+      id: 'sweep',
+      run: 'node scripts/maintenance.mjs run',
+      why: `last link sweep ${ago(lastSweep)}; it also runs the compiled checks`,
+    });
+  }
+
+  if (lessonWaiting.length > 0) {
+    items.push({
+      id: 'lessons',
+      run: '/lesson step 4 (routing proposal)',
+      why: `waiting for a routing decision: ${lessonWaiting.join(', ')}`,
+    });
+  }
+  return items;
+}
+
+export function maintenanceNotice(repoRoot, { now = new Date() } = {}) {
+  try {
+    const items = maintenanceDue(repoRoot, { now });
+    if (items.length === 0) return null;
+    const list = items.map((i) => `${i.run} — ${i.why}`).join(' · ');
+    return {
+      key: 'maintenance-due',
+      priority: 3,
+      text:
+        `Maintenance due: ${list}. Tell the owner in one line at the start of your ` +
+        'first reply and ask whether to run them; run nothing until they say yes.',
+    };
   } catch {
     return null;
   }

@@ -60,7 +60,9 @@ four layers in `/recall`: `INDEX.md` first, then `grep` over `notes/`, then
 `core/MEMORY.md`, then `logs/`. Write down the pages that could conflict or
 absorb this material.
 
-**3b. Decide per fact** against that list — ADD / MERGE / SUPERSEDE / NOOP.
+**3b. Decide per fact** against that list — ADD / MERGE / SUPERSEDE / NARROW /
+NOOP (NARROW: cut a fact back to what its source supports,
+[[lifecycle-policy]] §7).
 NOOP is the most common answer and costs nothing; the failure mode of this
 step is a new note that restates an existing one under a different title.
 
@@ -80,6 +82,10 @@ The old belief and the date it died are themselves data.
   "the current state of X" — each gets the date it was true. Add
   `review_by:` only where the decay is genuinely predictable
   ([[lifecycle-policy]] §5).
+- **Keep the source's doubt.** Carry over its uncertainty words ("probably",
+  "seems", "unverified") and its explicit dates as written; never state a claim
+  more firmly than the source does. Distilling turns hedged remarks into
+  confident facts (arXiv 2606.29279), and gist compression drops dates.
 - New note → `.claude/templates/knowledge.md`, `status: seedling`,
   `confidence: low` if the claim is single-sourced. Merge into an existing note
   → append or revise the relevant section, never a wholesale rewrite of a note
@@ -125,3 +131,4 @@ session does not re-ingest the same source hoping for more.
   raising go in the note and the log, not into a list of suggestions.
 - If the source is the owner's own writing, this is the wrong skill. Their own
   words are theirs; the vault distills what they read, not what they wrote.
+  Keeping them is `/note`, and `my-notes/` is never distilled.

@@ -8,18 +8,22 @@ repo: <absolute path of the primary checkout, forward slashes — or none>
 remote: <git remote URL — or none>
 state_file: docs/CURRENT_STATE.md
 project_aliases: []
+harvested_at: none
+harvested_on: none
 related: []
 ---
 
 # Project Name
 
-<!-- A thin card (ADR 0045): why the project exists, where it lives, what it
+<!-- A thin card (ADR 0045), written only by /harvest from a vault session
+     (ADR 0052): why the project exists, where it lives, what it
      taught — at most 25 lines of body. Live status (milestones, gates,
      blockers, the next action) lives in the repo's state_file and is never
      copied here: a copy is right for a day and wrong afterwards.
      project_id equals the filename; project_aliases lists older ids that
      session logs used, so they still resolve. No repo yet: repo: none and
-     state_file: none. Status is active | paused | done. -->
+     state_file: none. Status is active | paused | done. harvested_at and
+     harvested_on record the last sha and date /harvest read. -->
 
 <Why it exists, in one line.>
 

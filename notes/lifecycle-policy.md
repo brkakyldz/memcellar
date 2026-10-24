@@ -49,6 +49,10 @@ instance actually running it.
   snapshot (ADR 0043). A selective pressure valve, not a rule that every long
   note is split — plans, playbooks and references whose detail *is* the
   retrieval target stay whole.
+- **The playbook gate runs both ways.** Promotion takes ≥2 verified successful
+  uses (`AGENTS.md`). Two recorded failed or abandoned uses since the last
+  success send a playbook back: demote it to `type: knowledge`,
+  `status: growing`, leave the file where it is, and log the demotion.
 
 ## 3. Distillation
 
@@ -71,9 +75,9 @@ never comes. One rule is load-bearing:
 - Every new note gets **≥1 outbound wikilink before it is closed** — the
   highest-leverage rule against orphan graveyards. **One exception, at capture
   time only:** a `notes/lesson-*.md` links only when an obviously-related note
-  already exists (`/lesson` step 5). Choosing what a fresh mistake relates to
-  is interpretation, and ADR 0019 keeps interpretation out of capture; the link
-  arrives with corroboration or not at all.
+  already exists (`/lesson`, ADR 0048). Choosing what a fresh mistake relates
+  to is interpretation, and ADR 0019 keeps interpretation out of capture; the
+  link arrives with corroboration or not at all.
 - Atomicity gate for `evergreen`: one idea, cleanly nameable, understandable
   with zero context, nothing removable. Split a note that fails it.
 - Orphans are structural waste, but the audit only **reports** them. Never
@@ -106,11 +110,18 @@ never comes. One rule is load-bearing:
 ## 7. Consolidation contract (curator)
 
 - **Runs when the owner starts it** (ADR 0033), never on every write and never
-  on a clock.
-- Per candidate fact, exactly one decision: **ADD / MERGE / SUPERSEDE / NOOP**,
-  never blind append. Before ADD, search for near-duplicates.
+  on a clock. The session start may say it is due (ADR 0049); it still runs
+  only on the owner's yes.
+- Per candidate fact, exactly one decision: **ADD / MERGE / SUPERSEDE / NARROW
+  / NOOP**, never blind append. Before ADD, search for near-duplicates.
+  NARROW shrinks a fact to what its source actually supports — a hedge or a
+  date the rewrite lost, or a claim stated more firmly than its evidence.
 - On contradiction **newer evidence wins and the override is logged** in the
   surviving note or session log — supersession is visible, never silent.
+- **A reversal rewrites the head.** When a correction reverses a note's stance,
+  rewrite its TL;DR or top line to the new view and move the old one under a
+  visible "Superseded" heading. A correct body under a stale TL;DR gave a wrong
+  end-to-end answer in the reference instance.
 - Safe operations (merge duplicates, fix pointers, distill logs) are applied
   directly; destructive or structural ones are reported in the conversation and
   left to the owner. No queue is opened for them (ADR 0038).

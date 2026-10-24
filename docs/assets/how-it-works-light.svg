@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 610" width="460" height="610" role="img" aria-labelledby="hiw-t hiw-d">
 <title id="hiw-t">How Second Brain OS works</title>
-<desc id="hiw-d">Claude Code and Codex sessions sit above a dashed line; below it there is no model, only plain files, Node and Git. Both runtimes run the same SessionStart hook and share one set of rules (AGENTS.md) and one skills folder (.agents/skills). At session start the hook pulls the vault and injects core/: IDENTITY, USER and MEMORY. On demand the session reads INDEX.md and then the two or three notes it names (tier 1); logs are searched last (tier 2); raw/ holds the sources you saved, which /ingest distills into notes. A skill such as /lesson, /file or /closeout writes a note or a log, and the task commits exactly the paths it wrote. Git is the only database, and the hook never commits.</desc>
+<desc id="hiw-d">Claude Code and Codex sessions sit above a dashed line; below it there is no model, only plain files, Node and Git. Both runtimes run the same SessionStart hook and share one set of rules (AGENTS.md) and one skills folder (.agents/skills). At the start of a vault session the hook pulls the vault and injects core/: IDENTITY, USER and MEMORY. On demand the session reads INDEX.md and then the two or three notes it names (tier 1); logs are searched last (tier 2); raw/ holds the sources you saved, which /ingest distills into notes. A skill such as /lesson, /file or /ingest writes a note or a log, and the task commits exactly the paths it wrote. Git is the only database, and the hook never commits.</desc>
 <!-- Second Brain OS README figure. how-it-works-light.svg and how-it-works-dark.svg are the same drawing; only the palette in :root differs, so an edit to one is made to both. Motion is CSS only and switches off under prefers-reduced-motion; the still drawing is complete on its own. -->
 <style>
 :root { --bg: #e7e0d3; --zone: #ddd5c6; --box: #ede7dc; --box-lit: #e8d9cb; --stroke: #978d7b; --stroke-lit: #1c2124; --ink: #1c2124; --ink-soft: #3a4043; --sub: #5d5950; --label: #8a3f28; --edge: #a0968a; --edge-lit: #3a4043; --req: #b0573a; --ans: #1c3d63; --ghost: #b0573a; --cross: #9a4930; --chip: #e2dacb; --chip-stroke: #cdc4b3; --rule: #cdc4b3; --state: #8a3f28; }
@@ -154,6 +154,6 @@ text { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Anti
 <g class="caps"><text class="cap still" x="230" y="590" text-anchor="middle">Two runtimes, one hook, one vault — and Git underneath</text>
 <text class="cap step" id="cap1" x="230" y="590" text-anchor="middle">Session start: the hook pulls, then injects core/</text>
 <text class="cap step" id="cap2" x="230" y="590" text-anchor="middle">A question: INDEX.md first, then two or three pages</text>
-<text class="cap step" id="cap3" x="230" y="590" text-anchor="middle">/lesson, /file or /closeout writes it down</text>
+<text class="cap step" id="cap3" x="230" y="590" text-anchor="middle">/lesson, /file or /ingest writes it down</text>
 <text class="cap step" id="cap4" x="230" y="590" text-anchor="middle">The task commits exactly the paths it wrote</text></g>
 </svg>

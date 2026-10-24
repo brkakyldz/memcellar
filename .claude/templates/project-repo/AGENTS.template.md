@@ -3,15 +3,18 @@
 <One paragraph: what this builds, for whom, and what it deliberately is not.
 Link the intent or scope document for the rest.>
 
-This file is timeless: rules and pointers only. Status lives in
-`docs/CURRENT_STATE.md`, direction changes in `docs/WORKLOG.md`, run history in
-`docs/runs/`. A dated paragraph here is a WORKLOG line in the wrong file.
+This file is timeless: rules and pointers only. One fact has one home: where
+we are is `docs/CURRENT_STATE.md`, why is an ADR in `docs/decisions/`, what
+happened is `git log`, what a run checked is its report in `docs/runs/`, what
+the agent learned here is `docs/lessons/`. When a decision changes a rule, the
+rule is edited here without a date; the reason goes to the ADR. A dated
+paragraph here is an ADR or a commit subject in the wrong file.
 
 ## Read first
 
 1. This file.
 2. `docs/CURRENT_STATE.md` — the only file that states status.
-3. The last 10 lines of `docs/WORKLOG.md`.
+3. `git log --oneline -15` — the project's history.
 4. The active milestone's section of `<plan path>`.
 
 Canonical documents are read on demand, when the milestone touches them. Keep
@@ -32,8 +35,9 @@ Never resume from a chat or compaction summary. Re-anchor: STATE, then
 | Decisions | `<docs/decisions/>` | owner, or the session the owner asks | superseded chain intact |
 | Milestones, acceptance IDs, exit commands | `<plan path>` | owner | the acceptance commands |
 | Status | `docs/CURRENT_STATE.md` | the implementing session | no code commit after the last STATE commit |
-| Direction, decisions, milestone results | `docs/WORKLOG.md` | any session, append-only | — |
-| Run reports | `docs/runs/` | the session that ran the work (`/closeout`) | frontmatter `status` set |
+| History: milestone results, direction changes | `git log` — the commit subject | every commit | `git log --oneline` reads as the history |
+| Run reports: checks, evidence, assumptions, cost | `docs/runs/` | the session that ran the work (`/closeout`) | frontmatter `status` set |
+| Lessons: corrections to how the agent works here | `docs/lessons/` | `/lesson`, entries appended verbatim | — |
 | Evidence *(optional)* | `docs/evidence/` | the check that produced it | revision recorded |
 | Held-out acceptance *(optional)* | `tests/acceptance/holdout/` | owner only | `<acceptance command>` |
 | `<source area>` | `<path>` | `<owner or lane>` | `<focused command>` |

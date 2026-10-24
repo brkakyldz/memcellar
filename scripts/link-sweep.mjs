@@ -7,15 +7,16 @@
 // for:
 //   1. Broken [[wikilinks]] — target not found by filename or alias.
 //   2. Orphan notes — no inbound AND no outbound resolved wikilinks, further
-//      excluding logs/, archive/, raw/, core/, docs/, scripts/ and the repo
-//      docs from being reported (episodic, evidence, always-loaded or
-//      documentation — not part of the linked graph).
+//      excluding logs/, my-notes/, archive/, raw/, core/, docs/, scripts/ and
+//      the repo docs from being reported (episodic, the owner's own notes,
+//      evidence, always-loaded or documentation — not part of the linked
+//      graph).
 //   3. Dangling pointer lines in core/MEMORY.md (a "-> [[...]]" pointer
 //      whose target does not exist).
 //   4. Duplicate basenames — two files sharing a name anywhere in the tree.
 //      Wikilinks resolve by basename, so a collision makes [[foo]] ambiguous
-//      and it fails silently. `notes/` is flat, but `raw/`, `archive/` and
-//      any folder you add can still collide with it.
+//      and it fails silently. `notes/` is flat, but `my-notes/`, `raw/`,
+//      `archive/` and any folder you add can still collide with it.
 //   5. Notes missing from INDEX.md — a git-blind twin of the index-coverage
 //      check (ADR 0038).
 //
@@ -85,7 +86,9 @@ const TARGET_ONLY_DIRS = new Set(['archive', 'raw']);
 // false positives long before it dies from missed orphans.
 // `docs/` and the root repo docs are documentation *about* the vault rather
 // than pages in it; they are read from the repo, not reached by wikilink.
-const EXCLUDE_FROM_ORPHAN_REPORT = ['logs', 'archive', 'raw', 'core', 'docs', 'scripts'];
+// `my-notes/` is the owner's own notes, exempt from the >=1-outbound-wikilink
+// rule (AGENTS.md), so an unlinked file there is not a finding.
+const EXCLUDE_FROM_ORPHAN_REPORT = ['logs', 'my-notes', 'archive', 'raw', 'core', 'docs', 'scripts'];
 const ORPHAN_EXEMPT_FILES = new Set(['README.md', 'SETUP.md', 'AGENTS.md', 'CLAUDE.md']);
 
 function toPosix(p) {
@@ -405,7 +408,7 @@ lines.push('');
 lines.push('## Orphan notes');
 lines.push('');
 lines.push(
-  '(no inbound and no outbound resolved wikilinks; excludes episodic, archived, source, always-loaded and documentation files)'
+  '(no inbound and no outbound resolved wikilinks; excludes episodic, my-notes, archived, source, always-loaded and documentation files)'
 );
 lines.push('');
 if (orphans.length === 0) {

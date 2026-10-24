@@ -3,11 +3,11 @@
 **A memory for your coding agents that you can read, correct and undo.**
 It is an Obsidian vault that Claude Code and Codex share as equals, and a Git
 repository, at once — Git is the only database. Your assistant knows who you
-are and what you're working on the moment a session starts, in either runtime,
-and writes down what it learned as ordinary files you commit.
+are and what you're working on the moment a session in the vault starts, in
+either runtime, and writes down what it learned as ordinary files you commit.
 
 <p>
-  <a href="docs/UPGRADING.md"><img alt="version v1.1" src="https://img.shields.io/badge/version-v1.1-1c3d63"></a>
+  <a href="docs/UPGRADING.md"><img alt="version v1.2" src="https://img.shields.io/badge/version-v1.2-1c3d63"></a>
   <a href="LICENSE"><img alt="license MIT" src="https://img.shields.io/badge/license-MIT-5b7150"></a>
   <a href="docs/ARCHITECTURE.md#5-runtime-two-runtimes-one-hook-each"><img alt="runtimes: Claude Code and Codex" src="https://img.shields.io/badge/runtimes-Claude%20Code%20%C2%B7%20Codex-b0573a"></a>
 </p>
@@ -15,7 +15,7 @@ and writes down what it learned as ordinary files you commit.
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/how-it-works-dark.svg">
-    <img src="docs/assets/how-it-works-light.svg" width="520" alt="How it works. Claude Code and Codex sessions sit above a dashed line; below it there is no model. Both run one SessionStart hook, which pulls the vault and injects core/ at every start and never commits, and both share one set of rules and skills. Under them, the vault in tiers: core/ with IDENTITY, USER and MEMORY; notes/ read on demand through INDEX.md; logs/ searched last; raw/ for the sources you saved. Git sits underneath as the only database: a skill writes a note or a log, and the task commits exactly its own paths.">
+    <img src="docs/assets/how-it-works-light.svg" width="520" alt="How it works. Claude Code and Codex sessions sit above a dashed line; below it there is no model. Both run one SessionStart hook, which pulls the vault and injects core/ at the start of every vault session and never commits, and both share one set of rules and skills. Under them, the vault in tiers: core/ with IDENTITY, USER and MEMORY; notes/ read on demand through INDEX.md; logs/ searched last; raw/ for the sources you saved. Git sits underneath as the only database: a skill writes a note or a log, and the task commits exactly its own paths.">
   </picture>
 </p>
 
@@ -31,7 +31,8 @@ and writes down what it learned as ordinary files you commit.
   no plugin dependency chain: Markdown, JSON and Node, with no build step and
   no dependency beyond Node itself, on Windows, macOS and Linux.
 - **Project status stays true.** It lives in each project's own repo,
-  committed with the code; the vault keeps what outlives the project.
+  committed with the code, and a project session never sees the vault's
+  personal context. The vault learns from a project only when you ask it to.
 
 This is the generic projection of a vault that has been running daily since
 2026-08-18. Everything here is in use somewhere, and the parts that were tried
@@ -44,14 +45,17 @@ Above the dashed line a model reads and decides. Below it there is no model —
 only plain files, Node and Git.
 
 - **One hook, and it never commits.** Both runtimes run the same
-  `SessionStart` hook: it pulls the vault and injects `core/`. That is all the
+  `SessionStart` hook: inside the vault it pulls and injects `core/`, and
+  once a day it may say which upkeep pass has real work waiting — it asks,
+  it never runs one. Outside the vault it does nothing. That is all the
   automation there is.
 - **Three tiers of reading.** `core/` at every start; `INDEX.md` and the pages
   it points at when a question needs them; `logs/` and a full-text search only
   when those don't answer.
 - **You talk, the agent distills.** Something worth keeping becomes a note on
   the spot; a source you drop in `raw/` becomes notes through `/ingest`.
-  Nothing waits in a queue.
+  Nothing waits in a queue. What you dictate word for word goes to
+  `my-notes/`, which no agent pass ever rewrites.
 - **Commits belong to the task.** Each task commits the files it wrote, by
   name — never `git add -A` — so two sessions, or both runtimes, can share one
   checkout.
@@ -68,6 +72,7 @@ Tiers, budgets and the reasoning behind each part:
 ```
 core/         Tier 0: IDENTITY, USER, MEMORY inlined; OPEN_QUESTIONS by pointer
 notes/        the memory store — flat, wikilinked, told apart by type:
+my-notes/     your own notes, written only when you ask, in your language
 raw/          immutable sources you put there; the agent reads, never writes
 logs/         append-only session logs + logs/signals/, the event ledger
 archive/      closed and superseded content — never deleted, always moved here
@@ -93,24 +98,27 @@ docs/         architecture guide, decision index and full records from 0045,
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/where-things-live-dark.svg">
-    <img src="docs/assets/where-things-live-light.svg" width="520" alt="Where things live. A session in a project sits above the dashed line. Below it, the vault keeps what outlives a project: knowledge in notes/, one card per project, lessons, and short session logs. Each project's repo keeps its execution state: AGENTS.md, docs/CURRENT_STATE.md as the only status, docs/WORKLOG.md and docs/runs/. The card points at the state file and the session log points back at the repo; a crossed path marks live status copied into the vault, which never happens.">
+    <img src="docs/assets/where-things-live-light.svg" width="520" alt="Where things live. A session in a project sits above the dashed line and is walled off from the vault. Below the line, the vault keeps what outlives a project: knowledge in notes/, one card per project, the vault's own lessons, and short harvest logs. Each project's repo keeps its execution state and memory: AGENTS.md, docs/CURRENT_STATE.md as the only status, docs/lessons/ and docs/runs/; git log is its history. The card points at the state file, /harvest run from a vault session reads the repo, and a crossed path marks live status copied into the vault, which never happens.">
   </picture>
 </p>
 
 | The vault — what outlives a project | Each project's repo — its execution state |
 |---|---|
-| knowledge and lessons, in `notes/` | `AGENTS.md` — the contract: timeless, no status |
+| knowledge and the vault's own lessons, in `notes/` | `AGENTS.md` — the contract: timeless, no status |
 | one thin card per project, `notes/<project_id>.md`: why it exists, where it lives, what it taught | `docs/CURRENT_STATE.md` — the only file that states status |
-| short session logs in `logs/` that point back at the repo | `docs/WORKLOG.md`, the append-only direction log, and `docs/runs/`, one report per autonomous run |
+| short harvest logs in `logs/` that point at the repo | `docs/lessons/` — corrections to how the agent works there; `docs/runs/` — one report per autonomous run; `git log` — the history |
 
-In global mode, a session in any project is told to read that repo's
-`AGENTS.md`, `docs/CURRENT_STATE.md` and the last lines of `docs/WORKLOG.md`
-before planning, and to end substantial work with `/closeout`: STATE and
-WORKLOG brought up to date, the run report of an autonomous run, one commit of
-exactly the task's paths, then — for substantial work — one short log in the
-vault. Formats and adoption steps: [`.claude/templates/project-repo/`](.claude/templates/project-repo/README.md);
-the decision:
-[ADR 0045](docs/decisions/0045-project-execution-state-lives-in-the-repo.md).
+**Projects and the vault are walled off.** A session in a project neither
+reads nor writes the vault: the hook does nothing there, and the project keeps
+its own state, decisions and lessons. When you want the vault to learn from a
+project, open a session in the vault and run `/harvest <path to the repo>`.
+It reads the repo — state, decisions, lessons and `git log` since the last
+harvest — and updates the card and the vault's notes, without writing into
+the repo. Optionally, `/closeout` and `/lesson` can be linked into every
+project to do the repo-side bookkeeping. Formats and adoption steps:
+[`.claude/templates/project-repo/`](.claude/templates/project-repo/README.md);
+the decisions: [ADR 0045](docs/decisions/0045-project-execution-state-lives-in-the-repo.md)
+and [ADR 0052](docs/decisions/0052-projects-and-the-vault-are-walled-off.md).
 
 ## Quickstart
 
@@ -130,11 +138,9 @@ recommended; the vault is plain Markdown either way.
    ```
 
 2. **Answer its questions.** It creates your repo from this template and checks
-   that it is private, interviews you — including whether the brain should
-   follow you into every project (global mode, recommended) or stay
-   project-scoped — personalizes the core files, links the skills and verifies
-   the hook fires. It asks before creating the repo and before writing
-   user-level settings.
+   that it is private, interviews you, personalizes the core files, links the
+   skills and verifies the hook fires. It asks before creating the repo and
+   before writing user-level settings.
 3. **Check the wiring:** `node scripts/brain-doctor.mjs`.
 4. **Work normally.** Talk to your agent inside the vault about anything — plan
    a project, think a problem through, ask what you decided last month. It
@@ -145,63 +151,65 @@ Prefer to do it by hand? [Manual setup](SETUP.md#manual-setup-without-an-agent)
 runs `node install.mjs`, which interviews you and prints the wiring without
 touching your user-level settings or committing anything.
 
-**Global mode** — the intended way to run it — loads the brain in every
-session on the machine, not only inside the vault. Two things not to miss;
-the full wiring is in [`SETUP.md`, Step 5](SETUP.md#step-5--runtime-wiring).
+**Wiring, in short.** Claude Code needs nothing beyond this repo's own
+`.claude/settings.json`. Codex gets `core/` once its `SessionStart` entry is
+wired in `~/.codex/hooks.json` — and not also in a project-level
+`.codex/hooks.json`, because Codex adds the layers together. The full steps:
+[`SETUP.md`, Step 5](SETUP.md#step-5--runtime-wiring).
 
-- **Claude Code:** once the `SessionStart` entry lives in
-  `~/.claude/settings.json`, empty the `hooks` block of the vault's own
-  `.claude/settings.json` (keep `permissions`) and commit that file, or the
-  hook fires twice inside the vault.
-- **Codex** reads `AGENTS.md` natively but gets `core/` only once its
-  `SessionStart` entry is wired in `~/.codex/hooks.json` — and not also in a
-  project-level `.codex/hooks.json`, because Codex adds the layers together.
-
-For `/closeout`, `/lesson` and `/recall` to load in other projects, link them
-at user level: `node install.mjs --link-global-skills` (opt-in;
-`--unlink-global-skills` undoes it).
+For `/closeout` and `/lesson` to load in your other projects, link them at
+user level: `node install.mjs --link-global-skills` (opt-in;
+`--unlink-global-skills` undoes it). They write into the project, never into
+the vault.
 
 ## Everyday commands
 
 | Command | What it does |
 |---|---|
 | `/recall` | four-layer lexical retrieval; logs the misses, so a search failure becomes data |
-| `/lesson` | capture a correction you just made, verbatim, before it is rationalized away |
+| `/lesson` | capture a correction verbatim into one file per recurring behaviour; the second correction on the same behaviour proposes a rule or a check |
 | `/file` | keep an analysis produced in conversation as a proper page, instead of losing it to the transcript |
 | `/ingest` | read a source in `raw/` into the wiki — discuss, distill, reconcile, catalog |
-| `/closeout` | end project work: the repo's STATE and WORKLOG, the run report of an autonomous run, one commit of exactly the task's paths, one short vault log |
+| `/note` | write what you dictate into `my-notes/`, your own notes, in your language |
+| `/harvest` | from a vault session, read one project repo and bring what it learned into the vault — its card, its lessons, its decisions |
+| `/closeout` | in a project: STATE up to date, the run report of an autonomous run, one commit of exactly the task's paths; never touches the vault |
 | `/curator` | consolidate memory, resolve stale facts, keep the core files inside budget |
 | `/audit` | structural and semantic report — budgets, orphans, contradictions, tag sprawl; reports only, never fixes |
 
-Plus a few read-only scripts you run when you want them — nothing runs on a
-schedule: `node scripts/brain-doctor.mjs` (is the setup healthy),
+Plus a few scripts you run when you want them — nothing runs on a schedule:
+`node scripts/maintenance.mjs` (what upkeep is due; `run` does the mechanical
+half after you say yes), `node scripts/brain-doctor.mjs` (is the setup healthy),
 `node scripts/project-doctor.mjs` (is each project's memory committed and its
 state fresh), `node scripts/link-sweep.mjs` (broken links, orphans — writes one
 report) and `node .claude/hooks/checks.mjs --staged` before a commit (link
 form, frontmatter, catalog). All of them: [`scripts/README.md`](scripts/README.md).
 
-## What's new in v1.1
+## What's new in v1.2
 
-**One hook that never commits, two equal runtimes, and project state that lives
-in the project's own repo.**
+**Projects and the vault are walled off, lessons become one file per
+behaviour, and the session start says when upkeep is due.**
 
-- No hook commits: the Stop / SessionEnd / PreCompact checkpoint is gone, and
-  each task commits its own explicit paths.
-- `SessionStart` skips its pull while tracked files have uncommitted changes,
-  instead of stashing another task's work.
-- Codex is an equal runtime: one constitution, one skills copy, a thin adapter.
-- Project execution state lives in each project's repo: the repo-side
-  formats, thin project cards, `/closeout` and `--link-global-skills`.
-- Two read-only doctors, `brain-doctor.mjs` and `project-doctor.mjs`, and a
-  ranked lookup, `retrieval-eval.mjs --query`.
-- A command line for the compiled checks, now that no hook runs them.
-- Retired: the session flush, reuse telemetry, the proposals sweep,
-  `/flywheel` and the maintenance due line.
-- Secret scanning is opt-in, through gitleaks and `.pre-commit-config.yaml`.
+- The hook does nothing outside the vault: no pull, no injection. "Global
+  mode" is gone, and so is the vault log a project session used to write.
+- `/harvest` is how the vault learns from a project: from a vault session,
+  read-only, when you ask. Project cards are written only this way.
+- A project keeps its own lessons in `docs/lessons/`; `/closeout` never
+  touches the vault. `/recall` is vault-only.
+- `docs/WORKLOG.md` is retired — `git log` is a project's history, and each
+  fact has one home.
+- Lessons are one file per recurring behaviour; the second correction on the
+  same behaviour proposes a rule.
+- A once-a-day "Maintenance due" line, computed from outstanding work;
+  `scripts/maintenance.mjs` runs the mechanical half on your yes.
+- `my-notes/` and `/note` for notes you dictate yourself.
+- `/recall` rewrites a query into keyword variants and fuses the results;
+  the retrieval eval gained a held-out set and a sign-test gate.
+- `brain-doctor` checks Tier-0 integrity, provenance and stale references to
+  retired machinery.
 
-Several of these are younger than the template's usual two-week bar, which the
-owner lifted for this release (ADR 0046). The complete list and the
-step-by-step upgrade from v1.0: [`docs/UPGRADING.md`](docs/UPGRADING.md).
+Several of these are younger than the template's usual two-week bar. The
+complete list and the step-by-step upgrade from v1.1:
+[`docs/UPGRADING.md`](docs/UPGRADING.md).
 
 ## Safety
 
@@ -227,8 +235,8 @@ The details are in [`docs/FAQ.md`](docs/FAQ.md#safety).
   manual path.
 - [`docs/FAQ.md`](docs/FAQ.md) — safety notes, and why there is no vector
   database, no schedule and no automatic commit.
-- [`docs/UPGRADING.md`](docs/UPGRADING.md) — everything v1.1 changed, and how
-  to upgrade a v1.0 vault.
+- [`docs/UPGRADING.md`](docs/UPGRADING.md) — everything v1.2 and v1.1
+  changed, and how to upgrade an older vault.
 - [`scripts/README.md`](scripts/README.md) — what each script checks and when
   to run it.
 

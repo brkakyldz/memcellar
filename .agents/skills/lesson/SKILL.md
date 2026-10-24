@@ -1,109 +1,123 @@
 ---
 name: lesson
-description: Captures a correction verbatim into the brain as a low-confidence lesson note plus a correction signal line — no interpretation at capture time. Use from any repo when the owner corrects the agent, when /closeout finds an uncaptured correction, or on /lesson.
+description: Captures a correction verbatim into the current repo's own lesson store (docs/lessons/ in a project, notes/ inside the vault) under the recurring behaviour it belongs to, and proposes a rule change in that repo once that behaviour has been corrected twice. Use when the owner corrects how the agent works — not when they give feedback on one deliverable — when /closeout finds an uncaptured correction, or on /lesson.
 ---
 
 # Lesson
 
-Captures a mistake the moment it's corrected, before the agent can talk itself
-into a fluent-but-false story about what went wrong. Full rationale: ADR 0019,
-amended by 0038 (`docs/DECISIONS.md` in the brain).
+A lesson exists to change how the agent works next time. The correction is
+captured verbatim the moment it is made — before the agent can talk itself
+into a fluent-but-false story about what went wrong — filed under the
+behaviour it is about, and when the same behaviour is corrected a second time
+it is routed into a rule where the work happens. Mechanics: ADR 0048 (amends
+0019 and 0038); store: ADR 0052 (the template's `docs/DECISIONS.md` indexes both).
 
-## Writes always land in the brain
+## Writes land in the current repo
 
-Whichever repo the session is in, the note goes to `<brain>/notes/` and the
-signal line to `<brain>/logs/signals/` — never into the current project. A
-lesson is about the agent, not the project, which is why one store serves
-every repo. Resolve `<brain>` once:
+A project keeps its own lessons, and a project session never reads or writes
+the vault (ADR 0052). Where the session is decides the store:
 
-1. The session is in the brain itself (its root has `core/MEMORY.md` and
-   `.claude/hooks/session-start.mjs`) → that root.
-2. The SessionStart context says "The brain lives at `<path>`." (global
-   mode) → that path.
-3. `BRAIN_DIR` is set in the environment → that path.
-4. This skill was loaded through a user-level link → the real path of this
-   skill's folder, three levels up (`<brain>/.agents/skills/lesson`).
-5. None of these → ask the owner. Never guess a path.
+| Session in | Lesson file | Template |
+|---|---|---|
+| a project repo | `docs/lessons/lesson-<topic>.md` | `templates/lesson.md` next to this skill |
+| the vault | `notes/lesson-<topic>.md` | `.claude/templates/lesson.md` in the vault |
 
-## Trigger
+The vault reads project lessons later, when the owner runs `/harvest` there.
+Never write a project's lesson into the vault, or a vault lesson into a
+project.
 
-- the owner corrects the agent — "no, actually…", a revert, a rejected suggestion
-  they explain.
-- `/lesson` invoked explicitly, with the correction as argument.
+## Gate — is this a lesson?
 
-## Standing rule — verbatim only, no interpretation
+Ask one question: **would this correction apply to a different task next
+week?**
 
-Capture is mechanical, not analytical:
+- **Yes** → a lesson. Examples: not stopping when told to stop, proposing
+  ideas the owner already has, skipping the clarifying questions, doing a
+  narrower search than asked, not using a skill that was written for the job.
+- **No, it is about this artifact** ("remove the colours from this CV", "this
+  paragraph is too long") → apply it now. If the project should remember it,
+  write it into that project's own rules (its skill, style guide or `docs/`)
+  and say so in one line. Not a lesson.
+- **A fact about the owner was wrong** ("I'm not an engineer") → in the vault,
+  fix it through the memory path (`USER.md` or a `notes/` memory note, with
+  their yes). In a project, fix it where the project states it, and tell the
+  owner the vault may need the same fix in a vault session. Not a lesson.
+
+Several corrections of one deliverable in one session are one task. If they
+show a behaviour (e.g. "keeps making the CV fancier when asked for a standard
+one"), capture that once.
+
+## Standing rule — verbatim evidence, no single-point interpretation
 
 - Write the correction **exactly as given** and the artifact it corrects (the
   diff, error message, or wrong output) — unchanged, no cleanup.
-- **Never** author an interpreted "lesson learned," generalize the mistake, or
-  propose a fix. The confabulation risk (ADR 0019, arXiv:2605.29463) is that a
-  plausible narrative is worse than no narrative — interpretation comes
-  later, from a fresh instance, after corroboration. Since the `/flywheel`
-  pass was retired (ADR 0038) that later step is the owner's judgment, not a
-  pass's.
 - A correction **stays in the language it was given in**. Translation, if it
-  happens at all, happens later — never here. A lesson's whole
-  value is the correction verbatim.
-- The class slug assigned below is grouping for corroboration, not analysis —
-  don't reach past the six listed slugs unless none of them fit.
+  happens at all, happens later — never here. A lesson's whole value is the
+  correction verbatim.
+- One correction is evidence, not a rule. Do not write "lesson learned" prose
+  under an entry. The confabulation risk (ADR 0019, arXiv:2605.29463) is that
+  a plausible narrative is worse than no narrative; interpretation starts only
+  at routing (step 4), with two entries in front of you and the owner
+  approving the result.
+- Entries are never edited after capture. A better understanding is a new
+  entry or a routed rule — never a rewrite of an earlier entry.
 
 ## Steps
 
-0. **Outside the brain, pull it first:** `git -C <brain> pull --ff-only`. If
-   that fails, say so in one line and capture anyway.
-
-1. **Create the note.** Copy `<brain>/.claude/templates/lesson.md` to
-   `<brain>/notes/lesson-YYYY-MM-DD-<class>.md` (kebab-case). On a filename
-   collision for the same day, suffix `-2`, `-3`, etc.
-
-2. **Assign a class slug.** Pick the closest of:
+1. **Find the topic.** List the store's `lesson-*.md` files and read their
+   titles and `topic:` lines. If the correction is the same behaviour as an
+   existing topic, append to it. Otherwise create `lesson-<topic>.md` from the
+   template in the table above (create `docs/lessons/` if it is missing). Name
+   the topic after the behaviour (`lesson-stopping-when-told`), never after a
+   date. Set `class:` to the closest of
    `wrong-memory | no-memory | unused-memory | wrong-procedure | style | scope`
-   — or a new short slug only if none of the six fit. This is a mechanical
-   grouping key for the corroboration count, not a judgment about the mistake.
+   — a grouping key, not analysis; don't reach past these six unless none fit.
 
-3. **Fill the note** — correction verbatim, artifact verbatim, context facts
-   (session id; project as the repo path, plus its brain card id when one
-   exists; date). Leave `confidence: low` and `status: seedling` as the
-   template sets them.
+2. **Append the entry** under `## Entries`: date, the correction verbatim, the
+   artifact verbatim, the session id. Never edit an existing entry — the vault
+   copies entries on `/harvest`, and an append-only file is what keeps that
+   copy true.
 
-4. **Append the signal line.** The script resolves the brain from its own
-   location, so it works from any working directory:
+3. **Vault only:** a new topic file gets a row in the Lessons table of
+   `INDEX.md` (replacing the `_(none yet …)_` placeholder row if it is still
+   there) and one outbound wikilink in `related:` if an obviously related note
+   exists — never a forced one. Then append the signal line:
    ```
-   node <brain>/.claude/hooks/append-signal.mjs correction class:<slug> note:<filename> "<verbatim excerpt, <=80 chars>" --sid <session id if known>
+   node .claude/hooks/append-signal.mjs correction class:<slug> note:lesson-<topic>.md "<verbatim excerpt, <=80 chars>" --sid <session id if known>
    ```
+   A project repo has neither — skip this step.
 
-5. **Add one outbound wikilink** only if an obviously-related note already
-   exists (every note needs >=1 link per `AGENTS.md`) — link to the related
-   note itself, never to an interpretation of the mistake. Skip this step
-   rather than force a link.
+4. **Route when the topic has two entries from different tasks.**
+   - Read every entry in the file, including the ones that disagree with each
+     other, and write one concrete change that would have prevented them —
+     a diff to the place that produced the mistake, inside this repo: the
+     skill that was running, the repo's `AGENTS.md` / `CLAUDE.md`, or a check
+     or test when the rule is mechanical (in the vault, a check in
+     `.claude/hooks/checks.mjs`). Prefer the narrowest target. A rule for
+     every project (a user-level instructions file) is proposed only when the
+     owner asks for it.
+   - **The topic is already `routing: routed`** → the rule failed. Do not
+     strengthen the wording in the same place; propose moving it closer to
+     the work (into the skill, or a check). A firmer sentence in the same
+     place is not a fix.
+   - Show the owner the proposal in a few lines — the target, the diff, the
+     entries it rests on — and ask. If they say yes, apply it and set
+     `routing: routed`. If they say no, set `routing: refused`. Either way add
+     a dated line under `## Routing`.
+   - Mid-task and the owner is busy → set `routing: pending` and say so in one
+     line. `/closeout` surfaces pending topics in a project; in the vault,
+     `/curator` lists them and the session-start maintenance notice counts
+     them (ADR 0049). A proposal counts toward the three-a-day proactive
+     budget.
 
-6. **Add the catalog row.** In `<brain>/INDEX.md`, under **Lessons —
-   corrections, captured verbatim**, add
-   `| [[lesson-YYYY-MM-DD-<class>]] | <the correction, verbatim, cut at ~80 chars> | seedling |`,
-   replacing the `_(none yet …)_` placeholder row if it is still there. A
-   note without a row is a page nothing can find.
-
-7. **Commit, when outside the brain.** Inside a brain session the session's
-   own commit carries these paths. From any other repo, commit them now, by
-   explicit path:
+5. **Commit** the paths this step wrote, by name, in the current repo:
    ```
-   git -C <brain> add -- notes/<file> INDEX.md logs/signals/<YYYY-MM>.md
-   git -C <brain> commit -m "lesson: <class> (<project>)" -- notes/<file> INDEX.md logs/signals/<YYYY-MM>.md
+   git commit -m "lesson: <topic>" -- <lesson file> [<routed rule file>]
    ```
-   Include `INDEX.md` and the signals file (in both commands) only if
-   `git -C <brain> diff -- <path>` shows your change alone, or the signals
-   file is new this month; other uncommitted lines belong to another task,
-   so then leave that file out and say which change is left uncommitted.
-   Never push.
+   In the vault, add `INDEX.md` when you changed it, and the signals file only
+   if `git diff -- logs/signals/<YYYY-MM>.md` shows your line alone or the file
+   is new this month; otherwise leave the signal line uncommitted and say so.
+   Other uncommitted changes belong to another task. Never push.
 
-8. **Confirm in one line** to the owner: what was captured and its class, e.g.
-   "Captured as `wrong-procedure`: notes/lesson-2026-08-25-wrong-procedure.md".
-
-## Standing rule — never edited after capture
-
-A lesson note is a dated snapshot of what was believed wrong at that moment.
-It is never edited after capture. A better understanding of it is either a
-**new** note or a later decision by the owner (once corroborated, routing it
-to a compiled check or a `MEMORY.md` line) — never a rewrite of this file.
+6. **Confirm in one line**, e.g. "Captured under `stopping-when-told` (2nd
+   entry) — proposed a rule for the closeout skill, waiting for your yes."

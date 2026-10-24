@@ -97,9 +97,9 @@ conclusion (ADR 0043).
 
 ## 4. Retrieval: tiers, not search
 
-- **Tier 0 — always loaded.** `IDENTITY.md` (40 lines), `USER.md` (2000 chars),
-  `MEMORY.md` (4000 chars) inside the vault; `USER.md` and `MEMORY.md` only in
-  any other project. Injected by the SessionStart hook, which heads each file
+- **Tier 0 — always loaded in a vault session.** `IDENTITY.md` (40 lines),
+  `USER.md` (2000 chars), `MEMORY.md` (4000 chars); a session in any other
+  project gets none of it (ADR 0052). Injected by the SessionStart hook, which heads each file
   with its usage against its budget so the agent sees its remaining room
   *before* writing. `MEMORY.md` holds **pointers, never detail**: one fact per
   line, ending in a `[[wikilink]]`. `OPEN_QUESTIONS.md` gets a pointer, not
@@ -135,8 +135,9 @@ Claude Code and Codex are equal (ADR 0044). Each has exactly one brain
 SessionStart, and both land in the same implementation:
 
 - **Claude Code:** `.claude/settings.json` (project scope, the default) or
-  `~/.claude/settings.json` (global mode) → `.claude/hooks/session-start.mjs`
-  directly; Claude supplies `CLAUDE_PROJECT_DIR`. Never both, or it fires twice.
+  `~/.claude/settings.json` (a v1.1 global-mode install) →
+  `.claude/hooks/session-start.mjs` directly; Claude supplies
+  `CLAUDE_PROJECT_DIR`. Never both, or it fires twice.
 - **Codex:** `~/.codex/hooks.json` → `.codex/hooks/session-start.mjs`, which sets
   `BRAIN_DIR` and `CLAUDE_PROJECT_DIR` and imports the same file. Not also in a
   project-level `.codex/hooks.json`: Codex adds hook layers together.
@@ -146,7 +147,7 @@ the same file is correct from any working directory, in any clone.
 
 | Event | Job (both runtimes) |
 |---|---|
-| `SessionStart` | Skip if `core/.vault-active` is missing. Otherwise `git pull --rebase` — skipped when tracked changes exist, because they belong to a live task — then inject Tier 0 with budget meters and, at most, one notice about unpushed commits. Outside the vault it also injects the global-mode standing rules (§10) |
+| `SessionStart` | Skip if `core/.vault-active` is missing. Otherwise `git pull --rebase` — skipped when tracked changes exist, because they belong to a live task — then inject Tier 0 with budget meters and, through the daily notice budget, at most a notice about unpushed commits and a once-a-day "Maintenance due" line (ADR 0049). Outside the vault it does nothing at all — no pull, no injection, no log line (ADR 0052, §10) |
 | `Stop` / `SessionEnd` / `PreCompact` | Nothing. The task stages and commits only its own explicit paths |
 
 Design notes worth keeping:
@@ -161,7 +162,12 @@ Design notes worth keeping:
   session start; the vault still loads from disk.
 - **Push failure is non-fatal.** The commit stays local; the next session start
   says so once a backlog is over a day old.
-- **A stuck rebase is aborted, not left half-applied.**
+- **A stuck rebase is aborted, not left half-applied** — but only one this
+  pull started. A rebase, merge, cherry-pick or revert another task left in
+  progress makes the hook skip its pull and leave that state alone.
+- **A notice counts as shown only once it is delivered.** The hook asks the
+  budget which notices may go out, fits the payload, and records only the
+  survivors, so a notice dropped for size is offered again later that day.
 - **One sidecar, gitignored and lock-free:** `.claude/.maintenance.json`, the
   shared daily notice counter. The session-trace and access sidecars went with
   the flush and telemetry hooks (ADR 0038, 0039).
@@ -174,17 +180,27 @@ Only the parts of the policy that exist as running code belong here.
   Tier-0 budgets and injects the bounded context.
 - **The daily notice budget** — three proactive items across every surface, one
   shared counter (`emitNotices` in `lib.mjs`); a backup failure outranks
-  everything in it.
+  everything in it, then the maintenance-due line.
+- **The maintenance-due line** (`maintenanceDue` in `lib.mjs`, ADR 0049) —
+  computed from the logs the passes already write: `/curator` when ten or more
+  logs are past thirty days, `/audit` after thirty days without one or when a
+  note is past `review_by`, the link sweep after seven days, and lesson topics
+  waiting to be routed. It announces; `scripts/maintenance.mjs run` acts, and
+  only after the owner's yes.
 - **`brain-doctor.mjs`** reports, read-only, whether each runtime has exactly
   one SessionStart and no retired git-writing hook, whether the skills link
-  resolves, whether a runtime in global mode can load `/closeout`, `/lesson`
-  and `/recall` in project sessions, and whether the budgets hold.
+  resolves, whether the optional user-level `/closeout` and `/lesson` links
+  resolve (and no v1.1 `/recall` link is left), whether the budgets hold,
+  whether `core/` carries invisible control characters, whether a
+  `confidence: low` note is linked from `MEMORY.md` (the corroboration gate),
+  and whether a skill or hook still names retired machinery.
 
 Written as code but **not run automatically** since v1.1:
 
 - **Compiled checks** (`.claude/hooks/checks.mjs`) — wikilink short form, note
   frontmatter, `INDEX.md` coverage. They ran from the Stop checkpoint until
-  v1.1. Now they run when someone runs them:
+  v1.1. Now they run when someone runs them — `scripts/maintenance.mjs run`
+  after a yes to the maintenance line (ADR 0049), or by hand:
   `node .claude/hooks/checks.mjs [--staged | --all] [--record]` prints every
   finding and exits 1 when there is one — by hand before a commit, or from a
   git pre-commit hook if the owner wants the warning to become a gate (the
@@ -261,7 +277,7 @@ Three properties are deliberate:
   appends; real multi-device concurrent editing would need more than that.
 - **The Windows skills junction stores an absolute path.** Move the vault
   folder and the link breaks; `node install.mjs --link-skills` repairs it and
-  `brain-doctor.mjs` reports it. The user-level links from
+  `brain-doctor.mjs` reports it. The optional user-level links from
   `--link-global-skills` behave the same way, and rerunning that flag repairs
   them.
 - **The policy is only as good as its enforcement.** Anything enforced only by
@@ -280,23 +296,34 @@ Three properties are deliberate:
 
 ## 9. From correction to check
 
-Capture → corroborate → enforce-or-retire (ADR 0019, amended by 0038).
+Capture → corroborate → enforce-or-retire (ADR 0019, amended by 0038 and 0048).
 
-`/lesson` captures a correction verbatim into `notes/lesson-*.md` plus a
-`correction` signal, with **no interpretation at capture time** — agents
-confabulate their own failure stories, so the agent never authors the lesson in
-the same session it earned.
+`/lesson` captures a correction verbatim, with **no interpretation of a single
+correction** — agents confabulate their own failure stories. It first asks
+whether the correction is about a behaviour that will recur on a different
+task; feedback on one deliverable is applied there and goes no further. A
+lesson is one file per recurring behaviour (`lesson-<topic>.md`), entries
+appended and never edited — in the vault `notes/`, in a project that
+project's `docs/lessons/` (ADR 0052).
 
 The corroborate-and-route half used to be a `/flywheel` pass that mined the
 ledger and proposed checks into an approval queue. It was retired with proposal
-production (ADR 0038): a lesson becomes a compiled check because the owner
-decides it should, not because a pass proposed it. `scripts/vault-metrics.mjs`
+production (ADR 0038), and for a month nothing routed anything. Since ADR 0048
+routing happens at capture: when a topic gets a second entry from a different
+task, the capturing agent proposes one concrete change to the place that
+produced the mistake — a skill, `AGENTS.md`, `USER.md`, or a check — and the
+owner approves or refuses it. The answer is kept in the file (`routing:`). A
+new entry on a routed topic means the rule failed, and the next proposal moves
+it closer to the work. `scripts/vault-metrics.mjs`
 is the deterministic count that informs that decision — check fires,
 correction recurrence by class, lesson and check survival — with no LLM call
 anywhere in it.
 
-`/recall` is the four-layer lexical retrieval procedure, and it logs a
-`retrieval-failure` signal with a cause when the vault misses. That signal is
+`/recall` is the four-layer lexical retrieval procedure. It first rewrites
+the question into two or three keyword variants in the vault's language and
+fuses their rankings (the `expand` arm of `retrieval-eval.mjs`, which passed a
+sign-test gate on held-out real prompts in the reference instance), and it
+logs a `retrieval-failure` signal with a cause when the vault misses. That signal is
 the only thing that can reverse the no-vector-index decision.
 
 The seed checks were bootstrapped from standing constitution rules rather than
@@ -307,38 +334,40 @@ quiet.
 
 ## 10. Project work: the vault and the repo
 
-Two stores, split by what the record is for (ADR 0045). Each fact has one
-owner.
+Two stores, split by what the record is for (ADR 0045), and walled off from
+each other (ADR 0052). Each fact has one home (ADR 0050).
 
-- **The vault holds what outlives a project:** distilled knowledge, lessons,
-  one thin card per project (`notes/<project_id>.md` — why it exists, where
-  it lives, what it taught), and short session logs.
-- **Each project repo holds its own execution state, committed:** `AGENTS.md`
-  (the contract — timeless, no status), `docs/CURRENT_STATE.md` (the only
-  file that states status), `docs/WORKLOG.md` (the append-only direction
-  log), `docs/runs/` (one report per autonomous run), and its plans, ADRs,
-  research and evidence.
+- **The vault holds what outlives a project:** distilled knowledge, the
+  vault's own lessons, one thin card per project (`notes/<project_id>.md` —
+  why it exists, where it lives, what it taught), and short harvest logs.
+- **Each project repo holds its own execution state and memory, committed:**
+  `AGENTS.md` (the contract — timeless, no status), `docs/CURRENT_STATE.md`
+  (the only file that states status), `docs/decisions/` (why),
+  `docs/lessons/` (what the agent learned there), `docs/runs/` (what an
+  autonomous run checked), and its plans, research and evidence. `git log` is
+  its history; there is no WORKLOG any more.
 
 The lifecycle of one piece of project work:
 
 ```
-  vault: notes/<project_id>.md     thin card: repo, state_file, why, what it
-        |                          taught — never a copy of status
-        | points at
-        v
-  repo: docs/CURRENT_STATE.md      read first, with AGENTS.md and the last
-        |                          10 lines of docs/WORKLOG.md
+  repo: AGENTS.md, docs/CURRENT_STATE.md, git log --oneline -15
+        |                          read first; the vault is never read
         v
   work in the repo                 code and its STATE update committed together
         |
         v
-  /closeout                        STATE, WORKLOG, the run report of an
-        |                          autonomous run, this task's worktrees,
-        |                          one commit of exactly the paths it wrote
+  /closeout                        STATE, the run report of an autonomous run,
+        |                          this task's worktrees, one commit of exactly
+        |                          the paths it wrote — never the vault
+        :
+        :  later, when the owner asks, from a vault session
         v
-  vault: logs/YYYY-MM-DD_HHMM-<slug>.md
-                                   project: <card id>, runtime:, <= 10 lines,
-                                   one outcome line pointing at repo refs
+  /harvest <repo>                  reads STATE, ADRs, lessons and git log since
+        |                          the last harvest; writes nothing in the repo
+        v
+  vault: notes/<project_id>.md     the card (repo, state_file, why, what it
+         logs/…_harvest log        taught — never a copy of status), copied
+                                   lessons with source:, one short log
 ```
 
 Why the split runs this way: in the reference instance, the one project that
@@ -350,30 +379,35 @@ resumed from a vault note. A record earns its keep by being read at the moment
 it matters. Status is read at resume time, inside the repo; knowledge that
 should carry into the *next* project has to survive the repo being closed.
 
+Why the wall: until v1.2 a project session received the vault's `USER.md`,
+the whole of `MEMORY.md` and a block of standing rules, and wrote a short log
+back. Read on the day it was questioned, almost none of that `MEMORY.md` had
+anything to do with the repo being worked on, and the agent treated all of it
+as context it was meant to use. A context block earns its place by being
+relevant; Tier 0 is budgeted for the vault's own sessions.
+
 How the pieces meet:
 
 - **The formats** ship in `.claude/templates/project-repo/` (`AGENTS`
-  contract, `CLAUDE` shim, STATE, WORKLOG, run report — with a README on
-  adopting them) and `.claude/templates/project.md` (the card). Copied into
-  a project, they live there; the vault never reads them back.
-- **Global mode carries the rule into every project.** Outside the vault the
-  SessionStart hook injects standing rules: read the repo's `AGENTS.md`,
-  STATE and last WORKLOG lines before planning; end substantial work with
-  `/closeout`; never copy live status into the brain. The standing-rules
-  section names the vault in one sentence, "The brain lives at …", and that
-  sentence is how the skills find the vault from any repo.
-- **Three skills cross the boundary** — `/closeout`, `/lesson`, `/recall`.
-  Each resolves the brain (the vault itself, that SessionStart line,
-  `BRAIN_DIR`, or its own link target) and writes only brain paths into the
-  brain, committed by explicit path. `node install.mjs --link-global-skills`
-  links them into each runtime's user-level skills folder, opt-in and
-  reversible; everything else in `.agents/skills/` stays vault-scoped.
+  contract, `CLAUDE` shim, STATE, run report — with a README on adopting
+  them) and `.claude/templates/project.md` (the card). Copied into a
+  project, they live there; the vault never reads them back.
+- **Two skills may cross into projects** — `/closeout` and `/lesson`, and
+  both write only into the repo the session is in. `node install.mjs
+  --link-global-skills` links them into each runtime's user-level skills
+  folder, opt-in and reversible. `/recall` and `/harvest` work on the vault
+  and stay vault-scoped, like everything else in `.agents/skills/`.
+- **`/harvest` is the only road back.** Run from a vault session, it reads a
+  repo read-only — since the card's `harvested_at` commit — and updates the
+  card, copies a lesson that matters beyond the project verbatim with a
+  `source:` pointer, and writes one short log. Project cards are written only
+  this way.
 - **An interrupted run is visible from files alone:** STATE names an
   `active_run` whose report is missing or has no `status:`. The next session
   trusts git, the diff and a fresh test run over what is written down, then
   corrects STATE.
 - **`scripts/project-doctor.mjs` reports where the split is not holding**,
-  read-only, across every repo a card names: project memory that is not
+  from a vault session, read-only, across every repo a card names: project memory that is not
   committed, no remote, a stale or missing STATE, an interrupted run, leftover
   worktrees, status claimed outside STATE, log ids that resolve to no card,
   and drifted copies of one skill.

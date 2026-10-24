@@ -3,10 +3,16 @@ id: 0045
 title: Project execution state lives in the repo; the vault keeps what outlives a project
 date: 2026-09-25
 status: accepted
+amended_by: [0050, 0052]
 related: [0016, 0042, 0044]
 ---
 
 # 0045 — Project execution state lives in the repo
+
+> **Amended.** ADR 0050 retired `docs/WORKLOG.md` (`git log` is the project
+> history); ADR 0052 walled projects off from the vault — no global-mode
+> injection, no vault log at closeout, `/recall` vault-only, project lessons in
+> `docs/lessons/`. The text below is the decision as it was made.
 
 Generalized from the reference instance's record of the same number: the
 reasoning is kept, the names and figures of its projects are not.

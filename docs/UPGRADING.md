@@ -3,6 +3,119 @@
 What each release changed, and how to bring a vault made from an earlier one
 up to date. The README keeps the short version.
 
+## What changed in v1.2
+
+v1.2 brings the template in line with the reference instance again, four
+weeks after v1.1. The one-line version: **projects and the vault are walled
+off, lessons become one file per behaviour, and the session start says when
+upkeep is due.** As with v1.1, several of these are younger than the usual
+two-week bar; the owner asked for the release as the system runs today, and
+the decisions are recorded in full in `docs/decisions/` (0048, 0049, 0050,
+0052).
+
+**Removed**
+
+- Global mode's injection. The SessionStart hook does nothing outside the
+  vault — no pull, no `USER.md` or `MEMORY.md`, no standing rules (ADR 0052).
+  A user-level hook from a v1.1 global install keeps working: it now exits at
+  once in other projects.
+- The vault log a project session wrote at `/closeout`, and `/closeout`'s
+  `MEMORY.md` step. `/closeout` ends with the repo's own commit.
+- `docs/WORKLOG.md` from the project-repo formats, and *Commits*, *Open gates*
+  and *Next* from the run-report template (ADR 0050). An existing WORKLOG is
+  frozen history: keep it, never append to it.
+- `/recall` from the user-level links. It is vault-only now; rerunning
+  `--link-global-skills` removes the old link.
+- The `bm25`, `alias-addonly` and `prefix5` arms of `retrieval-eval.mjs`,
+  which failed the sign-test gate in the reference instance.
+
+**Added**
+
+- `/harvest <project>` — from a vault session, read one project repo
+  read-only and bring what it learned into the vault: the card, lessons that
+  matter beyond it, its decisions. Project cards are written only this way.
+- Project lessons in the project: `/lesson` writes `docs/lessons/` in a repo
+  and `notes/` in the vault (ADR 0052).
+- Lessons as topic files: one file per recurring behaviour, entries appended
+  verbatim, and on a second entry from a different task the agent proposes a
+  rule, which you approve or refuse (`routing:`, ADR 0048).
+- The once-a-day "Maintenance due" line and `scripts/maintenance.mjs`, which
+  lists what is due and, with `run`, does the mechanical half after your yes
+  (ADR 0049). `checks.mjs` has a caller again.
+- `my-notes/` and `/note` — your own notes, written only when you ask, in your
+  own language, never touched by a pass. Templates `my-note.md` and
+  `my-entity.md`.
+- `/recall` query expansion: the question is rewritten into keyword variants
+  and the rankings are fused (`retrieval-eval.mjs --ranker expand`). The eval
+  gained an optional held-out set (`.claude/eval/real-prompts.md`), an
+  expansions file (`.claude/eval/expansions.md`) and a sign-test gate.
+- `brain-doctor.mjs`: Tier-0 integrity, provenance (the corroboration gate),
+  the `/recall` contract and stale references to retired machinery.
+- Tests for the brain doctor, the retrieval eval and the SessionStart hook.
+
+**Changed**
+
+- `/curator` gains a NARROW verdict (shrink a fact to what its source
+  supports), keeps the source's doubt and dates, logs where every removed
+  `MEMORY.md` line went, and lists lesson topics waiting to be routed.
+- `/curator` and `/audit` may be started by the agent in Claude Code, but
+  only after you type the command or say yes to the maintenance line. In
+  Codex their `agents/openai.yaml` keeps implicit invocation off, so there you
+  type the command yourself.
+- The SessionStart hook skips its pull while another task's rebase, merge,
+  cherry-pick or revert is in progress, instead of aborting it; a notice is
+  recorded as shown only once it is actually delivered.
+- The session-log rule has a write-time gate: a bullet goes in only if a
+  future session would decide worse without it.
+- A playbook with two recorded failed uses since its last success is demoted
+  back to knowledge.
+- The figures in the README show the wall and `/harvest`.
+
+## Upgrading from v1.1
+
+As with v1.0 → v1.1, there is no shared history to pull: you fetch v1.2 and
+take its machinery path by path. Your content — `core/`, `notes/`, `logs/`,
+`raw/`, `archive/`, `INDEX.md`, `PROPOSALS.md` — is never overwritten. Start
+from a clean tree, in the vault's root.
+
+1. **Fetch v1.2:** `git fetch template --tags` (add the remote first, as in
+   the v1.0 steps below, if this clone has none).
+2. **Note your own edits first:** `git diff --stat v1.1 HEAD` — any file in
+   step 3's list is about to be replaced; save your changes to `AGENTS.md`
+   and re-apply them afterwards.
+3. **Take the machinery:**
+
+   ```
+   git checkout v1.2 -- .agents .claude/hooks .claude/templates .claude/settings.json .claude/eval/expansions.md .claude/eval/real-prompts.md .codex scripts docs my-notes/README.md AGENTS.md CLAUDE.md README.md SETUP.md install.mjs .gitignore .gitattributes notes/lifecycle-policy.md notes/self-evolution-policy.md notes/source-roots.md logs/signals/README.md raw/README.md
+   ```
+
+   `.claude/eval/golden-set.md` is yours once you have added your own rows —
+   compare it with `git diff HEAD v1.2 -- .claude/eval/golden-set.md` rather
+   than taking it.
+4. **Remove what v1.2 deleted:** `git rm -q .claude/templates/project-repo/docs/WORKLOG.md`.
+5. **One hook, one place.** Step 3 restored the SessionStart entry in the
+   vault's `.claude/settings.json`. If you ran v1.1 in global mode, delete the
+   SessionStart entry that points at this vault from `~/.claude/settings.json`
+   — the project-level one is now the default, and a user-level one would do
+   nothing outside the vault anyway. Keep exactly one; `brain-doctor.mjs`
+   fails when both are wired. Codex keeps its user-level entry.
+6. **Relink.** `node install.mjs --link-skills`, and — if you linked skills at
+   user level in v1.1 — `node install.mjs --link-global-skills` again: it links
+   `/closeout` and `/lesson` and removes the old `/recall` link.
+7. **Old lessons.** Per-correction `notes/lesson-*.md` files from v1.1 keep
+   working as notes. When you have a few minutes, group them by behaviour
+   into topic files (`.claude/templates/lesson.md`), move the originals to
+   `archive/`, and give each topic file an `INDEX.md` row. Take the new
+   heading of `INDEX.md`'s Lessons section from
+   `git diff HEAD v1.2 -- INDEX.md` while you are there.
+8. **Commit the upgrade** by explicit path:
+   `git commit -m "upgrade: Second Brain OS v1.2"`.
+9. **Check it:** `node scripts/brain-doctor.mjs`, then
+   `node scripts/maintenance.mjs` to see what is due.
+
+In your projects, nothing has to change at once: a repo with a WORKLOG keeps
+it as frozen history, and `/closeout` simply stops appending to it.
+
 ## What changed in v1.1
 
 v1.1 (2026-09-25) brings the template in line with the reference instance as
@@ -51,6 +164,10 @@ which ones.
   `docs/CURRENT_STATE.md`.
 
 ## Upgrading from v1.0
+
+From v1.0, go to v1.1 first with the steps below, then follow *Upgrading from
+v1.1* above.
+
 
 A vault made with **Use this template** shares no git history with this
 repository, so there is nothing to pull: you fetch v1.1 and take its machinery

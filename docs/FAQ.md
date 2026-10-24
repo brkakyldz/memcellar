@@ -32,7 +32,7 @@ first-time reader tends to ask. How the parts fit together is
 **Why not a vector database?** Grep, wikilinks, `INDEX.md` and a curated
 `MEMORY.md` cover retrieval for a single-person vault without an embedding
 pipeline to keep in sync. This isn't an assumption: the reference instance
-measured it with 52 golden queries and found zero paraphrase-misses — every
+measured it with 52 golden queries (the reference instance's own set; yours starts with two examples) and found zero paraphrase-misses — every
 failure was a vocabulary mismatch, which an `aliases:` entry fixes. The trigger
 to revisit is written down (`docs/DECISIONS.md`, 0010/0018) and has not fired.
 
@@ -67,8 +67,17 @@ is the only database here precisely so undo is free.
 
 **Does anything run on a schedule?** No, and that's deliberate. Unattended
 maintenance was built, run, and retired: a pass that runs with nobody watching
-produces work nobody reads. Nothing tells you a pass is overdue either — you
-run `/curator` or `/audit` when you want them.
+produces work nobody reads. What the session start does instead, once a day,
+is say which pass has real work waiting — ten old logs to distill, a month
+without an audit, a lesson waiting to be routed — and ask. Nothing runs until
+you say yes (ADR 0049).
+
+**Why doesn't my project session know who I am any more?** Since v1.2 the
+vault and your projects are walled off (ADR 0052): a session in a project gets
+nothing from the vault, because most of what the vault holds is noise for the
+repo at hand. Put how you want every session to work in your runtime's own
+user-level instructions file. When you want the vault to learn from a project,
+open a session in the vault and run `/harvest <path to the repo>`.
 
 **What happens if a memory file gets too big?** `MEMORY.md` and `USER.md` have
 character budgets. Going over never silently truncates — the session-start

@@ -60,13 +60,15 @@ open without opening it.
 | [[lifecycle-policy]] | What happens to a note or a fact, with rationale; binding rules live in `AGENTS.md` | active |
 | [[self-evolution-policy]] | How the vault changes itself — the maintenance loop, growth control, the noise budget | active |
 
-## Lessons — corrections, captured verbatim
+## Lessons — one file per recurring behaviour
 
-Kept in the language the correction was given in: a lesson's value is the
-wording as it was said. Routed to a check or a `MEMORY.md` line only after a
-second independent occurrence, and only when the owner decides to.
+Each file collects the corrections about one behaviour, verbatim, in the
+language they were given in: a lesson's value is the wording as it was said.
+A second entry from a different task is where the agent proposes a rule —
+a skill, `AGENTS.md`, `USER.md` or a check — and the owner approves or
+refuses it (ADR 0048). A project's own lessons live in its repo, not here.
 
-| Page | The correction | Status |
+| Page | The behaviour | Routing |
 |---|---|---|
 | _(none yet — `/lesson` writes these)_ | | |
 

@@ -27,11 +27,18 @@ the *why*. The scripts themselves and their kill criteria are in
 | After substantial work | Session log, plus a `MEMORY.md` update when a durable fact emerged (standing rule) | applies |
 | The owner runs it | `/curator`, which runs `link-sweep.mjs` and, with project cards, `project-doctor.mjs` — by hand, with someone watching | applies safe, reports the rest |
 | The owner runs it | `/audit` — budgets, orphans, overdue `review_by`, tag sprawl, contradiction stacking | **report only, never fixes** |
+| Session start announces, the owner says yes | `node scripts/maintenance.mjs` lists what is due; `run` executes the mechanical part; lesson routing proposals wait in `routing: pending` (ADR 0048) | announce once a day, run only on yes |
 
-Every trigger is a person. Nothing is scheduled (ADR 0033) and nothing reports
-a pass as overdue either (ADR 0038) — a reminder to run a pass is not a
-finding. A session start volunteers one thing: commits that never left this
-machine, which no later session can recover.
+Every trigger is a person. Nothing is scheduled (ADR 0033). A session start
+volunteers at most two things, through the shared daily notice budget: commits
+that never left this machine, which no later session can recover, and a
+once-a-day "Maintenance due" line computed from state (ADR 0049) — `/curator`
+when 10 or more logs are past 30 days, `/audit` after 30 days without an audit
+log or when a note is past `review_by`, the link sweep after 7 days, and
+pending lesson routing. The agent mentions it in one line and runs nothing
+until the owner says yes. The backup line still comes first. (ADR 0038 had
+removed an earlier due line because it measured staleness against a schedule
+nothing ran; this one is gated on outstanding work and asks a yes/no question.)
 
 The audit stays separate from consolidation: a pass that only reports cannot
 cause the drift it exists to catch. This policy evolves through the gate it

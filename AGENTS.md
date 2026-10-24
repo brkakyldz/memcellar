@@ -18,10 +18,9 @@ frontmatter `type:`; how it is written and retired decides which folder holds
 it. A note's maturity changes its `status:`, never its path — so a link never
 breaks because a thought grew up.
 
-- `core/` — Tier 0, injected by the SessionStart hook. Four files: inside the
-  vault the first three are inlined with their budgets and `OPEN_QUESTIONS.md`
-  arrives as a pointer; a project session in global mode gets `USER.md` and
-  `MEMORY.md` only.
+- `core/` — Tier 0, injected by the SessionStart hook in a vault session (and
+  only there — ADR 0052). Four files: the first three are inlined with their
+  budgets and `OPEN_QUESTIONS.md` arrives as a pointer.
   - `IDENTITY.md` — the assistant's persona and rules of engagement in this vault.
   - `USER.md` — who the owner is: role, preferences, working style.
   - `MEMORY.md` — index of durable facts, one line each, pointing into `notes/`.
@@ -32,6 +31,8 @@ breaks because a thought grew up.
   here is wikilinked, has frontmatter, and earned its place.
   A `type: project` note is a thin card: it names the repo and its state file
   and never copies live status — execution state lives in the repo (ADR 0045).
+  Cards are written only by `/harvest`, which reads a project repo when the
+  owner asks for it (ADR 0052).
 - `raw/` — the source store: immutable documents the owner put there.
   Articles, papers, transcripts, exports, images. **The agent reads and never
   writes** — no edit, rename, move or delete; the one exception is fetching a
@@ -41,22 +42,34 @@ breaks because a thought grew up.
   Contract: `raw/README.md`.
 - `logs/` — append-only session logs, `YYYY-MM-DD_HHMM.md` or
   `YYYY-MM-DD_HHMM-<slug>.md`; a pass report names its pass instead
-  (`YYYY-MM-DD_link-sweep.md`, `YYYY-MM-DD_audit.md`) — the date prefix is
+  (`YYYY-MM-DD_link-sweep.md`, `YYYY-MM-DD_audit.md`,
+  `YYYY-MM-DD_HHMM_curator.md`; the maintenance line reads these suffixes) —
+  the date prefix is
   the part that never varies. Plus the signal ledger in `logs/signals/`.
   Written as evidence — read it, never rewrite it.
+- `my-notes/` — the owner's own notes. Written **only** when the owner
+  explicitly asks ("note this down"), never on agent initiative. No automated
+  pass writes here: `/curator` and `/audit` both skip it; nothing here is
+  distilled into `notes/`, archived, or deleted by an agent. One file per
+  topic, in the owner's own language, `type: my-note`. Contract:
+  `my-notes/README.md`.
 - `archive/` — closed projects, stale content, and the historical working
   record. Never deleted, always moved here.
 - `.agents/skills/` — the vault's skills, the one canonical copy both runtimes
   load. Codex reads it natively; `.claude/skills` is a gitignored junction
   (Windows) or symlink (macOS/Linux) to it, created by `node install.mjs`.
   There is only one copy — an edit through either path is an edit to it.
+  `/recall` and `/harvest` work on the vault and load only in a vault session.
+  `/closeout` and `/lesson` are the two a project session may also use, if the
+  owner links them at user level (`node install.mjs --link-global-skills`):
+  they write into the repo the session is in, never into the vault.
 - `.claude/` — the shared machinery both runtimes call: `hooks/`,
   `templates/`, `eval/`. The name is historical, not ownership. `.codex/`
   holds only the thin Codex SessionStart adapter. Not vault content; this is
   how the agent runs, not what it knows about the world.
-- `scripts/` — helper jobs (link sweep, metrics, retrieval eval, brain
-  doctor, project doctor), each invoked by hand or by a skill. Nothing here
-  runs on a clock: unattended scheduling was retired (ADR 0033).
+- `scripts/` — helper jobs (link sweep, metrics, maintenance, retrieval eval,
+  brain doctor, project doctor), each invoked by hand or by a skill. Nothing
+  here runs on a clock: unattended scheduling was retired (ADR 0033).
 - `docs/` — documentation about the vault, not vault content: the
   architecture guide, the decision index (`DECISIONS.md`), the template's
   full decision records (`docs/decisions/`), the FAQ, the upgrade guide and
@@ -117,6 +130,12 @@ the owner saving what they are reading — which is the property an inbox lacks.
   Anything else is a staleness bug waiting to happen.
 - Facts derived from untrusted external content (web pages, tool output) carry
   a `source:` marker and are **never** written into `USER.md` or `IDENTITY.md`.
+- `my-notes/` is exempt from the ≥1-outbound-wikilink rule and from the
+  English-content rule in `IDENTITY.md`; `notes/lesson-*.md` is exempt from the
+  same language rule wherever it quotes verbatim — the correction and the
+  artifact it came from — because a lesson's evidence is worthless paraphrased.
+  A fact appearing in either place is not promoted to `MEMORY.md` — it still
+  goes through the corroboration gate.
 - **Archive-first.** Stale or closed content moves to `archive/`, never into
   the void. Deletion is allowed only in the narrow cases defined in
   [[lifecycle-policy]] §6 — and the second (a superseded, unlinked,
@@ -156,8 +175,9 @@ binding rules:
   window and point it forward (bi-temporal keys, § Note conventions).
 - **Corroboration gate:** a once-seen fact enters `notes/` as `type: memory`,
   `confidence: low`; it reaches `MEMORY.md` only after a second independent
-  source confirms it — independence is a property of the source, not a count
-  of sessions.
+  source confirms it. Independence belongs to the source, not the session
+  count: two sessions repeating the same page or the same claim are one source
+  ([[lifecycle-policy]] §8).
 - **Playbook gate:** a note is promoted to `type: playbook` only after
   **≥2 verified successful uses**. A workflow that just worked may be drafted
   as a playbook in the same session, marked `uses: 1`, and stays there until
@@ -165,14 +185,17 @@ binding rules:
   `description:` — good enough to judge relevance without opening the file.
 - **Protected files:** `IDENTITY.md` and this file are never edited by an
   automated pass — agents propose a diff, the owner applies it.
-- **Pins:** `pinned: true` exempts from demotion; max 10 vault-wide.
+- **Pins:** `pinned: true` exempts from demotion; max 10 vault-wide,
+  re-justified when the audit says they need it.
 - **The loop:** the trigger is the owner opening a session, never a clock
-  (ADR 0033), and nothing reports a pass as overdue (ADR 0038). They run
-  `/curator` (safe fixes applied, destructive changes reported and left to
-  them) when they want it. The structural audit stays report-only — budgets,
-  orphans, overdue reviews, tag sprawl — and audit and consolidation stay
-  separate passes. Pins and policy get re-justified when the audit says they
-  need it, not on a calendar.
+  (ADR 0033). A once-a-day "Maintenance due" line at session start says what
+  is due and why (ADR 0049); the agent mentions it in one line and runs
+  `/curator`, `/audit` or `node scripts/maintenance.mjs run` only after the
+  owner says yes. Nothing runs unasked. Lesson topics are routed by `/lesson`
+  when a second correction lands (ADR 0048), not by a separate pass. The
+  structural audit stays report-only — budgets, orphans, overdue reviews, tag
+  sprawl — and audit and consolidation stay separate passes. Pins and policy
+  get re-justified when the audit says they need it, not on a calendar.
 - **Notification budget:** hard cap **3 proactive items per day**, counted
   across *all* surfaces together (session start, pass reports, anything else
   that speaks up unasked).
@@ -180,7 +203,7 @@ binding rules:
   they want it, never a push. False positives kill a review queue permanently.
 - **Suggestions are acted on or dropped, not queued.** A pass reports its
   findings in the conversation and its own log; nothing appends to an approval
-  queue (ADR 0038). A suggestion feature that is not acted on gets killed, not
+  queue (ADR 0038). A suggestion feature that is not acted on gets removed, not
   tuned forever. A decision worth recording may still be logged by hand as an
   `acceptance` / `rejection` line in the signal ledger.
 - **Growth control:** no new folder/tag/taxonomy without an actual retrieval
@@ -198,6 +221,13 @@ was learned. Tag each item with one of: `decision | bugfix | feature |
 discovery | preference | change`. If a durable fact emerged, also update
 `MEMORY.md` (respecting its budget and consolidation rule above).
 
+**Write-time gate.** A bullet goes in only if a future session that never read
+this log would decide worse or slower without it. A note written in the same
+session is cited by its wikilink, not restated. Step-by-step narration belongs
+in the commit message. One log per session — append to it rather than opening
+a second. (In the reference instance, close to half of all log bullets turned
+out to be duplicates or narration before this gate existed.)
+
 End every substantial-work log with exactly one `outcome` line:
 `outcome | claim:<what is now true> | verification:<verified|agent-claimed|partial> | refs:<paths, commits or [[wikilinks]]>`.
 `verified` requires a test, readback, external result, or the owner's
@@ -206,11 +236,14 @@ acceptance; a file existing or an agent saying "done" is only
 or fresh-session check remains. The line indexes existing evidence; it never
 copies tool output.
 
-A log about project work carries `project: <card id>` — the filename of a
-`notes/<project_id>.md` card; older values resolve through the card's
-`project_aliases` — and `runtime: claude-code | codex`. It stays under ten body
-lines and points at the repo's run report or commit for detail, because the
-repo holds execution state (ADR 0045). `/closeout` writes it.
+**Projects are walled off (ADR 0052).** A session in a project repo neither
+reads nor writes this vault: the SessionStart hook does nothing outside it, and
+the project keeps its own `docs/CURRENT_STATE.md`, ADRs and `docs/lessons/`.
+Project progress gets no vault log. The vault reads a project only through
+`/harvest`, in a vault session, read-only, when the owner asks. A harvest log
+carries `project: <card id>` — the filename of a `notes/<project_id>.md` card;
+older values resolve through the card's `project_aliases` — and
+`runtime: claude-code | codex`, and stays under ten body lines.
 
 ## Note conventions
 
@@ -220,9 +253,11 @@ repo holds execution state (ADR 0045). `/closeout` writes it.
   or extension** (`[[project-x]]`, never `[[notes/project-x]]`). Used with
   surrounding sentence context, not as bare link lists.
 - Frontmatter: flat YAML, this schema —
-  - `type`: `project | knowledge | memory | playbook | log | decision`. The
-    live list is `ALLOWED_TYPES` in `.claude/hooks/checks.mjs`; when the two
-    disagree, the check is the newer of the pair.
+  - `type`: `project | knowledge | memory | playbook | log | decision |
+    my-note` — `my-note` is valid **only** inside `my-notes/`. The live list
+    for `notes/` is `ALLOWED_TYPES` in `.claude/hooks/checks.mjs`, which
+    leaves `my-note` out because it is invalid there; when the two disagree,
+    the check is the newer of the pair.
   - `created`: `YYYY-MM-DD`
   - `tags`: list
   - `status`: knowledge → `seedling | growing | evergreen`; projects →

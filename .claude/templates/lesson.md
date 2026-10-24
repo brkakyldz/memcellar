@@ -5,28 +5,32 @@ tags: [lesson]
 status: seedling
 confidence: low
 origin: lesson
+topic: <topic-slug>
 class: <mistake-class-slug>
+routing: none
 related: []
 ---
 
-<!-- CAPTURE ONLY. Verbatim, no interpretation — routing happens later, by the owner's decision, after a second independent occurrence corroborates it (ADR 0019, 0038). -->
+<!-- One file per recurring behaviour (ADR 0048). Entries are appended verbatim, never edited — no interpretation at capture. A second entry from a different task triggers a routing proposal, which the owner approves or refuses; record the outcome under Routing and in routing: (none | pending | routed | refused). -->
 
-# Lesson — <mistake-class-slug>
+# Lesson — <the behaviour, in a few words>
 
-## Correction (verbatim)
+## Entries
+
+### YYYY-MM-DD — <project path>
+
+Correction (verbatim):
 
 > <the correction exactly as the owner gave it — no paraphrase, no translation>
 
-## Artifact
-
-The diff, error message, or wrong output the correction responds to, verbatim:
+Artifact (verbatim):
 
 ```
-<paste artifact here unchanged>
+<the diff, error or wrong output the correction responds to, unchanged>
 ```
 
-## Context
+Session: <session id, if known>
 
-- Session: <session id, if known>
-- Project: <repo/path the correction happened in>
-- Date: YYYY-MM-DD
+## Routing
+
+<!-- YYYY-MM-DD — proposed: <one-line change> → <target file> — accepted | refused -->

@@ -8,8 +8,8 @@
 //   4. links .claude/skills to .agents/skills, the one skills copy both
 //      runtimes load (a junction on Windows, a symlink elsewhere — ADR 0044),
 //   5. turns on git rerere,
-//   6. prints the global-mode wiring for Claude Code and Codex for you to
-//      paste, and does NOT write it.
+//   6. prints the Codex wiring for you to paste, and does NOT write it
+//      (Claude Code needs none: this repo's .claude/settings.json wires it).
 //
 // Step 6 is deliberate: user-level settings are outside this repo, they affect
 // every project on the machine, and an installer that edits them without you
@@ -20,10 +20,12 @@
 // clone upgraded from v1.0, where the skills still lived in .claude/skills.
 //
 // `node install.mjs --link-global-skills` is a separate, opt-in step: it links
-// /closeout, /lesson and /recall into the user-level skills folder of each
-// runtime whose home exists (~/.claude/skills, ~/.codex/skills, or
-// CLAUDE_CONFIG_DIR / CODEX_HOME), so a session in any project can reach them
-// (ADR 0045). It creates only links that point back into this vault, never
+// /closeout and /lesson into the user-level skills folder of each runtime
+// whose home exists (~/.claude/skills, ~/.codex/skills, or CLAUDE_CONFIG_DIR /
+// CODEX_HOME), so a session in any project can reach them. Both write into
+// the project the session is in, never into this vault (ADR 0052). A /recall
+// link left by v1.1 is removed: recall works on the vault, so it is a
+// vault-only skill now. It creates only links that point back into this vault, never
 // replaces anything but a broken link, and `--unlink-global-skills` removes
 // exactly those links again. That is why it may touch user-level folders when
 // step 6 may not: you ask for it by name, it changes nothing but its own
@@ -55,9 +57,14 @@ function samePath(a, b) {
     : norm(a) === norm(b);
 }
 
-// The skills a project session needs from the brain (ADR 0045). Everything
-// else in .agents/skills works on the vault itself and stays vault-scoped.
-const GLOBAL_SKILLS = ['closeout', 'lesson', 'recall'];
+// The skills a project session may use (ADR 0045, 0052). They write into the
+// project repo the session is in, never into the vault. Everything else in
+// .agents/skills works on the vault itself and stays vault-scoped.
+const GLOBAL_SKILLS = ['closeout', 'lesson'];
+// Linked at user level by v1.1 and vault-only since v1.2. Both
+// --link-global-skills and --unlink-global-skills remove such a link, and
+// only when it points into this vault.
+const RETIRED_GLOBAL_SKILLS = ['recall'];
 
 function userSkillDirs() {
   const home = os.homedir();
@@ -219,6 +226,13 @@ function globalSkills(remove) {
       if (!r.ok) ok = false;
       stdout.write(`${runtime}: ${path.join(dir, name)} — ${r.ok ? r.note : `FAILED: ${r.note}`}\n`);
     }
+    for (const name of RETIRED_GLOBAL_SKILLS) {
+      const r = unlinkGlobalSkill(dir, name);
+      if (!r.ok) ok = false;
+      if (r.note !== 'not linked') {
+        stdout.write(`${runtime}: ${path.join(dir, name)} (vault-only since v1.2) — ${r.ok ? r.note : `FAILED: ${r.note}`}\n`);
+      }
+    }
   }
   return ok;
 }
@@ -227,10 +241,12 @@ const USAGE = `Second Brain OS — install.mjs
 
   node install.mjs                         one-time setup: interview, core/USER.md,
                                            core/.vault-active, skills link, rerere;
-                                           prints the global-mode wiring, writes none of it
+                                           prints the Codex wiring, writes none of it
   node install.mjs --link-skills           create or repair only .claude/skills -> .agents/skills
-  node install.mjs --link-global-skills    link /closeout, /lesson and /recall into the
-                                           user-level skills folder of each installed runtime
+  node install.mjs --link-global-skills    link /closeout and /lesson into the user-level
+                                           skills folder of each installed runtime, so
+                                           every project can use them (they write into
+                                           the project, never the vault)
   node install.mjs --unlink-global-skills  remove exactly those links again
   node install.mjs --help                  this text
 
@@ -355,7 +371,7 @@ ${where || '<!-- unanswered -->'}
 
 ## Current focus
 ${focus.length
-    ? focus.map((f) => `- **${f}** — <!-- one line on what it is --> → [[${slug(f)}]]`).join('\n')
+    ? focus.map((f) => `- **${f}** — <!-- one line on what it is; link its card once /harvest has written it -->`).join('\n')
     : '<!-- unanswered -->'}
 
 <!-- Filled ${today} by install.mjs from a setup interview.
@@ -363,15 +379,6 @@ ${focus.length
      the fix is an edit plus a dated comment, not a second line saying otherwise.
      Budget: 2000 characters, HTML comments excluded. -->
 `;
-
-function slug(s) {
-  return s
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[^\w\s-]/g, '')
-    .trim()
-    .replace(/\s+/g, '-');
-}
 
 stdout.write(`
 About to write:
@@ -417,17 +424,6 @@ try {
 }
 
 const abs = ROOT.replace(/\\/g, '/');
-const claudeBlock = JSON.stringify(
-  {
-    hooks: {
-      SessionStart: [
-        { hooks: [{ type: 'command', command: `node "${abs}/.claude/hooks/session-start.mjs"`, timeout: 60 }] },
-      ],
-    },
-  },
-  null,
-  2,
-);
 const codexBlock = JSON.stringify(
   {
     hooks: {
@@ -450,29 +446,25 @@ for you, and nothing ever stages the whole tree:
     git add core/USER.md core/IDENTITY.md
     git commit -m "setup: personalize brain"
 ${focus.length ? `
-Your current-focus lines link to project notes that do not exist yet. Create
-each as a thin card from .claude/templates/project.md, with a row in INDEX.md
-(or ask your agent to) — until then \`node scripts/link-sweep.mjs\` reports
-them as broken.
+Your current-focus projects have no card in notes/ yet. Cards are written by
+/harvest, which reads a project's repo: open a session in this folder and run
+/harvest <path to the repo> for each, then link the card from USER.md.
 ` : ''}
-Next, optional but recommended — GLOBAL MODE
---------------------------------------------
-By default the hook fires only inside this folder, and only in Claude Code.
-Global mode makes the brain load in *every* session on this machine, which is
-the way this system is meant to run: it grows from everything you work on.
-
+How the brain is wired
+----------------------
 There is exactly one hook per runtime: SessionStart. Nothing commits at Stop,
 SessionEnd or PreCompact — commits are made by the task that wrote the files.
+The hook works only inside this folder: in any other project it exits at once,
+without a pull and without injecting anything (ADR 0052). A project keeps its
+own state, decisions and lessons in its own repo; when you want the brain to
+learn from one, open a session here and run /harvest <path to the repo>.
 
-Claude Code — merge into ~/.claude/settings.json (append to any existing
-"hooks" arrays, never replace them), then empty the "hooks" block in this
-repo's .claude/settings.json and commit that file, or the hook fires twice
-inside the vault:
+Claude Code — nothing to do. This repo's .claude/settings.json wires the hook.
 
-${indent(claudeBlock)}
-
-Codex — merge into ~/.codex/hooks.json the same way, then re-trust the changed
-hook definition in Codex. Do not also add it to a project-level
+Codex — merge this into ~/.codex/hooks.json (append to any existing "hooks"
+arrays, never replace them), then re-trust the changed hook definition in
+Codex. Outside this folder it does nothing, so wiring it at user level costs
+other projects nothing. Do not also add it to a project-level
 .codex/hooks.json: Codex adds the layers together, so it would fire twice.
 
 ${indent(codexBlock)}
@@ -480,23 +472,20 @@ ${indent(codexBlock)}
 The scripts resolve the brain root themselves (their own location, or BRAIN_DIR
 if you set it), so they are correct from any working directory.
 
-In global mode a project session is told to end its work with /closeout: the
-project's state stays in its own repo and the brain gets a short log. To make
-/closeout, /lesson and /recall loadable in every project, link them at user
-level — opt-in, and undone by --unlink-global-skills:
+Optional — /closeout and /lesson in your other projects. /closeout ends project
+work (state file, run report, one commit of exactly the task's paths) and
+/lesson keeps a correction in that project's docs/lessons/. Neither touches
+the brain. To make them loadable everywhere — opt-in, and undone by
+--unlink-global-skills:
 
     node install.mjs --link-global-skills
-
-Trade-off, stated plainly: every session on the machine then pays a small
-\`git pull\` at start (skipped whenever the vault has uncommitted changes to
-tracked files).
 
 Check the wiring any time with:  node scripts/brain-doctor.mjs
 
 Now open this folder as an Obsidian vault (optional), start \`claude\` or
 \`codex\` in it, and say hello. Claude Code reads AGENTS.md through CLAUDE.md
 and gets core/ from this repo's own hook; Codex reads AGENTS.md natively and
-gets core/ only once its user-level hook (above) is wired.
+gets core/ only once its hook (above) is wired.
 `);
 
 rl.close();

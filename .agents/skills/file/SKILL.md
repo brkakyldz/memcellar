@@ -35,6 +35,7 @@ one line rather than writing.
 | The material is | Skill | Lands in |
 |---|---|---|
 | A correction they made to the agent | `/lesson` | `notes/lesson-*.md`, verbatim |
+| The owner's own words, as they said them | `/note` | `my-notes/`, the owner's language |
 | An external document | `/ingest` | `notes/`, with `source:` |
 | Analysis worked out together in the session | **`/file`** | `notes/`, English |
 
@@ -53,9 +54,10 @@ is the better outcome and the more common one.** A new page is right when the
 subject is genuinely new; a section appended to the right existing page is
 right when it deepens something the vault already covers.
 
-If it merges, decide per fact: ADD / MERGE / SUPERSEDE / NOOP. Supersession
-closes a window and never overwrites (`valid_to`, `superseded_by`, plus the
-visible line in the body).
+If it merges, decide per fact: ADD / MERGE / SUPERSEDE / NARROW / NOOP —
+NARROW cuts a fact back to what its evidence supports. Supersession closes a
+window and never overwrites (`valid_to`, `superseded_by`, plus the visible
+line in the body).
 
 ### 3. Rewrite it as a page, not as a transcript
 

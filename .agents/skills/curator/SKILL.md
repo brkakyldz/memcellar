@@ -1,13 +1,15 @@
 ---
 name: curator
-description: Explicit maintenance pass that reconciles the vault's live memory, distills due logs, archives stale evidence, and verifies Tier-0 budgets.
-disable-model-invocation: true
+description: Maintenance pass that reconciles the vault's live memory, distills due logs, archives stale evidence, and verifies Tier-0 budgets without touching my-notes. Run only when the owner types /curator or says yes to the session-start "Maintenance due" notice (ADR 0049) — never on the agent's own initiative.
 ---
 
 # Curator
 
-Runs a maintenance pass over the memory core. Only invoked explicitly via
-`/curator` (never auto-triggered) because it rewrites shared memory files.
+Runs a maintenance pass over the memory core. It rewrites shared memory
+files, so it runs only when the owner types `/curator` or answers yes to the
+session-start "Maintenance due" notice (ADR 0049) — never on a clock and never
+on the agent's own initiative. `my-notes/` is the owner's own folder: this pass
+neither reads, distills, archives nor rewrites anything in it.
 
 ## Standing rule — evidence pointers (anti-confabulation)
 
@@ -45,6 +47,10 @@ unsourced beliefs poisons every session after it.
    Where the losing fact carries bi-temporal keys, close its window
    (`valid_to`, `superseded_by`) rather than deleting the line.
 
+   Each fact gets one verdict: ADD / MERGE / SUPERSEDE / NOOP / **NARROW**.
+   NARROW shrinks a fact to what its source actually supports — a line stated
+   more strongly than its `source:` or evidence allows is cut back, not kept.
+
    **Numeric consolidation targets** — merge when a topic crosses these:
    - one topic spread over **>5 notes** → consolidate to **≤2** (one topic
      file in `notes/`, one pointer line in `MEMORY.md`);
@@ -69,11 +75,23 @@ unsourced beliefs poisons every session after it.
      entirely if nothing forward-looking remains.
    - Pointer with a dead target → fix the pointer or remove the line.
 
-4. **Distill old logs.** For every file directly in `logs/` whose date prefix
-   is more than 30 days before today — session logs and pass reports alike,
-   never the signal ledger in `logs/signals/`:
+   When this pass rewrites `core/MEMORY.md` (steps 2, 3 or 5), its log lists
+   every removed line with where it went — merged into `<line>`, moved to
+   `notes/<x>`, archived, or superseded by `<x>`. A line with no destination
+   is not removed.
+
+4. **Distill old logs.** For every file directly in `logs/` whose name starts
+   with `YYYY-MM-DD` — any suffix, `_HHMM`, `-<slug>`, `_link-sweep`, `_audit`
+   (AGENTS.md: the date prefix is the part that never varies) — and whose
+   date is more than 30 days before today; session logs and pass reports
+   alike, never the signal ledger in `logs/signals/`:
    - Extract durable facts and decisions into the matching
      `notes/<topic>.md` topic file (append, don't duplicate).
+   - Keep the source's doubt and dates, here and in step 2's merges: carry over
+     uncertainty words ("probably", "seems", "single-source", "unverified") and
+     every explicit date as written; never raise a claim's certainty above its
+     source's. Consolidation measurably turns hedged remarks into confident
+     facts (arXiv 2606.29279); gist compression drops dates.
    - Move the original log file to `archive/` (never delete it — the raw
      record stays available, just out of the searched-by-default path;
      archive is flat, so the filename stays as it was, ADR 0028).
@@ -95,7 +113,7 @@ unsourced beliefs poisons every session after it.
 
 6. **Never delete — propose instead.** Nothing produced by this pass is ever
    deleted outright. Stale content always lands in `notes/` or in `archive/`,
-   which is flat — a distilled log keeps its dated filename and
+   which is flat — a distilled log keeps its original name and
    moves to `archive/` itself, never into a subfolder (ADR 0028, and step 4
    above says the same thing). Only exact duplicate lines within
    `MEMORY.md`/`USER.md` itself may be collapsed to one. If a note meets all
@@ -121,6 +139,12 @@ unsourced beliefs poisons every session after it.
    because it is a judgment call — is said to the owner in the same conversation,
    in the report, and nowhere else.
 
+   Lesson topics are the one standing queue this pass reads: list every
+   `notes/lesson-*.md` with `routing: pending`, and every topic with two or
+   more entries and `routing: none`, each with its entry count. Report them;
+   routing is `/lesson`'s step 4 with the owner's yes, never this pass
+   (ADR 0048).
+
    The `PROPOSALS.md` approval queue was retired (ADR 0038): in the reference
    instance it accumulated 38 rows, 19 of them still open with four past a
    week, and the review cost it promised ("seconds per row") never showed up.
@@ -138,6 +162,8 @@ unsourced beliefs poisons every session after it.
     stage only this pass's hunk or leave that file out and report it. Make
     exactly one commit: `curator: consolidation <YYYY-MM-DD>` (ADR 0042).
 
-11. **Nothing to stamp.** The maintenance stamp and the session-start due
-    line it fed were removed (ADR 0038). The owner runs this pass when they
-    want it; the vault does not tell them it is overdue.
+11. **The log is the stamp.** Write this pass's session log as
+    `logs/YYYY-MM-DD_HHMM_curator.md`. The session-start "Maintenance due"
+    notice (ADR 0049) reads the newest `*_curator.md` as the last run, and
+    judges whether a pass is due from the logs still past 30 days — so a run
+    that distills logs is what quiets the notice, not the date alone.

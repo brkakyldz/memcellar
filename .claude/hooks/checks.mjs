@@ -7,7 +7,9 @@
 // retired with the whole-tree commit it guarded (ADR 0042, 0044), so nothing
 // runs them automatically any more. They run when someone runs them — by
 // hand, from a task before its own commit, or from a git pre-commit hook —
-// through the command line at the bottom of this file:
+// through the command line at the bottom of this file, and as part of
+// `scripts/maintenance.mjs run`, which the owner starts after the
+// session-start maintenance notice asks (ADR 0049):
 //
 //   node .claude/hooks/checks.mjs [--staged | --all] [--record] [--help]
 //
@@ -27,9 +29,9 @@
 // (ADR 0022): they are corroborated-by-adoption, not derived from lessons.
 // The third seed check, `inbox-48h`, was deleted with `inbox/` itself on
 // 2026-08-31 (ADR 0034) — a check enforcing a rule that no longer exists.
-// A check born from a corroborated lesson is added by hand when the owner
-// decides it should be — the /flywheel pass that used to propose them was
-// retired with proposal production (ADR 0038).
+// Checks born from real corroborated lessons are proposed by `/lesson` once a
+// behaviour has been corrected twice (ADR 0048) — the owner applies them; no pass
+// adds one by itself.
 
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, realpathSync } from 'node:fs';
@@ -45,6 +47,9 @@ import {
   thisDir,
 } from './lib.mjs';
 
+// The `type:` values valid in notes/. `my-note` is left out on purpose: it is
+// valid only inside my-notes/, the owner's own notes, which no check here
+// scans (every scope below is notes/ or core/).
 const ALLOWED_TYPES = new Set([
   'project', 'knowledge', 'memory', 'playbook', 'log', 'decision',
 ]);
