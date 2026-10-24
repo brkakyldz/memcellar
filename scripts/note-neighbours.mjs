@@ -31,7 +31,7 @@ above this script.
 
 const SCAN_DIRS = ['notes', 'reports', 'outputs'];
 const STOP = new Set(['a', 'an', 'the', 'and', 'or', 'of', 'for', 'to', 'in', 'on', 'with', 'by', 'from', 'vs',
-  've', 'ile', 'bir', 'bu', 'için', 'de', 'da', 'mi', 'mı', 'ne']);
+  've', 'ile', 'bir', 'bu', 'icin', 'de', 'da', 'mi', 'ne']);
 // A trailing version or date: -v2, -v3, -2026-10, -2026-10-04, _2026-10-04.
 const VERSION_RE = /([-_]v\d+|[-_]\d{4}-\d{2}(-\d{2})?)$/;
 
@@ -49,21 +49,24 @@ export function parseArgs(argv) {
     else rest.push(a);
   }
   opts.query = rest.join(' ');
-  if (!opts.help && !opts.query && !opts.slug) throw new Error('give subject words or --slug');
+  if (!opts.help && !opts.query && !opts.slug && !opts.tags.length) throw new Error('give subject words, --tags or --slug');
   if (Number.isNaN(opts.min)) throw new Error('--min needs a number');
   return opts;
 }
 
-// Lowercase without the Turkish dotted-I trap: 'İ'.toLowerCase() is 'i̇'
-// (i plus a combining dot), which then matches nothing.
+// Lowercase without the Turkish dotted-I trap ('İ'.toLowerCase() is 'i̇', i
+// plus a combining dot, which then matches nothing), then fold the Turkish
+// letters to ASCII on both sides, so "is ilanlari" typed on an English
+// keyboard still meets an alias written "iş ilanları".
+const FOLD = { ç: 'c', ğ: 'g', ı: 'i', ö: 'o', ş: 's', ü: 'u' };
 function lower(s) {
-  return s.replace(/İ/g, 'i').replace(/I/g, 'ı').toLowerCase().replace(/ı/g, 'i');
+  return s.replace(/İ/g, 'i').replace(/I/g, 'ı').toLowerCase().replace(/[çğıöşü]/g, (c) => FOLD[c]);
 }
 
 export function tokens(s) {
   return lower(s)
     .replace(/\.md$/, '')
-    .split(/[^a-z0-9çğıöşü]+/)
+    .split(/[^a-z0-9]+/)
     .filter((t) => t && !STOP.has(t) && !/^\d+$/.test(t) && !/^v\d+$/.test(t));
 }
 
@@ -110,7 +113,9 @@ export function loadPages(root) {
       const heading = (text.match(/^#\s+(.+)$/m) || [])[1] || '';
       const slug = name.replace(/\.md$/, '');
       const links = new Set();
-      for (const m of text.matchAll(/\[\[([^\]|#]+)/g)) links.add(m[1].trim());
+      // `[[x\|y]]` is the escaped-pipe form inside Markdown tables; the
+      // backslash belongs to the table, not to the target.
+      for (const m of text.matchAll(/\[\[([^\]|#]+)/g)) links.add(m[1].trim().replace(/\\$/, ''));
       pages.push({
         rel, slug, fm, links,
         nameTokens: tokens(slug.replace(/^\d{4}-\d{2}-\d{2}_/, '')),
@@ -146,20 +151,27 @@ export function neighbours(pages, opts) {
     }
     if (score >= opts.min) out.push({ ...p, score: Math.min(1, score), reasons });
   }
-  // Version flag: two scanned pages whose names differ only by a version or
-  // date suffix, where at least one of them is in the result.
+  // Version flag: two pages of the living layer whose names differ only by a
+  // version or date suffix, where at least one of them is in the result.
+  // Reports are left out on both sides: a topic page and its dated reports
+  // sharing a slug is the normal ADR 0055 shape, not a second version.
   const stems = new Map();
   for (const p of pages) {
+    if (p.fm.type === 'report' || p.rel.startsWith('reports/')) continue;
     const stem = p.slug.replace(/^\d{4}-\d{2}-\d{2}_/, '').replace(VERSION_RE, '');
     if (!stems.has(stem)) stems.set(stem, []);
     stems.get(stem).push(p.slug);
   }
   for (const r of out) {
+    if (r.fm.type === 'report' || r.rel.startsWith('reports/')) continue;
     const stem = r.slug.replace(/^\d{4}-\d{2}-\d{2}_/, '').replace(VERSION_RE, '');
-    const siblings = stems.get(stem).filter((s) => s !== r.slug);
-    if (siblings.length && r.fm.type !== 'report') r.flags = [`version of ${siblings.join(', ')}`];
+    const siblings = (stems.get(stem) ?? []).filter((s) => s !== r.slug);
+    if (siblings.length) r.flags = [`version of ${siblings.join(', ')}`];
   }
-  return out.sort((a, b) => b.score - a.score || a.rel.localeCompare(b.rel)).slice(0, 15);
+  if (opts.slug && !target) out.warning = `--slug ${opts.slug} names no page in notes/, reports/ or outputs/`;
+  const sorted = out.sort((a, b) => b.score - a.score || a.rel.localeCompare(b.rel)).slice(0, 15);
+  if (out.warning) sorted.warning = out.warning;
+  return sorted;
 }
 
 function main() {
@@ -174,6 +186,7 @@ function main() {
   const here = path.dirname(fileURLToPath(import.meta.url));
   const root = process.env.BRAIN_DIR?.trim() || path.resolve(here, '..');
   const found = neighbours(loadPages(root), opts);
+  if (found.warning) process.stderr.write(`warning: ${found.warning}\n`);
   if (opts.json) {
     process.stdout.write(`${JSON.stringify(found.map((r) => ({ path: r.rel, score: Number(r.score.toFixed(2)), type: r.fm.type ?? '', status: r.fm.status ?? '', updated: r.fm.updated || r.fm.created || '', reasons: r.reasons, flags: r.flags ?? [] })), null, 2)}\n`);
     return;

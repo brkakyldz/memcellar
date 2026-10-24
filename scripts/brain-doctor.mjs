@@ -14,7 +14,7 @@
 //
 // Checks, in output order: Claude Code and Codex hook topology, the
 // .claude/skills link, user-level skill links (only closeout and lesson may be
-// linked there; /harvest is vault-only, ADR 0052), Tier-0
+// linked there; every other vault skill is vault-only, ADR 0052), Tier-0
 // budgets, Tier-0 integrity (invisible or bidirectional control characters in
 // core/*.md; uncommitted changes under the hook and core folders), Provenance
 // (the corroboration gate: no `confidence: low` note linked from MEMORY.md,
@@ -82,6 +82,7 @@ const RETIRED_TERMS = [
   { term: 'retrieval-eval', why: 'retrieval machinery retired (ADR 0057)', scope: 'all', allow: [] },
   { term: 'golden-set', why: 'retrieval machinery retired (ADR 0057)', scope: 'all', allow: [] },
   { term: '/recall', why: 'retrieval machinery retired (ADR 0057)', scope: 'all', allow: [] },
+  { term: ['/harvest', 'harvested_at'], why: 'harvest retired for the project board (ADR 0056)', scope: 'all', allow: [] },
   { term: '/flywheel', why: 'deleted 2026-09-06', scope: 'all', allow: [] },
   { term: 'acceptance rate', why: 'suggestion ledger and its rate retired (ADR 0039)', scope: 'all', allow: [], ignoreCase: true },
   { term: 'scripts/proposals.mjs', why: 'deleted 2026-09-06', scope: 'all', allow: [] },
@@ -417,7 +418,7 @@ if (!existsSync(skillsTarget)) {
 
 // --- User-level skill links (ADR 0052). closeout and lesson write into the
 // current project's repo, never the vault, so linking them at user level is an
-// optional convenience. Every other vault skill — /harvest above all — reads
+// optional convenience. Every other vault skill — /ingest and /curator among them — reads
 // or writes the vault and runs only in a vault session; a link at
 // user level would hand it to every project session, which is the wall broken.
 // Claude Code reads CLAUDE_CONFIG_DIR/skills; Codex builds differ in the

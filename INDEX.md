@@ -1,6 +1,7 @@
 ---
-type: knowledge
+type: topic
 created: 2026-09-03
+updated: 2026-10-24
 tags: [index, catalog, navigation]
 status: growing
 related: ["[[lifecycle-policy]]"]
@@ -8,7 +9,7 @@ related: ["[[lifecycle-policy]]"]
 
 # Index — every page in the wiki, one line each
 
-**Top line.** The catalog of `notes/` and of every ingested source: what exists,
+**Top line.** The catalog of the living layer in `notes/` (ADR 0055) and of every ingested source: what exists,
 what each page is for, and how mature it is. Read this first when answering a
 question, then drill into the two or three pages that matter — it is the cheap
 half of retrieval, and it is why no search index has been needed.
@@ -41,13 +42,13 @@ open without opening it.
 |---|---|---|
 | _(your first project card goes here — `.claude/templates/project.md`)_ | | |
 
-## Knowledge — the world
+## Topics — the world
 
 | Page | What it is | Status |
 |---|---|---|
 | _(what you have read and distilled)_ | | |
 
-## Knowledge — the vault itself
+## Topics — the vault itself
 
 | Page | What it is | Status |
 |---|---|---|
@@ -72,12 +73,22 @@ refuses it (ADR 0048). A project's own lessons live in its repo, not here.
 |---|---|---|
 | _(none yet — `/lesson` writes these)_ | | |
 
+## Folders, not pages
+
+Two folders hold pages that are not listed here row by row (ADR 0055): each is
+listed on the topic page it feeds.
+
+| Folder | What it holds |
+|---|---|
+| `reports/` | Dated readings of the world — research, comparisons, audits. Write-once; `reports/README.md` |
+| `outputs/` | Deliverables made to be used and then done with — lists, drafts, inventories. They expire; `outputs/README.md` |
+
 ## Ingested sources
 
 Each row is a document in `raw/`, read once and distilled into the notes named
 beside it. A file in `raw/` with no row here has not been ingested — that, and
 not the folder's size, is the graveyard signal.
 
-| Source | Ingested | Fed into |
+| Source | Ingested | Report → topic page |
 |---|---|---|
 | _(none yet — `/ingest` writes these)_ | | |

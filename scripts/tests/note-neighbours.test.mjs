@@ -45,9 +45,27 @@ test('an alias in the owner\'s language finds an English page', (t) => {
   const root = vault(t, {
     'notes/job-search.md': page('topic', 'aliases: [iş arama, İş ilanları]\n'),
   });
-  const found = run(root, ['iş ilanları']);
-  assert.equal(found[0]?.slug, 'job-search');
-  assert.deepEqual(tokens('İŞ İLANLARI'), ['iş', 'ilanlari']);
+  assert.equal(run(root, ['iş ilanları'])[0]?.slug, 'job-search');
+  assert.equal(run(root, ['is ilanlari'])[0]?.slug, 'job-search', 'ASCII-typed Turkish still matches');
+  assert.deepEqual(tokens('İŞ İLANLARI'), ['is', 'ilanlari']);
+});
+
+test('a topic page and its same-slug report are not versions of each other', (t) => {
+  const root = vault(t, {
+    'notes/job-search.md': page('topic'),
+    'reports/2026-10-24_job-search.md': page('report'),
+  });
+  const found = run(root, ['job search']);
+  assert.equal(found.length, 2);
+  assert.ok(found.every((r) => !r.flags), JSON.stringify(found.map((r) => [r.slug, r.flags])));
+});
+
+test('a table link [[slug\\|label]] counts as a link to slug', (t) => {
+  const root = vault(t, {
+    'notes/index-like.md': page('topic', '', '| x | [[models\\|m]] |'),
+    'notes/models.md': page('topic'),
+  });
+  assert.deepEqual(run(root, ['--slug', 'models']).map((r) => r.slug), ['index-like']);
 });
 
 test('--slug adds pages linked in either direction, even with no title overlap', (t) => {
@@ -70,7 +88,8 @@ test('one shared word in a long title is not a neighbour; archive/ is never scan
 });
 
 test('arguments: words or --slug are required; unknown flags fail', () => {
-  assert.throws(() => parseArgs([]), /subject words or --slug/);
+  assert.throws(() => parseArgs([]), /subject words, --tags or --slug/);
+  assert.equal(parseArgs(['--tags', 'career']).tags[0], 'career');
   assert.throws(() => parseArgs(['x', '--bogus']), /unknown argument --bogus/);
   assert.deepEqual(parseArgs(['a', 'b', '--tags', 'X, y']).tags, ['x', 'y']);
 });

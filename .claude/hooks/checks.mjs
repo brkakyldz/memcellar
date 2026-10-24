@@ -108,7 +108,8 @@ function parseFrontmatter(text) {
   const fields = {};
   for (const line of m[1].split(/\r?\n/)) {
     const kv = line.match(/^([A-Za-z_][A-Za-z0-9_-]*):\s*(.*)$/);
-    if (kv) fields[kv[1]] = kv[2].trim();
+    // `updated: "2026-10-24"` is the same date as `updated: 2026-10-24`.
+    if (kv) fields[kv[1]] = kv[2].trim().replace(/^(["'])(.*)\1$/, '$2');
   }
   return fields;
 }
@@ -207,8 +208,9 @@ const noteLifetime = {
       if (parts.length !== 2 || parts[1] === 'README.md') continue; // top level of each folder only
       const [dir, base] = parts;
       if (!['notes', 'reports', 'outputs'].includes(dir)) continue;
+      if (base.startsWith('.')) continue; // .gitkeep and friends
       const isMd = base.endsWith('.md');
-      if (dir === 'outputs' && !/^\d{4}-\d{2}-\d{2}_[a-z0-9][a-z0-9-]*\.[a-z0-9]+$/.test(base)) {
+      if (dir === 'outputs' && !/^\d{4}-\d{2}-\d{2}_[a-z0-9][a-z0-9-]*\.[A-Za-z0-9.]+$/.test(base)) {
         findings.push({ file: rel, detail: 'deliverable-filename' });
       }
       if (dir === 'reports' && !/^\d{4}-\d{2}-\d{2}_[a-z0-9][a-z0-9-]*\.md$/.test(base)) {
@@ -229,10 +231,16 @@ const noteLifetime = {
       } else if (dir === 'reports') {
         if (fm.type !== 'report') findings.push({ file: rel, detail: 'report-type' });
         if (!/\[\[[^\]]+\]\]/.test(fm.topic ?? '')) findings.push({ file: rel, detail: 'report-topic-missing' });
+        // `source:` may be inline (`source: [a, b]`, `source: x`) or a block
+        // list on the following lines (`source:` then `  - x`).
+        const blockList = /^source:\s*\r?\n\s+-\s+\S/m.test(text);
+        if (!blockList && (!fm.source || fm.source === '[]')) findings.push({ file: rel, detail: 'report-source-missing' });
+        if (!fm.confidence) findings.push({ file: rel, detail: 'report-confidence-missing' });
       } else if (dir === 'outputs') {
         if (fm.type !== 'deliverable') findings.push({ file: rel, detail: 'deliverable-type' });
         if (!DATE_RE.test(fm.expires ?? '')) findings.push({ file: rel, detail: 'deliverable-expires-missing' });
       }
+      if (dir !== 'notes' && !DATE_RE.test(fm.created ?? '')) findings.push({ file: rel, detail: 'created-missing' });
     }
     return findings;
   },

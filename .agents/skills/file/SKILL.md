@@ -90,14 +90,18 @@ The template for the type: `.claude/templates/topic.md`, `report.md` or
 `deliverable.md`. A topic page gets `updated: <today>`; a report its date in
 the filename and `topic:`; a deliverable `expires:`. `status: seedling` on a
 topic page unless it has already been used in real work. Date anything
-perishable. Add two fields the templates do not carry — on a merged section,
-as a one-line provenance note under its heading instead:
+perishable. Provenance, by type:
 
-- `source: filed from a session, YYYY-MM-DD, on the owner's request` — plus
-  the external source, if the analysis rests on one; that part is mandatory
-  and carries through every later merge.
-- `confidence: low` — the page is the agent's own output until something
+- **A report** fills the template's `source:` with
+  `filed from a session, YYYY-MM-DD, on the owner's request`, plus every
+  external source the analysis rests on (that part is mandatory), and keeps
+  `confidence: low`: it is the agent's own output until something
   independent confirms it (see § Standing rules).
+- **A topic page** is updated in place, so it carries no page-wide
+  confidence. The merged section gets a one-line provenance note under its
+  heading instead: where it came from and when, with any external source.
+- **A deliverable** names what it was built from in its body; it expires, so
+  it needs no confidence.
 
 `status: evergreen` needs the 1–2 sentence top-line distillation at the head of
 the note — if the idea cannot be stated that briefly it is not evergreen yet.

@@ -316,7 +316,7 @@ test('Retired terms: scope, case and folders', (t) => {
   const allowed = diagnose(fixture(t, { kitFiles: { 'skills/closeout/SKILL.md': 'x\nnever touches {{VAULT}}\n' } }));
   assert.equal(allowed.rows['Retired terms'].status, 'PASS', 'allow-listed kit files may name the vault');
 
-  const vaultOnly = diagnose(fixture(t, { vaultFiles: { '.agents/skills/harvest/SKILL.md': 'reads {{VAULT}}\n' } }));
+  const vaultOnly = diagnose(fixture(t, { vaultFiles: { '.agents/skills/ingest/SKILL.md': 'reads {{VAULT}}\n' } }));
   assert.equal(vaultOnly.rows['Retired terms'].status, 'PASS', 'the wall rule is for kit skills only');
 
   const caseless = diagnose(fixture(t, { vaultFiles: { '.agents/skills/audit/SKILL.md': 'The ACCEPTANCE RATE fell\n' } }));
@@ -348,9 +348,9 @@ test('an unknown argument exits 2 with the usage line', (t) => {
   assert.match(result.stderr, /Usage: node scripts\/brain-doctor\.mjs/);
 });
 
-test('User-level skills: closeout and lesson may be linked; note and harvest may not (ADR 0052)', (t) => {
+test('User-level skills: closeout and lesson may be linked; note and ingest may not (ADR 0052)', (t) => {
   const skill = (name) => `---\nname: ${name}\n---\n`;
-  const vaultFiles = Object.fromEntries(['closeout', 'lesson', 'note', 'harvest']
+  const vaultFiles = Object.fromEntries(['closeout', 'lesson', 'note', 'ingest']
     .map((name) => [`.agents/skills/${name}/SKILL.md`, skill(name)]));
   const link = (fx, dir, name) => {
     mkdirSync(dir, { recursive: true });
@@ -371,12 +371,12 @@ test('User-level skills: closeout and lesson may be linked; note and harvest may
 
   const wrong = fixture(t, { vaultFiles, git: false });
   link(wrong, path.join(wrong.home, '.claude', 'skills'), 'note');
-  link(wrong, path.join(wrong.home, '.codex', 'skills'), 'harvest');
+  link(wrong, path.join(wrong.home, '.codex', 'skills'), 'ingest');
   link(wrong, path.join(wrong.home, '.claude', 'skills'), 'closeout');
   const wrongRun = diagnose(wrong);
   assert.equal(wrongRun.rows['User-level skills'].status, 'WARN', verdict(wrongRun, 'User-level skills'));
   assert.match(wrongRun.rows['User-level skills'].detail, /Claude Code note/);
-  assert.match(wrongRun.rows['User-level skills'].detail, /Codex harvest/);
+  assert.match(wrongRun.rows['User-level skills'].detail, /Codex ingest/);
   assert.doesNotMatch(wrongRun.rows['User-level skills'].detail, /closeout,|Claude Code closeout/);
 });
 

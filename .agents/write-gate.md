@@ -1,10 +1,13 @@
 # Write gate — the one procedure every vault writer follows
 
 ADR 0055 is the decision; this is the procedure. `/file`, `/ingest`,
-`/lesson`, `/curator`, and any outside skill that writes into the vault
-(a research pipeline, for one), run these four steps before they write a page.
-`/note` is the exception: `my-notes/` is the owner's, written in their words on
-their request, and nothing here applies to it.
+`/curator`, and any outside skill that writes into the vault (a research
+pipeline, for one), run these four steps before they write a page.
+
+Two writers are exempt, each for its own reason. `/note` writes `my-notes/`,
+the owner's own words on their request, and nothing here applies to it.
+`/lesson` follows ADR 0048 instead: a correction is captured verbatim, its
+"find the topic" step is its neighbour step, and it has no type to choose.
 
 ## 1. NOOP first
 

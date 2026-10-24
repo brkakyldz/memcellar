@@ -102,10 +102,12 @@ Three kinds of knowledge were sharing one bridge:
 
 4. **`/harvest` is retired.** Of its three jobs, lessons now go to their home
    at capture and cross-project findings go to `<kit>/reference/` at
-   closeout. The third job, project status, is replaced by a read-only
-   `scripts/project-board.mjs`. It reads each card's repo (last commit,
-   branches, the head of the state file) and prints one table. It writes
-   nothing, and nothing is copied into a card.
+   closeout. The third job, project status, is replaced by a read-only board,
+   `node scripts/project-doctor.mjs --board`. It is a mode of the doctor that
+   already read every card's repo, not a new script. It reads each card's repo
+   (last commit, the active milestone, the state file's Next line) and prints
+   one table, flagging where the card's status and the repo disagree. It
+   writes nothing, and nothing is copied into a card.
 
 5. **The vault reads, never writes, a project.** A vault session may inspect
    a repo read-only to answer a cross-project question. What it records in
@@ -142,8 +144,8 @@ Three kinds of knowledge were sharing one bridge:
 - In the reference instance, the vault's lesson topics and its three
   trap notes move to the kit. Each moved copy is headed with its source and
   sha, and the vault originals go to `archive/`.
-- `/harvest`, its card fields (`harvested_at`, `harvested_on`) and the
-  `project-doctor` checks that depend on them are removed. Cards keep why,
+- `/harvest` and its card fields (`harvested_at`, `harvested_on`) are
+  removed, and `project-doctor` gains the `--board` view. Cards keep why,
   where and what it taught.
 - The template documents the kit as optional. Its installer links `/lesson`
   and `/closeout` at user level as before.

@@ -292,3 +292,28 @@ test('a worktree merged into master is leftover even when main exists', (t) => {
   card(root, 'repo', { repo });
   assert.ok(scan(root).data.projects[0].findings.some((f) => f.reason.includes('leftover worktree')));
 });
+
+test('--board: one row per repo with card status, last commit, milestone and Next, read live (ADR 0056)', (t) => {
+  const root = tmp('project-board-', t);
+  const vault = path.join(root, 'vault');
+  const busy = path.join(root, 'busy');
+  const quiet = path.join(root, 'quiet');
+  init(busy);
+  put(path.join(busy, 'docs', 'CURRENT_STATE.md'), '---\nproject_id: busy\nactive_milestone: M2\n---\n# Current state\n\n## Next\n<!-- the single next action -->\nShip the board.\n');
+  git(busy, 'add', '.'); git(busy, 'commit', '-qm', 'Add state');
+  init(quiet);
+  put(path.join(quiet, 'a.txt'), 'x');
+  git(quiet, 'add', '.'); git(quiet, 'commit', '-qm', 'Only commit');
+  card(vault, 'busy', { repo: busy, status: 'paused' });
+  card(vault, 'quiet', { repo: quiet });
+  const { code, data } = scan(vault, '--board');
+  assert.equal(code, 0);
+  const row = (id) => data.find((r) => r.id === id);
+  assert.equal(row('busy').card, 'paused');
+  assert.equal(row('busy').milestone, 'M2');
+  assert.equal(row('busy').next, 'Ship the board.');
+  assert.equal(row('busy').last.subject, 'Add state');
+  assert.match(row('busy').note, /card paused, committed 0 day/);
+  assert.equal(row('quiet').note, 'no state file');
+  assert.equal(git(busy, 'status', '--porcelain'), '', 'the board must not write into a repo');
+});

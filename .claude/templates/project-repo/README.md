@@ -3,8 +3,9 @@
 The repo half of ADR 0045 (`docs/decisions/0045-project-execution-state-lives-in-the-repo.md`):
 a project's execution state lives in the project's own repo, committed. Since
 v1.2 the project also keeps its own lessons, and a project session neither
-reads nor writes the brain (ADR 0052); the brain learns about a project only
-when you run `/harvest <project>` from a vault session. These files are the formats
+reads nor writes the brain (ADR 0052); a vault session reads the repo
+read-only when you want the cross-project view (`scripts/project-doctor.mjs --board`,
+ADR 0056). These files are the formats
 for that repo half. Nothing in the brain reads them from here — you copy them
 into a project repo and they live there.
 
@@ -64,15 +65,15 @@ Then:
    status sections: rewording them per project is how two repos end up with
    two meanings of PASS.
 2. **Fill STATE's frontmatter:** `project_id` (a kebab-case slug, usually
-   the repo name — `/harvest` uses it as the card's filename), `implementation_agent` (`claude-code` or `codex`), `branch`,
+   the repo name — the vault's card uses it as its filename), `implementation_agent` (`claude-code` or `codex`), `branch`,
    `as_of` (the short sha of HEAD), and one `PLANNED` row per milestone.
 3. **Commit all of it**, by explicit path, under a subject that reads as
    history, e.g. `Execution layer adopted, implementation agent claude-code`.
 4. **When you want the brain to know the project**, open a vault session and
-   run `/harvest <path to the repo>`. It reads the repo read-only and writes
-   the project card `notes/<project_id>.md` (from
-   `.claude/templates/project.md`) with its `INDEX.md` row. The card names
-   the repo and its state file; it never copies status.
+   ask for a card for it: `notes/<project_id>.md` from
+   `.claude/templates/project.md`, with its `INDEX.md` row. The card names
+   the repo and its state file and never copies status;
+   `node scripts/project-doctor.mjs --board` reads the status live.
 
 A repo that already has instructions gains only what is missing. An existing
 `AGENTS.md` gets the missing sections, not a rewrite. An existing `CLAUDE.md`

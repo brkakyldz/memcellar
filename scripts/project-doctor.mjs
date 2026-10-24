@@ -45,6 +45,9 @@ const vault = process.env.BRAIN_DIR?.trim() || path.resolve(path.dirname(fileURL
 const args = process.argv.slice(2);
 const json = args.includes('--json');
 const strict = args.includes('--strict');
+// --board: the cross-project view that replaced /harvest (ADR 0056) — one row
+// per repo, read live, nothing copied into a card.
+const board = args.includes('--board');
 // The day ADR 0045 introduced project cards — see the header comment.
 const LEGACY_CUTOFF = '2026-09-25';
 
@@ -59,9 +62,11 @@ for (let i = 0; i < args.length; i++) {
 if (process.env.BRAIN_KIT_DIR?.trim()) kits.push(process.env.BRAIN_KIT_DIR.trim());
 if (args.includes('--help') || args.includes('-h')) {
   console.log([
-    'Usage: node scripts/project-doctor.mjs [--repo PATH ...] [--kit DIR ...] [--since YYYY-MM-DD] [--json] [--strict]',
+    'Usage: node scripts/project-doctor.mjs [--board] [--repo PATH ...] [--kit DIR ...] [--since YYYY-MM-DD] [--json] [--strict]',
     '',
     'Read-only report over every repo a project card names (type: project + repo:).',
+    '--board      print one row per project instead: card status, last commit,',
+    '             active milestone and the state file\'s Next line, read live',
     '--repo PATH  also check a repo that has no card yet',
     '--kit DIR    also scan a separate skills kit for drifted copies (DIR/skills',
     '             if it exists, else DIR itself); BRAIN_KIT_DIR does the same',
@@ -159,7 +164,7 @@ function branchHeads(repo) {
 function project(card) {
   const findings = [];
   const repo = path.resolve(card.repo);
-  const item = { id: card.ids.join(', '), ids: card.ids, repo, findings };
+  const item = { id: card.ids.join(', '), ids: card.ids, repo, findings, cardStatus: [...new Set(card.statuses ?? [])].join('/') || '—' };
   if (!existsSync(repo)) { add(findings, 'FLAG', 'repo path missing'); return item; }
   const toplevel = git(repo, 'rev-parse', '--show-toplevel')?.trim();
   if (!toplevel) {
@@ -169,6 +174,11 @@ function project(card) {
   if (key(toplevel) !== key(repo)) {
     add(findings, 'FLAG', `not a git repo (inside ${toplevel})`);
     return item;
+  }
+  const last = git(repo, 'log', '-1', '--format=%cs%x09%s')?.trim();
+  if (last) {
+    const [date, ...subject] = last.split('\t');
+    item.last = { date, subject: subject.join('\t') };
   }
   const remotes = git(repo, 'remote');
   if (remotes === null) add(findings, 'WARN', 'cannot read remotes');
@@ -217,6 +227,9 @@ function project(card) {
       const head = cleanSha(git(repo, 'rev-parse', '--verify', '--end-of-options', 'HEAD')?.trim());
       const target = namedBranch ? localBranches.get(namedBranch) : head;
       item.state = { as_of: asOf || null, measuredAgainst: namedBranch || 'HEAD' };
+      item.milestone = scalar(fields.active_milestone) || null;
+      const nextSection = body.split(/^## /m).find((part) => /^Next\b/i.test(part));
+      item.next = nextSection?.split('\n').slice(1).map((l) => l.replace(/<!--.*?-->/g, '').trim()).find(Boolean) || null;
       if (target) {
         // Fresh = no commit after the latest STATE commit touches anything
         // but STATE, the worklog and run reports. as_of is information only.
@@ -328,9 +341,10 @@ const index = new Map(cards.flatMap((card) => [card.project_id, ...card.project_
 const repos = new Map();
 for (const card of cards.filter((card) => scalar(card.repo) && scalar(card.repo).toLowerCase() !== 'none')) {
   const id = key(card.repo);
-  if (!repos.has(id)) repos.set(id, { repo: card.repo, ids: [], state_file: card.state_file, remote: card.remote });
+  if (!repos.has(id)) repos.set(id, { repo: card.repo, ids: [], state_file: card.state_file, remote: card.remote, statuses: [] });
   const group = repos.get(id);
   group.ids.push(card.project_id);
+  group.statuses.push(scalar(card.status) || '?');
   if ((!scalar(group.state_file) || group.state_file === 'none') && scalar(card.state_file)) group.state_file = card.state_file;
 }
 for (const repo of extraRepos) {
@@ -394,6 +408,33 @@ for (const [name, bucket] of copies) {
 }
 const all = [...projects.flatMap((p) => p.findings), ...vaultFindings];
 const summary = { projects: projects.length, flags: all.filter((f) => f.level === 'FLAG').length, warns: all.filter((f) => f.level === 'WARN').length };
+// The board flags the one disagreement that matters for a cross-project view:
+// the card's status against what the repo is doing. The owner decides status;
+// the board only says when the repo disagrees.
+function boardNote(item) {
+  if (!item.last) return item.findings.find((f) => f.level === 'FLAG')?.reason || '';
+  const days = Math.floor((Date.now() - Date.parse(item.last.date)) / 86400000);
+  if (/active/.test(item.cardStatus) && days > 30) return `card active, quiet ${days} days`;
+  if (/paused|done/.test(item.cardStatus) && days <= 7) return `card ${item.cardStatus}, committed ${days} day(s) ago`;
+  if (!item.state) return 'no state file';
+  return '';
+}
+if (board) {
+  const rows = [...projects].sort((a, b) => (b.last?.date || '').localeCompare(a.last?.date || ''));
+  if (json) {
+    console.log(JSON.stringify(rows.map((p) => ({ id: p.id, card: p.cardStatus, last: p.last || null, milestone: p.milestone || null, next: p.next || null, note: boardNote(p) })), null, 2));
+  } else {
+    console.log('# Project board\n');
+    console.log('| project | card | last commit | milestone | next | note |');
+    console.log('|---|---|---|---|---|---|');
+    for (const p of rows) {
+      const cell = (s) => String(s ?? '').replace(/\|/g, '\\|').slice(0, 90);
+      console.log(`| ${cell(p.id)} | ${cell(p.cardStatus)} | ${p.last ? `${p.last.date} ${cell(p.last.subject)}` : '—'} | ${cell(p.milestone || '—')} | ${cell(p.next || '—')} | ${cell(boardNote(p))} |`);
+    }
+    console.log('\nRead live from each repo; nothing was copied into a card.');
+  }
+  process.exit(0);
+}
 if (json) console.log(JSON.stringify({ projects, vault: vaultFindings, summary }, null, 2));
 else {
   console.log('# Project doctor');

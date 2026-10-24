@@ -41,20 +41,25 @@ test('a topic page needs updated:, and reports and deliverables do not belong in
 
 test('a report is dated, typed and points at its topic page', (t) => {
   assert.deepEqual(fire(t, {
-    'reports/2026-10-24_model-pricing.md': fm('type: report\ntopic: "[[models]]"'),
+    'reports/2026-10-24_model-pricing.md': fm('type: report\ncreated: 2026-10-24\nconfidence: low\nsource:\n  - https://example.com/prices\ntopic: "[[models]]"'),
+    'reports/2026-10-25_model-pricing.md': fm('type: report\ncreated: "2026-10-25"\nconfidence: low\nsource: [https://example.com]\ntopic: "[[models]]"'),
+    'reports/.gitkeep': '',
   }), []);
   assert.deepEqual(fire(t, {
     'reports/model-pricing.md': fm('type: knowledge'),
-  }), ['reports/model-pricing.md report-filename', 'reports/model-pricing.md report-type', 'reports/model-pricing.md report-topic-missing']);
+  }), ['reports/model-pricing.md report-filename', 'reports/model-pricing.md report-type',
+    'reports/model-pricing.md report-topic-missing', 'reports/model-pricing.md report-source-missing',
+    'reports/model-pricing.md report-confidence-missing', 'reports/model-pricing.md created-missing']);
 });
 
 test('a deliverable is dated and carries expires:; non-Markdown outputs need only the name', (t) => {
   assert.deepEqual(fire(t, {
-    'outputs/2026-10-24_job-listings.md': fm('type: deliverable\nexpires: 2026-11-23'),
+    'outputs/2026-10-24_job-listings.md': fm('type: deliverable\ncreated: 2026-10-24\nexpires: 2026-11-23'),
     'outputs/2026-10-24_job-listings.csv': 'a,b\n',
+    'outputs/2026-10-24_board.PNG': '',
     'outputs/README.md': '# contract\n',
   }), []);
   assert.deepEqual(fire(t, {
     'outputs/listings.md': fm('type: deliverable'),
-  }), ['outputs/listings.md deliverable-filename', 'outputs/listings.md deliverable-expires-missing']);
+  }), ['outputs/listings.md deliverable-filename', 'outputs/listings.md deliverable-expires-missing', 'outputs/listings.md created-missing']);
 });

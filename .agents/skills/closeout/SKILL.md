@@ -11,9 +11,11 @@ reports vanished into chat, and no coding session ever resumed from a vault
 note. Closeout makes the next session start from the repo.
 
 **The vault is out of reach** (ADR 0052). A project session neither reads nor
-writes the vault; the vault reads the repo later, when the owner runs
-`/harvest` from a vault session. Everything closeout writes lands in this
-repo.
+writes the vault; a vault session may read this repo, read-only, when the
+owner wants the cross-project view (ADR 0056). Everything closeout writes
+lands in this repo, except the two things that belong to every project:
+owner-wide lessons and cross-project traps, which go to the owner's
+user-level kit (steps 5 and 6).
 
 **One fact, one home** (ADR 0050). Where we are is STATE; why is an ADR; what
 happened is `git log`; what a run checked is its report. Closeout updates
@@ -111,10 +113,27 @@ asked in this session.
 If the owner corrected how the agent works this session and it was not
 captured yet, run `/lesson` — once per behaviour, not once per message.
 Feedback on a single deliverable is not a lesson; it belongs in that
-project's own rules (the gate in `/lesson`). It writes into this repo's
-`docs/lessons/` and commits its own paths. If a lesson topic touched this
-session is left `routing: pending`, name it in the closeout summary with its
-proposed change.
+project's own rules (the gate in `/lesson`). `/lesson` picks the store — the
+kit by default, this repo's `docs/lessons/` only when the correction is tied
+to this repository — and commits its own paths there. If a lesson topic
+touched this session is left `routing: pending`, name it in the closeout
+summary with its proposed change.
+
+## 6. Cross-project traps
+
+Ask one question: **did this task hit something that would bite any
+repository using the same library, tool or machine?** A function that behaves
+unexpectedly, a shell or OS quirk, a harness limit. Not a design choice, and
+not something specific to this repository: a pattern read off one repository
+stays in its docs until a second one uses it (ADR 0056).
+
+If so, append it to the matching file in `<kit>/reference/` (`$BRAIN_KIT_DIR`,
+else a `reference/` folder next to the user-level instruction file). Write a
+heading that names the trap, then what happened, the fix, and the repository
+and date it was found. Create a new topic file only when no existing one fits,
+and add its one trigger line to the user-level file ("before <kind of work>,
+read `reference/<file>.md`"). Commit it in the kit by path. Most tasks hit
+nothing: say "no new trap" and move on.
 
 ## Finish
 
@@ -134,7 +153,7 @@ the run or write its report as `ABANDONED` and set `active_run: none`.
 
 - Push unless asked.
 - Read or write anything in the vault — no log, no card, no `MEMORY.md`, no
-  lesson there.
+  lesson there. The kit is not the vault: steps 5 and 6 may write there.
 - Append to `docs/WORKLOG.md`, or rewrite a frozen WORKLOG or earlier run
   reports; they are evidence.
 - Copy one home's fact into another.

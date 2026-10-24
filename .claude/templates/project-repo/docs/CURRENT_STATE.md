@@ -8,7 +8,7 @@ active_run: none
 ---
 # Current state
 
-<!-- project_id = the slug the vault's /harvest maps to its card, notes/<id>.md
+<!-- project_id = the slug of the vault's card for this repo, notes/<id>.md
      implementation_agent: claude-code | codex
      as_of = the sha the checks ran against (information, not the freshness key)
      active_milestone: <id> | none · active_run: docs/runs/<file>.md | none

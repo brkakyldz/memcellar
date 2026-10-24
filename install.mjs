@@ -371,7 +371,7 @@ ${where || '<!-- unanswered -->'}
 
 ## Current focus
 ${focus.length
-    ? focus.map((f) => `- **${f}** — <!-- one line on what it is; link its card once /harvest has written it -->`).join('\n')
+    ? focus.map((f) => `- **${f}** — <!-- one line on what it is; link its card once it has one -->`).join('\n')
     : '<!-- unanswered -->'}
 
 <!-- Filled ${today} by install.mjs from a setup interview.
@@ -446,9 +446,9 @@ for you, and nothing ever stages the whole tree:
     git add core/USER.md core/IDENTITY.md
     git commit -m "setup: personalize brain"
 ${focus.length ? `
-Your current-focus projects have no card in notes/ yet. Cards are written by
-/harvest, which reads a project's repo: open a session in this folder and run
-/harvest <path to the repo> for each, then link the card from USER.md.
+Your current-focus projects have no card in notes/ yet. Open a session in
+this folder and ask for a card for each (.claude/templates/project.md), then
+link it from USER.md. \`node scripts/project-doctor.mjs --board\` shows them all live.
 ` : ''}
 How the brain is wired
 ----------------------
@@ -456,8 +456,9 @@ There is exactly one hook per runtime: SessionStart. Nothing commits at Stop,
 SessionEnd or PreCompact — commits are made by the task that wrote the files.
 The hook works only inside this folder: in any other project it exits at once,
 without a pull and without injecting anything (ADR 0052). A project keeps its
-own state, decisions and lessons in its own repo; when you want the brain to
-learn from one, open a session here and run /harvest <path to the repo>.
+own state, decisions and lessons in its own repo; lessons about how you work
+and traps any project could hit go to your user-level kit (ADR 0056). To see
+every project at once, run node scripts/project-doctor.mjs --board here.
 
 Claude Code — nothing to do. This repo's .claude/settings.json wires the hook.
 

@@ -30,7 +30,8 @@ and the interrupted-run protocol.
 ## C4, C5 — vault side: not a project's business any more
 
 A project session never reads or writes the vault (ADR 0052). The project
-card (C4) is written only by the vault's own `/harvest` skill, which reads
-the repo read-only and keeps the card format in its own folder. The closeout
-vault log (C5) is retired; existing logs are append-only evidence. STATE's
-`project_id` is the one link a repo keeps — `/harvest` maps it to a card.
+card (C4) is written from a vault session, and the vault's
+`scripts/project-doctor.mjs --board` reads this repo read-only for the live view
+(ADR 0056); `/harvest` is retired. The closeout vault log (C5) is retired;
+existing logs are append-only evidence. STATE's `project_id` is the one link a
+repo keeps — the card carries the same id as its filename.
