@@ -2,7 +2,7 @@
 id: 0056
 title: Three homes — the repo, the user-level kit and the vault; owner-wide lessons and cross-project traps live in the kit, harvest is retired
 date: 2026-10-24
-status: proposed
+status: accepted
 amends: [0048, 0052]
 related: [0044, 0045, 0050, 0055]
 ---

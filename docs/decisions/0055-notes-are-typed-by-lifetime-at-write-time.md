@@ -2,7 +2,7 @@
 id: 0055
 title: A note is typed by its lifetime when it is written — topic pages live, reports are dated, deliverables expire
 date: 2026-10-24
-status: proposed
+status: accepted
 amends: [0035]
 related: [0012, 0035, 0043, 0048, 0050]
 ---
