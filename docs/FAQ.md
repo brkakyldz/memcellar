@@ -30,11 +30,31 @@ first-time reader tends to ask. How the parts fit together is
 ## Questions
 
 **Why not a vector database?** Grep, wikilinks, `INDEX.md` and a curated
-`MEMORY.md` cover retrieval for a single-person vault without an embedding
-pipeline to keep in sync. This isn't an assumption: the reference instance
-measured it with 52 golden queries (the reference instance's own set; yours starts with two examples) and found zero paraphrase-misses — every
-failure was a vocabulary mismatch, which an `aliases:` entry fixes. The trigger
-to revisit is written down (`docs/DECISIONS.md`, 0010/0018) and has not fired.
+`MEMORY.md` cover reading for a single-person vault without an embedding
+pipeline to keep in sync. This isn't an assumption. The reference instance
+tested it with a set of queries and found no paraphrase misses: every miss was
+a vocabulary mismatch, which an `aliases:` entry fixes. It later built a
+ranker and a search skill on top, and real sessions almost never used them;
+fresh sessions found their answers with plain `grep` and file reads. Both were
+removed in v1.3 (ADR 0057). What goes wrong at this size is stale pages, not
+missed ones, and the page types handle that when a page is written.
+
+**What is the difference between a topic page, a report and a deliverable?**
+How long each stays true (ADR 0055). A topic page (`notes/`) says how one
+subject stands now and is updated in place — your job search, a tool you use.
+A report (`reports/`) is a set of sourced claims as of one day — a research
+run, a comparison — and is never edited after that day; its date says how old
+it is. A deliverable (`outputs/`) is something to act on and then be done
+with — a list of listings to pick from, a draft — and it expires after 30 days
+unless you keep it. When a page could be either of the last two, ask whether
+it would be *wrong* in three months because the world moved (a report) or
+*useless* because the task is over (a deliverable). If both, it is a report.
+
+**How do I know whether the vault answers well?** Write a few questions whose
+right answer you know, keep them in `.claude/eval/` (outside `notes/`, so the
+vault can't read its own answer key), and ask each in a fresh session. Record
+whether the answer was right and which pages it read. The template ships no
+set; yours has to come from your own vault.
 
 **Can I use only one of Claude Code or Codex?** Yes. Each runtime needs only
 its own SessionStart wiring; the vault content, the rules and the skills are
@@ -69,15 +89,18 @@ is the only database here precisely so undo is free.
 maintenance was built, run, and retired: a pass that runs with nobody watching
 produces work nobody reads. What the session start does instead, once a day,
 is say which pass has real work waiting — ten old logs to distill, a month
-without an audit, a lesson waiting to be routed — and ask. Nothing runs until
+without an audit, a lesson waiting to be routed, deliverables past their
+expiry date — and ask. Nothing runs until
 you say yes (ADR 0049).
 
 **Why doesn't my project session know who I am any more?** Since v1.2 the
 vault and your projects are walled off (ADR 0052): a session in a project gets
 nothing from the vault, because most of what the vault holds is noise for the
 repo at hand. Put how you want every session to work in your runtime's own
-user-level instructions file. When you want the vault to learn from a project,
-open a session in the vault and run `/harvest <path to the repo>`.
+user-level instructions file. Lessons from your corrections and traps any
+repo could hit go to your user-level kit, which every session can reach
+(ADR 0056). To see every project from the vault, run
+`node scripts/project-doctor.mjs --board`.
 
 **What happens if a memory file gets too big?** `MEMORY.md` and `USER.md` have
 character budgets. Going over never silently truncates — the session-start

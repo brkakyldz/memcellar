@@ -2,7 +2,7 @@
 
 The repo half of ADR 0045 (`docs/decisions/0045-project-execution-state-lives-in-the-repo.md`):
 a project's execution state lives in the project's own repo, committed. Since
-v1.2 the project also keeps its own lessons, and a project session neither
+v1.2 the project also keeps the lessons tied to it, and a project session neither
 reads nor writes the brain (ADR 0052); a vault session reads the repo
 read-only when you want the cross-project view (`scripts/project-doctor.mjs --board`,
 ADR 0056). These files are the formats
@@ -15,7 +15,7 @@ into a project repo and they live there.
 | `CLAUDE.template.md` | `CLAUDE.md` | the shim: `@AGENTS.md` plus Claude-only lines |
 | `docs/CURRENT_STATE.md` | `docs/CURRENT_STATE.md` | **the only file that states status** — milestones, open gates, blockers, the next action. At most 80 lines |
 | `docs/runs/TEMPLATE.md` | `docs/runs/TEMPLATE.md` | the shape of a run report — one `docs/runs/YYYY-MM-DD_<slug>.md` per autonomous run: checks, evidence, assumptions, cost, nothing git or STATE already holds |
-| — | `docs/lessons/lesson-<topic>.md` | created by `/lesson` on the first correction: one file per recurring behaviour, entries appended verbatim |
+| — | `docs/lessons/lesson-<topic>.md` | created by `/lesson` on the first correction that is tied to this repo's code or domain: one file per recurring behaviour, entries appended verbatim. Corrections about how the owner wants work done in general go to the owner's user-level kit instead (ADR 0056) |
 
 There is no WORKLOG any more (ADR 0050). Its lines restated commit subjects
 and STATE rows; **`git log` is the project's history** — a commit subject says
@@ -147,11 +147,16 @@ What is written down loses to git, the diff and a fresh test run.
 `/closeout` (in the brain's `.agents/skills/closeout/`) is the last step of
 project work: STATE brought up to date, the run report of an autonomous run,
 this task's merged worktrees removed, and one commit of exactly the paths the
-task wrote. It never touches the brain (ADR 0052). `/lesson` is its partner:
-a correction to how the agent works here goes to `docs/lessons/`, and after a
-second entry on the same behaviour it proposes a rule for this repo's
-`AGENTS.md`, a skill or a check (ADR 0048). `node install.mjs
---link-global-skills` in the brain makes both loadable in any project.
+task wrote. It never touches the brain (ADR 0052). It also asks whether the
+task hit a trap any repository could hit — a library, tool or machine that
+behaves unexpectedly — and if so appends it to the owner's kit, in
+`reference/` (ADR 0056). `/lesson` is its partner: a correction to how the
+agent works goes to the kit's `lessons/` by default, or to this repo's
+`docs/lessons/` when it is tied to this repo, and after a second entry on
+the same behaviour it proposes a rule where the mistake was made — for a
+repo lesson this repo's `AGENTS.md`, a skill or a check (ADR 0048).
+`node install.mjs --link-global-skills` in the brain makes both loadable in
+any project.
 
 ## Optional gates — not shipped
 

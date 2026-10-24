@@ -21,15 +21,14 @@ instance actually running it.
 
 ## 1. Memory tiers
 
-- **Tier 0 — always loaded**: `IDENTITY.md` + `USER.md` + `MEMORY.md` in the
-  vault, `USER.md` + `MEMORY.md` in any other project (the rest is
-  vault-internal). Budgets (ADR 0030): `USER.md` 2000 characters, `MEMORY.md`
-  4000; `IDENTITY.md` is a 40-line convention. Pointers, never detail. The
-  budget protects loading itself — past roughly 10KB of payload the harness is
-  *believed* to stop inlining Tier 0, a hypothesis the hook logs its measured
-  size against on every run rather than assuming.
-- **Tier 1 — on demand**: `notes/` (`memory | playbook | project | knowledge`),
-  reached by pointer and search, never preloaded.
+- **Tier 0 — always loaded**: `IDENTITY.md` + `USER.md` + `MEMORY.md` in a
+  vault session only (ADR 0052). Budgets (ADR 0030): `USER.md` 2000
+  characters, `MEMORY.md` 4000; `IDENTITY.md` is a 40-line convention.
+  Pointers, never detail. The budget protects loading itself — past roughly
+  10KB of payload the harness is *believed* to stop inlining Tier 0, a
+  hypothesis the hook logs its measured size against on every run.
+- **Tier 1 — on demand**: `notes/` and `reports/`, through `INDEX.md`,
+  pointers and `grep`; a ranker was tried and dropped, unused (ADR 0057).
 - **Tier 2 — episodic**: `logs/`, append-only, distilled upward then archived.
 
 ## 2. Cognitive types, different lifecycles
@@ -37,21 +36,20 @@ instance actually running it.
 | Type | Lives in | Write mode | End of life |
 |---|---|---|---|
 | Episodic (what happened) | `logs/` | append-only | distill → archive |
-| Semantic (what is true) | `MEMORY.md`, `notes/` (`memory` / `knowledge`) | reconcile on write | supersede, then archive |
+| Semantic (what is true now) | `MEMORY.md`, `notes/` (`topic`, `decision`, `project`) | reconcile on write | supersede, then archive |
+| Semantic, dated (what was known then) | `reports/` | write-once | ages by its date; archived with its topic page |
+| Deliverable (to act on, then done) | `outputs/` | written for one task | `expires:`, then archive |
 | Procedural (how we work) | `notes/` (`playbook`), skills | deliberate revision only | replace whole sections, never casual append |
 
 - Logs older than 30 days: distill durable facts into notes, then move the
   original to `archive/` — flat, no subfolder (ADR 0028). Curator step.
 - Playbooks are capped at ~150 lines each; if one outgrows that, split it.
-- A long research report that crowds out retrieval may be kept twice: a
-  byte-identical, date-prefixed snapshot in `archive/` and a short live note of
-  the same name in `notes/` that holds the conclusion and points at the
-  snapshot (ADR 0043). A selective pressure valve, not a rule that every long
-  note is split — plans, playbooks and references whose detail *is* the
-  retrieval target stay whole.
+- **Why a page is typed by its lifetime** (ADR 0055): with one type, one-day
+  lists and dated research kept answering weeks after they stopped being
+  true. Now only the topic page claims to be current.
 - **The playbook gate runs both ways.** Promotion takes ≥2 verified successful
   uses (`AGENTS.md`). Two recorded failed or abandoned uses since the last
-  success send a playbook back: demote it to `type: knowledge`,
+  success send a playbook back: demote it to `type: topic` with `updated:`,
   `status: growing`, leave the file where it is, and log the demotion.
 
 ## 3. Distillation
@@ -60,13 +58,16 @@ There is no capture queue, on purpose. Two paths lead into the memory store and
 both end in distillation: **live distillation inside a session** — something is
 said, the note is written then and there — and **`/ingest` of a source** the
 owner saved into `raw/` (ADR 0035). Nothing is queued for a later pass that
-never comes. One rule is load-bearing:
+never comes. Two rules are load-bearing:
 
 - **Nothing enters `notes/` verbatim.** A thought is rewritten in original
   wording, merged into an existing note, or linked into the graph. Unprocessed
   clips are the collector's fallacy, however they arrive.
+- **Every write passes the write gate** (`.agents/write-gate.md`). It closes
+  stale neighbours in the same commit because only the writer knows, at that
+  moment, what changed; a later pass sees a pile.
 
-## 4. Knowledge-note maturity
+## 4. Topic-page maturity
 
 - `status` ladder: `seedling → growing → evergreen`, promoted **only when a
   human or a pass actually rewrites the note** — never on a timer, and never
@@ -92,6 +93,9 @@ never comes. One rule is load-bearing:
   API can move in a week — and a `review_by` a year out mostly reassures.
 - `review_by:` stays optional, for decay that is genuinely predictable.
   Nothing schedules a review: an overdue date is something a reader notices.
+- The type carries most of the staleness signal: expired deliverables, topic
+  pages behind their reports or untouched for 90 days, and unlinked reports
+  are counted at session start and closed by `/curator` on the owner's yes.
 - Stable content (concepts, principles, reflection): no trigger at all.
 - Correction memories are re-challenged after ~90 days; corrections that stack
   without expiry end up contradicting each other.
@@ -113,9 +117,9 @@ never comes. One rule is load-bearing:
   on a clock. The session start may say it is due (ADR 0049); it still runs
   only on the owner's yes.
 - Per candidate fact, exactly one decision: **ADD / MERGE / SUPERSEDE / NARROW
-  / NOOP**, never blind append. Before ADD, search for near-duplicates.
-  NARROW shrinks a fact to what its source actually supports — a hedge or a
-  date the rewrite lost, or a claim stated more firmly than its evidence.
+  / NOOP**, never blind append; before ADD, list the neighbours. NARROW
+  shrinks a fact to what its source actually supports — a hedge or a date
+  the rewrite lost, or a claim stated more firmly than its evidence.
 - On contradiction **newer evidence wins and the override is logged** in the
   surviving note or session log — supersession is visible, never silent.
 - **A reversal rewrites the head.** When a correction reverses a note's stance,
@@ -132,7 +136,7 @@ never comes. One rule is load-bearing:
   through every merge and move, and never enter `USER.md` or `IDENTITY.md`.
   A merge preserves each fact's source, date, scope and uncertainty; a newer
   line does not outrank an older one merely for being newer.
-- Corroboration gate: a fact seen once enters `notes/` (`type: memory`) at
+- Corroboration gate: a fact seen once enters the vault in a report at
   `confidence: low` and reaches `MEMORY.md` only on a **second independent
   source** — independence being a property of the source, not a count of
   sessions. Re-reading one summary is one observation seen twice (ADR 0038).

@@ -66,54 +66,49 @@ This used to be the input of a computed acceptance rate fed by a proposals
 sweep; both were retired with proposal production (ADR 0038). The line
 survives as a convention for the skills and feeds nothing that scores them.
 
-## B11 — `retrieval-eval.mjs`
+## `note-neighbours.mjs` — the neighbour step of the write gate (ADR 0055)
 
-- **What:** ranks `notes/` + `core/` and re-runs the `query → expected
-  note` pairs in `.claude/eval/golden-set.md`, reporting recall@1/@3/@5 plus
-  every miss. The default ranker, `fielded`, weights each matched token by
-  IDF, four times over when it is in the filename, title, aliases or tags;
-  `legacy` and `frequency-free` keep the older scorers. `expand` fuses the
-  rankings of the query and its keyword variants (from
-  `.claude/eval/expansions.md`, or `--variant` in query mode) — the arm
-  `/recall` uses, after it passed the gate in the reference instance.
-  `--query "<terms>"` is the ranked lookup `/recall` runs.
-  `--compare BASELINE,CANDIDATE` runs an exact sign test per query and a gate
-  verdict, and `--set golden|real|both` adds the held-out
-  `.claude/eval/real-prompts.md` — real questions, written down before
-  anyone tuned a ranker on them. A new ranker becomes the default only
-  through that gate.
-- **When:** from `/audit`, and ad hoc:
-  `node scripts/retrieval-eval.mjs [--verbose]`.
-- **Output:** Markdown on stdout. Exits 0 always — a failing row is a finding,
-  not a broken build.
-- **Language:** folding and stopwords are built for English and Turkish — a
-  Turkish-locale lowercase with a dotless-i fold, then an accent strip, and a
-  short stopword list in both. Another query language with its own case rules
-  adapts `normalizeText` and `STOPWORDS` in the script.
-- **What it does not measure:** whether a session answered anything correctly.
-  Recall also drifts down as the corpus grows, because more notes match the
-  same terms — competition, not rot.
-- **Kill criterion:** if every miss for two consecutive months is fixed by an
-  `aliases:` entry, the golden set is measuring vocabulary, not retrieval —
-  shrink it. If misses cluster on `paraphrase-miss`, that is the evidence ADR
-  0018 asked for.
+- **What:** before a page is written, lists the pages already on the same
+  subject in `notes/`, `reports/` and `outputs/` (top level, `.md` only;
+  `archive/` is never a neighbour). A page scores on title words against its
+  filename, first heading and aliases, plus a bonus for shared tags; with
+  `--slug <page>` also every page that links to it or that it links to. A
+  page whose name differs from another only by a `-v2`-style or date suffix
+  is flagged as a version; reports are never flagged, because a topic page
+  and its dated reports sharing a name is the normal shape. No embeddings,
+  no index: it reads the files each time.
+- **When:** step 3 of `.agents/write-gate.md`, run by `/file`, `/ingest` and
+  `/curator`, or by hand:
+  `node scripts/note-neighbours.mjs "<subject words>" [--tags a,b] [--slug name] [--min 0.3] [--json]`.
+  Run it once with English words and once with the owner's-language words;
+  Turkish letters are folded to ASCII on both sides, and another language
+  with its own case rules adapts `lower()` and `STOP` in the script.
+- **Output:** a Markdown table on stdout (score, page, type, status, date,
+  why, flags), at most 15 rows. Read-only.
+- **Failure that demanded it:** in the reference instance, versions of the
+  same list were all live and nothing said which was current, and pages
+  describing an old decision kept saying it after it changed (ADR 0055).
+- **Kill criterion:** if writers stop opening what it lists, or `-v2` pages
+  keep appearing beside it, the step is ceremony — fold it back into a
+  `grep` in the write gate.
 
 ## B15 — `brain-doctor.mjs`
 
 - **What:** one read-only table over the brain path of both runtimes: exactly
   one SessionStart per runtime, no retired v1.0 git-writing hook still wired,
   the `.claude/skills` link, and — if you linked them — the user-level
-  `closeout`/`lesson` links (and no user-level `recall` link left from v1.1,
+  `closeout`/`lesson` links (any other vault skill linked at user level warns,
   ADR 0052); Tier-0 budgets; **Tier-0 integrity** (invisible or bidirectional
   control characters in `core/*.md` fail, uncommitted changes under `core/` or
   the hook folders warn); **provenance** (a `confidence: low` note linked from
   `MEMORY.md` fails the corroboration gate; `source:` notes without
   `confidence:` and undated `MEMORY.md` bullets warn); the last recorded
-  session-start payload; the `/recall` contract (the vault skill and the
-  resources it names); **retired terms** (references in skill and hook files
-  to machinery that no longer exists, from the list at the top of the script);
-  the current retrieval score; top-level entries against the `AGENTS.md`
-  folder map; and Git delivery state.
+  session-start payload; **retired terms** (references in skill and hook
+  files to machinery that no longer exists, from the list at the top of the
+  script — since v1.3 that includes `retrieval-eval`, `golden-set`, the
+  recall and harvest skills and `harvested_at`); top-level entries against
+  the `AGENTS.md` folder map, which now includes `reports/` and `outputs/`;
+  and Git delivery state.
 - **When:** after setup, after changing hook wiring, after upgrading, or when
   memory loading is suspected: `node scripts/brain-doctor.mjs`. `--json` for
   tooling, `--strict` to exit 1 on any failure.
@@ -136,9 +131,17 @@ survives as a convention for the skills and feeds nothing that scores them.
   skills folder that exists — the vault's and each project's
   `.agents/skills`, `~/.agents/skills`, and the user-level folders of both
   runtimes (`CLAUDE_CONFIG_DIR` / `CODEX_HOME` respected).
-- **When:** from a vault session, before `/curator` or `/harvest` — a project
-  session never runs it, because projects and the vault are walled off (ADR
-  0052): `node scripts/project-doctor.mjs`. `--repo <path>` adds a repo with
+- **`--board`:** the cross-project view that replaced the harvest skill (ADR
+  0056). One row per repo, newest commit first: the card's status, the last
+  commit's date and subject, STATE's `active_milestone`, the first line of
+  its `## Next` section, and a note when the card and the repo disagree (a
+  card `active` with no commit for 30 days, a card `paused` or `done` with a
+  commit in the last 7, or no state file). `--board --json` for tooling.
+  Nothing is copied into a card. `maintenance.mjs run` prints it too.
+- **When:** from a vault session, before `/curator` or whenever you want the
+  cross-project view — a project session never runs it, because projects and
+  the vault are walled off (ADR 0052): `node scripts/project-doctor.mjs`.
+  `--repo <path>` adds a repo with
   no card yet; `--kit <dir>` (or `BRAIN_KIT_DIR`) adds a separate skills kit
   to the drift scan, if you keep one; `--since YYYY-MM-DD` moves the date
   from which a log `project:` id with no card is a FLAG rather than legacy
@@ -161,10 +164,14 @@ survives as a convention for the skills and feeds nothing that scores them.
   the same list the session-start "Maintenance due" line shows: `/curator`
   when 10 or more logs are past 30 days, `/audit` after 30 days without an
   audit log or when a note is past `review_by`, the link sweep after 7 days,
-  and lesson topics waiting to be routed. `node scripts/maintenance.mjs run`
-  does the deterministic half: link sweep, compiled checks over every note,
-  retrieval eval, brain doctor. Last-run dates come from the logs the passes
-  already write, so there is no stamp file to keep.
+  lesson topics waiting to be routed, and — added to the `/curator` item, or
+  raised on its own — the counts of what time made stale
+  (`lifetimeFindings` in `lib.mjs`: expired deliverables, unlinked reports,
+  topic pages behind their reports, and the rest the `lifetime-sweep` check
+  lists). `node scripts/maintenance.mjs run` does the deterministic half:
+  link sweep, compiled checks over every page in `notes/`, `reports/`,
+  `outputs/` and `core/`, brain doctor, project board. Last-run dates come
+  from the logs the passes already write, so there is no stamp file to keep.
 - **When:** after the owner says yes to the notice, or by hand. Never
   scheduled, never run unasked.
 - **Output:** `logs/YYYY-MM-DD_link-sweep.md`, `check-fire` ledger lines, the
@@ -176,8 +183,8 @@ survives as a convention for the skills and feeds nothing that scores them.
 ## `vault-metrics.mjs`
 
 - **What:** deterministic counts from the signal ledger and `notes/` — check
-  fires by month, correction recurrence by class, retrieval failures by cause,
-  and lesson and check survival. It counts and dates; it draws no conclusions.
+  fires by month, correction recurrence by class, and lesson and check
+  survival. It counts and dates; it draws no conclusions.
   Named `flywheel-metrics.mjs` until the reference instance retired the
   sections that scored suggestions and note re-use (ADR 0038, 0039).
 - **When:** from `/audit`, or ad hoc: `node scripts/vault-metrics.mjs`.
@@ -188,8 +195,17 @@ survives as a convention for the skills and feeds nothing that scores them.
 
 ## `.claude/hooks/checks.mjs` — the compiled checks
 
-- **What:** the rules that are checked as code — wikilink short form, note
-  frontmatter, `INDEX.md` coverage (ADR 0019, 0022, 0035). It lives beside the
+- **What:** the rules that are checked as code — wikilink short form (in
+  `notes/`, `core/`, `reports/` and `outputs/`), note frontmatter, `INDEX.md`
+  coverage (ADR 0019, 0022, 0035), and two lifetime checks (ADR 0055).
+  `note-lifetime` checks each type in its home: a topic page carries
+  `updated:`; a report in `reports/` is named `YYYY-MM-DD_<slug>.md` and
+  carries `type: report`, `topic:`, `source:` and `confidence:`; a
+  deliverable in `outputs/` is named `YYYY-MM-DD_<slug>.<ext>` and carries
+  `expires:`; a report or deliverable inside `notes/` fires; and a changed
+  `notes/` page that still says `knowledge` or `memory` fires `legacy-type`
+  (lesson files excepted). `lifetime-sweep` lists what time made stale, for
+  the files it is handed. It lives beside the
   hook because the Stop checkpoint ran it until v1.1. Since v1.2
   `maintenance.mjs run` is its caller again (ADR 0049).
 - **When:** before a commit — `node .claude/hooks/checks.mjs` for the working
@@ -213,11 +229,15 @@ with `node scripts/tests/<name>.test.mjs`; each exits 1 on a failure.
   `link-sweep.mjs`) and their command lines (`checks.mjs` exit codes,
   `--staged`, `--all`, `--record`; link-sweep's `BRAIN_DIR` and `--help`).
 - `project-doctor.test.mjs` — `project-doctor.mjs` on fixture vaults, repos
-  and home folders.
-- `brain-doctor.test.mjs` — the Tier-0 integrity, provenance, `/recall`
-  contract and retired-term checks.
-- `retrieval-eval.test.mjs` — the scorer, the expansion variants and the
-  sign-test gate.
+  and home folders, including `--board`.
+- `brain-doctor.test.mjs` — the Tier-0 integrity, provenance, retired-term
+  and user-level skill checks.
+- `note-lifetime.test.mjs` — the `note-lifetime` check: each type in its
+  home, with the fields its lifetime needs.
+- `lifetime-sweep.test.mjs` — `lifetimeFindings`, the `lifetime-sweep` check
+  and the maintenance notice that counts them.
+- `note-neighbours.test.mjs` — the neighbour finder: versions, aliases in
+  another language, links in either direction.
 - `session-start.test.mjs` — the SessionStart hook: inert outside the vault,
   notices recorded only once delivered, the pull skipped while another task's
   rebase or merge is in progress.
@@ -232,5 +252,7 @@ with `node scripts/tests/<name>.test.mjs`; each exits 1 on a failure.
 | Proposals sweep (`proposals.mjs`), `/flywheel`, the acceptance rate | v1.1 | The queue aged instead of being answered (ADR 0038) |
 | Maintenance due line (`maintenance-stamp.mjs`) | v1.1 | Measured staleness against a schedule nothing ran (ADR 0038). v1.2's `maintenance.mjs` is a different design: due is computed from outstanding work, with no stamp, and nothing runs without a yes (ADR 0049) |
 | Global-mode injection into project sessions | v1.2 | Project sessions received the vault's `USER.md` and `MEMORY.md`, mostly noise for the work at hand (ADR 0052) |
-| Retrieval-eval arms `bm25`, `alias-addonly`, `prefix5` | v1.2 | Each failed the sign-test gate on the reference instance; `expand` passed and is kept |
+| Retrieval-eval arms `bm25`, `alias-addonly`, `prefix5` | v1.2 | Each failed the sign-test gate on the reference instance; the rest of the eval went in v1.3 |
+| Retrieval eval (`retrieval-eval.mjs`), its golden, real-prompt and expansion sets, the recall skill and the retrieval-failure signal | v1.3 | Real sessions almost never called the ranker; fresh sessions answered with plain grep and reads, and the one wrong answer was not a search miss. Quality is now judged by answers (ADR 0057) |
+| The harvest skill and the cards' `harvested_at` / `harvested_on` | v1.3 | It never ran in the reference instance; lessons now go to their home at capture, cross-project traps to the kit at closeout, and project status is read live by `project-doctor.mjs --board` (ADR 0056) |
 | Scheduled maintenance, off-site bundle, daily resurfacer | before v1.0 — the code was never in the v1.0 tree, though its `scripts/README.md` still described it | ADRs 0021, 0032, 0033 |

@@ -24,7 +24,7 @@ Four constraints drive every other decision:
 2. **Git is the only database.** Every change is a commit, `git log` is the
    audit trail, `git revert` is undo. That buys versioning, sync, conflict
    handling and backup from one mechanism instead of four.
-3. **Context is a finite budget, not storage.** Retrieval is tiered and
+3. **Context is a finite budget, not storage.** Reading is tiered and
    pointer-based; the always-loaded surface is capped in characters.
 4. **Fail-open automation.** No hook or script may block a working session.
    Every hook path exits 0.
@@ -50,9 +50,10 @@ Two more were added by what went wrong:
         |
         +-- AGENTS.md   the constitution; CLAUDE.md only imports it
         +-- .agents/    judgment procedures (/ingest, /curator, /lesson …) — the
-        |               one skills copy; .claude/skills is a link to it
-        +-- .claude/    shared hook implementation, note and project-repo
-        |               templates, eval set
+        |               one skills copy; .claude/skills is a link to it —
+        |               and write-gate.md, the procedure every writer runs
+        +-- .claude/    shared hook implementation, compiled checks, page and
+        |               project-repo templates
         +-- .codex/     thin Codex SessionStart adapter
         +-- scripts/    deterministic maintenance (by hand or from a skill)
 ```
@@ -75,14 +76,17 @@ ways within a week.
 | Folder | Cognitive type | Write mode | End of life |
 |---|---|---|---|
 | `logs/` | Episodic — what happened | append-only | distill → `archive/` |
-| `core/MEMORY.md`, `notes/` (`memory` / `knowledge`) | Semantic — what is true | reconcile on write | supersede → archive |
+| `core/MEMORY.md`, `notes/` (`topic`, `decision`, `project`) | Semantic — what is true now | reconcile on write | supersede → archive |
+| `reports/` | Semantic, dated — what was known on one day | write-once | never archived for age; its date says how old it is |
+| `outputs/` | Deliverables — something to act on, then done with | written for one task | `expires:` → `archive/` |
 | `notes/` (`playbook`), `.agents/skills/` | Procedural — how we work | deliberate revision | replace whole sections |
 | `raw/` | Evidence — what a source said | write-once, by the human | never; a source is permanent |
 | `.claude/*.json` sidecars | Derived machine state | overwrite, lock-free | discarded; never committed |
 
-Mixing the first three is the classic failure of "one notes folder": episodic
-content grows without bound, semantic content gets appended to instead of
-reconciled, and procedural content drifts because nobody owns it.
+Mixing these is the classic failure of "one notes folder": episodic content
+grows without bound, semantic content gets appended to instead of reconciled,
+procedural content drifts because nobody owns it, and a one-day answer keeps
+answering questions weeks after it stopped being true.
 
 `raw/` is separate for a different reason. It is the only place verbatim
 external content may live, which is what makes "nothing enters `notes/`
@@ -90,12 +94,41 @@ verbatim" enforceable rather than aspirational — without a legal home, a quote
 paragraph either gets paraphrased into a note (losing the fidelity that made it
 worth keeping) or is lost.
 
-A long research report that crowds out retrieval may be split in two: a
-byte-identical, date-prefixed snapshot in `archive/` that owns the sources and
-the detail, and a short live note of the same name in `notes/` that holds the
-conclusion (ADR 0043).
+### Page types and the write gate
 
-## 4. Retrieval: tiers, not search
+Every page gets its type before it is written, and the type is decided by how
+long the page stays true (ADR 0055). `notes/` holds the living layer: `topic`
+pages (how one subject stands now, with `updated:`), `decision`, `project`
+and `playbook`. A `report` goes to `reports/YYYY-MM-DD_<slug>.md` and names
+its topic page in `topic:`. A `deliverable` goes to
+`outputs/YYYY-MM-DD_<slug>.<ext>` with an `expires:` date. Each type has a
+template in `.claude/templates/`. `knowledge` and `memory` are no longer
+written; pages from before ADR 0055 keep them until someone reclassifies them,
+and the vault's own lesson files keep `type: memory` from their template.
+
+The write gate is one procedure, `.agents/write-gate.md`, run by `/file`,
+`/ingest`, `/curator` and any outside skill that writes into the vault:
+
+1. **NOOP first.** Nothing is written when it is already written somewhere,
+   or can be derived from a file that exists, or is "what happened, when"
+   (that is `git log`).
+2. **Type it** by three questions, in order: something to act on and then be
+   done with is a deliverable; sourced claims as of one date that nobody will
+   keep current are a report; anything else updates the subject's topic page.
+3. **Find the neighbours** with `node scripts/note-neighbours.mjs`, which
+   lists the pages in `notes/`, `reports/` and `outputs/` whose titles,
+   aliases, tags or links say they are on the same subject, and flags a
+   `-v2`-style name.
+4. **Close what the write made stale**, in the same commit: `valid_to`,
+   `superseded_by` and a visible first line on every neighbour that still
+   says the old thing.
+
+A report or a deliverable still adds a line and a link to its topic page, so
+`INDEX.md` lists only the living layer and gives `reports/` and `outputs/` one
+row each, as folders. The two folders' contracts are `reports/README.md` and
+`outputs/README.md`.
+
+## 4. Reading: tiers, not search
 
 - **Tier 0 — always loaded in a vault session.** `IDENTITY.md` (40 lines),
   `USER.md` (2000 chars), `MEMORY.md` (4000 chars); a session in any other
@@ -104,12 +137,14 @@ conclusion (ADR 0043).
   *before* writing. `MEMORY.md` holds **pointers, never detail**: one fact per
   line, ending in a `[[wikilink]]`. `OPEN_QUESTIONS.md` gets a pointer, not
   its content.
-- **Tier 1 — the catalog, then the page.** `INDEX.md` lists every note in one
-  line each. Read it, pick the two or three pages that matter, open those.
-  `node scripts/retrieval-eval.mjs --query "…"` ranks `notes/` + `core/` by
-  query-token overlap when the catalog is not enough.
-- **Tier 2 — grep and the episodic stream.** `logs/` and full-text search, when
-  the first two don't answer.
+- **Tier 1 — the catalog, then the page.** `INDEX.md` lists every page of the
+  living layer in one line each, and each topic page lists its reports. Read
+  it, pick the two or three pages that matter, open those. When the catalog
+  is not enough, `grep` over `notes/`, `reports/` and `core/`, in English and
+  in the language the question was asked in. This is a rule in `AGENTS.md`,
+  not a skill (ADR 0057): before answering a question the vault may already
+  answer, read, then cite the page.
+- **Tier 2 — the episodic stream.** `logs/`, when the first two don't answer.
 - **`archive/` is not a tier below these** — it is live evidence at Tier 1
   depth. Superseded decisions are meant to be read before an expensive new one.
 
@@ -122,12 +157,24 @@ Tier-0 content. Over budget, the rule is **consolidate, never silently
 truncate**. Writer-only HTML comments are stripped before injection, so the
 text that is counted and the text that is delivered are the same text.
 
-Why there is no vector index: it was measured, not assumed. A golden set of 52
-queries against the reference instance found zero paraphrase-misses — every
-failure was a vocabulary mismatch (the query used a different word, or another
-language's inflection), whose remedy is an `aliases:` line, not an embedding.
-`scripts/retrieval-eval.mjs` re-runs `.claude/eval/golden-set.md` so that
-finding stays falsifiable, and the trigger to revisit is written down.
+Why there is no vector index, and no ranker either: both were measured. A set
+of test queries against the reference instance found no paraphrase misses;
+every miss was a vocabulary mismatch (another word, or another language's
+inflection), which an `aliases:` line fixes. A ranker and a query-rewriting
+skill were then built and tested, and real sessions almost never called them.
+Fresh sessions given questions whose answers had recently changed found them
+with plain `grep` and `Read`, and the one wrong answer came from a rule kept
+in the wrong place, not from a search miss (ADR 0057). At a few hundred pages
+an agent with an index and `grep` finds what is there. What it cannot do is
+tell a current page from a stale one, and the page types above address that
+at write time.
+
+Quality is measured by answers, not by a ranker. If you keep an eval, it is a
+short list of questions whose right answer you have confirmed, kept in
+`.claude/eval/` so the vault can never read its own answer key. Each question
+is asked in a fresh session, and you record whether the answer was right and
+which pages were read. The template ships no eval set; `/audit` names the
+latest result when one exists.
 
 ## 5. Runtime: two runtimes, one hook each
 
@@ -185,12 +232,19 @@ Only the parts of the policy that exist as running code belong here.
   computed from the logs the passes already write: `/curator` when ten or more
   logs are past thirty days, `/audit` after thirty days without one or when a
   note is past `review_by`, the link sweep after seven days, and lesson topics
-  waiting to be routed. It announces; `scripts/maintenance.mjs run` acts, and
-  only after the owner's yes.
+  waiting to be routed. It also counts what time has made stale
+  (`lifetimeFindings` in `lib.mjs`, ADR 0055): a deliverable past `expires:`,
+  a report no page in `notes/` links, a topic page older than its newest
+  report or untouched for 90 days, a `valid_to` that passed with nothing
+  superseding it, a `-v2`-style page beside its original, and, in
+  `core/USER.md`, `core/MEMORY.md`, topic pages and project cards, an
+  "until <date>" that has passed or a cited ADR range that newer ADRs have
+  outrun. Those counts ride on the `/curator` item. It announces;
+  `scripts/maintenance.mjs run` acts, and only after the owner's yes.
 - **`brain-doctor.mjs`** reports, read-only, whether each runtime has exactly
   one SessionStart and no retired git-writing hook, whether the skills link
   resolves, whether the optional user-level `/closeout` and `/lesson` links
-  resolve (and no v1.1 `/recall` link is left), whether the budgets hold,
+  resolve (and no other vault skill is linked at user level), whether the budgets hold,
   whether `core/` carries invisible control characters, whether a
   `confidence: low` note is linked from `MEMORY.md` (the corroboration gate),
   and whether a skill or hook still names retired machinery.
@@ -198,7 +252,13 @@ Only the parts of the policy that exist as running code belong here.
 Written as code but **not run automatically** since v1.1:
 
 - **Compiled checks** (`.claude/hooks/checks.mjs`) — wikilink short form, note
-  frontmatter, `INDEX.md` coverage. They ran from the Stop checkpoint until
+  frontmatter, `INDEX.md` coverage, `note-lifetime` (each type in its folder
+  with the fields its lifetime needs: `updated:` on a topic page, `topic:`,
+  `source:` and `confidence:` on a report, `expires:` on a deliverable; a
+  changed page in `notes/` that still says `knowledge` or `memory` fires
+  `legacy-type`, lesson files excepted) and
+  `lifetime-sweep` (the stale findings above, for the files it is handed;
+  under `--all` that is the whole vault). They ran from the Stop checkpoint until
   v1.1. Now they run when someone runs them — `scripts/maintenance.mjs run`
   after a yes to the maintenance line (ADR 0049), or by hand:
   `node .claude/hooks/checks.mjs [--staged | --all] [--record]` prints every
@@ -238,15 +298,23 @@ a rule, which is why it is drawn rather than described.
         | episodic, append-only, tagged         |
         | decision|bugfix|feature|…             |  /ingest — read it, discuss it,
         |                                       |  then distill and reconcile
-        | /curator, at 30 days: extract         |
-        | durable facts, archive the original   |
-        v                                       v
-  notes/<topic>.md  <-------------------------- +   semantic, confidence: low,
-        |                                            source: on anything external
+        | /curator, at 30 days: extract         v
+        | durable facts, archive the      reports/YYYY-MM-DD_<slug>.md
+        | original                              |  dated, write-once,
+        |                                       |  confidence: low, source:
+        |                                       |  the one or two lines that
+        v                                       v  change what is true now
+  notes/<topic>.md  <-------------------------- +
+        |   the topic page, kept current; every write passes the write gate
+        |
         |  corroboration gate: a second independent source confirms it
         v
   core/MEMORY.md          one pointer line, Tier 0, 4000 chars
 ```
+
+What you work out in conversation follows the same gate through `/file`: an
+update to a topic page, a dated report, or a deliverable in `outputs/` that
+expires.
 
 Three properties are deliberate:
 
@@ -265,9 +333,9 @@ Three properties are deliberate:
 
 ## 8. Known trade-offs
 
-- **No semantic search.** Retrieval is catalog + pointers + grep + wikilinks.
+- **No semantic search.** Reading is catalog + pointers + grep + wikilinks.
   Fine at single-vault scale and it keeps the substrate portable; revisit when
-  the retrieval-failure ledger says so, not before.
+  answers go wrong because a page that existed was not found, not before.
 - **Task-owned commits trade automatic recovery for ownership.** An interrupted
   task may leave a dirty tree until it resumes; the gain is that concurrent
   tasks cannot be swept into one another's commits. The session-log rule is
@@ -303,28 +371,29 @@ correction** — agents confabulate their own failure stories. It first asks
 whether the correction is about a behaviour that will recur on a different
 task; feedback on one deliverable is applied there and goes no further. A
 lesson is one file per recurring behaviour (`lesson-<topic>.md`), entries
-appended and never edited — in the vault `notes/`, in a project that
-project's `docs/lessons/` (ADR 0052).
+appended and never edited. Where the file lives is decided at capture by one
+question, would this correction recur in a different repository (ADR 0056)?
+Usually it would, so the default is the owner's user-level kit
+(`<kit>/lessons/`), where corrections from every project meet and the second
+one can be counted. A lesson tied to one repository's code or domain goes to
+that repo's `docs/lessons/`; one about running the vault itself goes to the
+vault's `notes/`.
 
 The corroborate-and-route half used to be a `/flywheel` pass that mined the
 ledger and proposed checks into an approval queue. It was retired with proposal
 production (ADR 0038), and for a month nothing routed anything. Since ADR 0048
 routing happens at capture: when a topic gets a second entry from a different
 task, the capturing agent proposes one concrete change to the place that
-produced the mistake — a skill, `AGENTS.md`, `USER.md`, or a check — and the
-owner approves or refuses it. The answer is kept in the file (`routing:`). A
+produced the mistake — for a kit lesson the user-level instruction file or
+the kit skill that ran, for a repo lesson that repo's `AGENTS.md`, skill or
+check, for a vault lesson a vault skill or a check — and the owner approves
+or refuses it. The answer is kept in the file (`routing:`). A
 new entry on a routed topic means the rule failed, and the next proposal moves
 it closer to the work. `scripts/vault-metrics.mjs`
 is the deterministic count that informs that decision — check fires,
 correction recurrence by class, lesson and check survival — with no LLM call
-anywhere in it.
-
-`/recall` is the four-layer lexical retrieval procedure. It first rewrites
-the question into two or three keyword variants in the vault's language and
-fuses their rankings (the `expand` arm of `retrieval-eval.mjs`, which passed a
-sign-test gate on held-out real prompts in the reference instance), and it
-logs a `retrieval-failure` signal with a cause when the vault misses. That signal is
-the only thing that can reverse the no-vector-index decision.
+anywhere in it. It reads the vault's ledger only, so it counts the vault's
+own lessons, not the kit's or a repo's.
 
 The seed checks were bootstrapped from standing constitution rules rather than
 waiting for organic corroboration. That shortcut has a cost worth knowing: a
@@ -332,20 +401,34 @@ check that never fires cannot be distinguished from a check that *cannot* fire,
 so a check earns its place by catching a synthetic offender, not by staying
 quiet.
 
-## 10. Project work: the vault and the repo
+## 10. Project work: the repo, the kit and the vault
 
-Two stores, split by what the record is for (ADR 0045), and walled off from
-each other (ADR 0052). Each fact has one home (ADR 0050).
+Three homes, split by what the record is for (ADR 0045, 0056), with the vault
+walled off from projects (ADR 0052). Each fact has one home (ADR 0050).
 
-- **The vault holds what outlives a project:** distilled knowledge, the
-  vault's own lessons, one thin card per project (`notes/<project_id>.md` —
-  why it exists, where it lives, what it taught), and short harvest logs.
 - **Each project repo holds its own execution state and memory, committed:**
   `AGENTS.md` (the contract — timeless, no status), `docs/CURRENT_STATE.md`
   (the only file that states status), `docs/decisions/` (why),
-  `docs/lessons/` (what the agent learned there), `docs/runs/` (what an
+  `docs/lessons/` (lessons tied to that repo), `docs/runs/` (what an
   autonomous run checked), and its plans, research and evidence. `git log` is
   its history; there is no WORKLOG any more.
+- **The owner's user-level kit holds what every project needs**, and is
+  optional: the working rules in the user-level instruction file, which every
+  session loads; owner-wide lessons in `<kit>/lessons/`; and traps that would
+  hit any repository (a library, tool or machine that behaves unexpectedly)
+  in `<kit>/reference/<topic>.md`, each with one trigger line in the
+  user-level file so its body loads only when the work matches. `<kit>` is
+  `$BRAIN_KIT_DIR`, or folders next to the user-level instruction file. It
+  must be private, because lessons quote the owner verbatim.
+- **The vault holds the owner's own life and knowledge:** topic pages,
+  reports, decisions that cross projects, the vault's own lessons, and one
+  thin card per project (`notes/<project_id>.md` — why it exists, where it
+  lives, what it taught).
+
+A trap goes to the kit on first sight, because it will hit any repository
+that uses the same thing. A design pattern read off one repository stays in
+that repository's docs until a second repository uses it. A rule for one
+project only lives in that project's `AGENTS.md`.
 
 The lifecycle of one piece of project work:
 
@@ -358,16 +441,16 @@ The lifecycle of one piece of project work:
         v
   /closeout                        STATE, the run report of an autonomous run,
         |                          this task's worktrees, one commit of exactly
-        |                          the paths it wrote — never the vault
+        |                          the paths it wrote — never the vault;
+        |                          a lesson goes to the kit or the repo, a
+        |                          trap any repo could hit to <kit>/reference/
         :
-        :  later, when the owner asks, from a vault session
+        :  later, when the owner wants the cross-project view, from a vault session
         v
-  /harvest <repo>                  reads STATE, ADRs, lessons and git log since
-        |                          the last harvest; writes nothing in the repo
-        v
-  vault: notes/<project_id>.md     the card (repo, state_file, why, what it
-         logs/…_harvest log        taught — never a copy of status), copied
-                                   lessons with source:, one short log
+  project-doctor.mjs --board       one row per card's repo, read live: last
+                                   commit, active milestone, STATE's Next
+                                   line, and where the card's status and the
+                                   repo disagree; writes nothing anywhere
 ```
 
 Why the split runs this way: in the reference instance, the one project that
@@ -378,6 +461,14 @@ completion reports went to chat and were lost; and no coding session ever
 resumed from a vault note. A record earns its keep by being read at the moment
 it matters. Status is read at resume time, inside the repo; knowledge that
 should carry into the *next* project has to survive the repo being closed.
+
+Why the kit: in the reference instance, the wall's one door back, a manual
+harvest pass, never ran. Projects captured no lessons, the cross-project
+traps they needed most sat in the vault out of their reach, and a behaviour
+corrected once in each of two repos never counted as a second correction.
+The kit is already loaded in every session, so rules and traps reach projects
+without a project ever opening the vault, and each home is written by the
+session that holds the knowledge, at the moment it has it (ADR 0056).
 
 Why the wall: until v1.2 a project session received the vault's `USER.md`,
 the whole of `MEMORY.md` and a block of standing rules, and wrote a short log
@@ -393,15 +484,18 @@ How the pieces meet:
   them) and `.claude/templates/project.md` (the card). Copied into a
   project, they live there; the vault never reads them back.
 - **Two skills may cross into projects** — `/closeout` and `/lesson`, and
-  both write only into the repo the session is in. `node install.mjs
-  --link-global-skills` links them into each runtime's user-level skills
-  folder, opt-in and reversible. `/recall` and `/harvest` work on the vault
-  and stay vault-scoped, like everything else in `.agents/skills/`.
-- **`/harvest` is the only road back.** Run from a vault session, it reads a
-  repo read-only — since the card's `harvested_at` commit — and updates the
-  card, copies a lesson that matters beyond the project verbatim with a
-  `source:` pointer, and writes one short log. Project cards are written only
-  this way.
+  both write only into the repo the session is in or the owner's kit, never
+  the vault. `node install.mjs --link-global-skills` links them into each
+  runtime's user-level skills folder, opt-in and reversible. Everything else
+  in `.agents/skills/` works on the vault and stays vault-scoped.
+- **The vault reads a project, and never writes one.** From a vault session,
+  `node scripts/project-doctor.mjs --board` shows every project at once, read
+  live from each repo. A vault session may also read a repo to answer a
+  cross-project question; what it records is the cross-project conclusion
+  ("finish A before B"), never the project's own detail. A card is written
+  from a vault session when the owner asks for one, from
+  `.claude/templates/project.md`, and its `status:` is the owner's call; the
+  board says when the repo disagrees.
 - **An interrupted run is visible from files alone:** STATE names an
   `active_run` whose report is missing or has no `status:`. The next session
   trusts git, the diff and a fresh test run over what is written down, then
@@ -410,7 +504,8 @@ How the pieces meet:
   from a vault session, read-only, across every repo a card names: project memory that is not
   committed, no remote, a stale or missing STATE, an interrupted run, leftover
   worktrees, status claimed outside STATE, log ids that resolve to no card,
-  and drifted copies of one skill.
+  and drifted copies of one skill. With `--board` it prints the one-row-per-
+  project view instead.
 
 Deliberately not shipped: the reference instance also has commit-gate,
 holdout-lock and test-gate hooks for its project repos. They are runtime hooks

@@ -3,6 +3,167 @@
 What each release changed, and how to bring a vault made from an earlier one
 up to date. The README keeps the short version.
 
+## What changed in v1.3
+
+The one-line version: **every page is typed by how long it stays true,
+lessons and traps from all your projects meet in one user-level kit, and the
+search machinery is gone.** It was built in the template and tested on a copy
+of a working vault before release; there is no two-week bar any more
+(ADR 0058). The decisions are recorded in full in `docs/decisions/` (0055,
+0056, 0057, 0058).
+
+**Removed**
+
+- The retrieval machinery (ADR 0057): the `/recall` skill,
+  `scripts/retrieval-eval.mjs` and its test, `.claude/eval/golden-set.md`,
+  `real-prompts.md` and `expansions.md`, the `retrieval-failure` signal type
+  as something anything writes, the brain doctor's recall-contract and
+  retrieval-score rows, the eval step of `maintenance.mjs run`, and the
+  retrieval-failure section of `vault-metrics.mjs`. Old `retrieval-failure`
+  lines in your ledger still parse.
+- `/harvest` and the project-card fields `harvested_at` and `harvested_on`
+  (ADR 0056). Harvest logs already in `logs/` stay as history.
+- `.claude/templates/knowledge.md`, and `knowledge` and `memory` as types to
+  write (ADR 0055). Pages that already carry them still parse; the vault's
+  lesson files keep `type: memory` from their template.
+
+**Added**
+
+- Three page types, each with a home and a lifetime (ADR 0055): `topic`
+  pages in `notes/`, updated in place with `updated:`; `report`s in the new
+  `reports/` folder, dated `YYYY-MM-DD_<slug>.md` and written once;
+  `deliverable`s in the new `outputs/` folder, with an `expires:` date
+  (30 days unless set). Templates `topic.md`, `report.md`, `deliverable.md`;
+  contracts `reports/README.md` and `outputs/README.md`.
+- The write gate, `.agents/write-gate.md`: NOOP first, type the page by three
+  questions, find its neighbours, close what the write made stale in the same
+  commit. `/file`, `/ingest` and `/curator` run it.
+- `scripts/note-neighbours.mjs` — lists the pages already on a subject, by
+  title words, aliases, tags and links, and flags `-v2`-style names.
+- Two compiled checks. `note-lifetime`: each type in its folder with the
+  fields its lifetime needs, and `legacy-type` on a changed page that still
+  says `knowledge` or `memory`. `lifetime-sweep`: expired deliverables,
+  reports no page links, topic pages older than their newest report or
+  untouched for 90 days, a passed `valid_to` with nothing superseding it,
+  `-v2` pages, and passed "until <date>" lines in `core/` and on topic pages
+  and cards. The "Maintenance due" line counts these under `/curator`.
+- `/curator` step 3a, which works through those findings and through pages
+  that a decision from the last 30 days made stale.
+- `node scripts/project-doctor.mjs --board` — one row per project, read live:
+  card status, last commit, active milestone, the state file's Next line,
+  and a note where the card and the repo disagree. `maintenance.mjs run`
+  prints it too.
+- `/closeout` step 6: a trap any repository could hit is appended to the
+  kit's `reference/` and committed there.
+- The brain doctor flags skills and hooks that still name `retrieval-eval`,
+  `golden-set`, the recall skill, the harvest skill or `harvested_at`, and
+  accepts `reports/` and `outputs/` at the top level.
+- Tests for the neighbour finder, the two new checks and the board.
+
+**Changed**
+
+- `/lesson` picks its store with one question — would this recur in a
+  different repository? — and defaults to your user-level kit
+  (`$BRAIN_KIT_DIR`, else `lessons/` next to your user-level instruction
+  file). A repo lesson needs a reason tied to that repo; the vault keeps only
+  lessons about running the vault. Each entry names the repository it came
+  from and keeps only the shortest excerpt of the artifact (ADR 0056).
+- `/file` writes a topic-page update, a report or a deliverable, and says
+  which and why. `/ingest` writes a report plus the lines it changes on its
+  topic page.
+- `INDEX.md` lists only the living layer — topic, decision, project and
+  playbook pages. Its "Knowledge" headings are "Topics", it gains a
+  "Folders, not pages" table for `reports/` and `outputs/`, and the Ingested
+  sources table names the report and the topic page each source fed.
+- `/audit` names the latest result of your answer eval, if you keep one in
+  `.claude/eval/`, instead of running a ranker.
+- Project cards are written from a vault session when you ask; their
+  `status:` is your call, and the board says when the repo disagrees.
+- The compiled checks treat a quoted date (`updated: "2026-10-24"`) the same
+  as an unquoted one, and the link-form check covers `reports/` and
+  `outputs/`.
+
+## Upgrading from v1.2
+
+As before, there is no shared history to pull: you fetch v1.3 and take its
+machinery path by path. Your content is never overwritten. Start from a clean
+tree, in the vault's root. The reclassification in step 6 is judgment work;
+do it in a session with the agent, page by page.
+
+1. **Fetch v1.3:** `git fetch template --tags`.
+2. **Note your own edits first:** `git diff --stat v1.2 HEAD`. Any file in
+   step 4's list is about to be replaced; save your changes to `AGENTS.md`
+   and re-apply them afterwards.
+3. **Read your retrieval files before anything deletes them.** If you added
+   rows to `.claude/eval/golden-set.md` or `real-prompts.md`, or wrote your
+   own `expansions.md`, read them first. A query whose right answer you know
+   can become a question in your answer eval: keep it in `.claude/eval/` as
+   the question plus the answer you confirmed. Words you added as expansions
+   belong in `aliases:` on the page they were meant to find. Everything else
+   in those files can go.
+4. **Take the machinery:**
+
+   ```
+   git checkout v1.3 -- .agents .claude/hooks .claude/templates .claude/settings.json .codex scripts docs my-notes/README.md reports/README.md outputs/README.md AGENTS.md CLAUDE.md README.md SETUP.md install.mjs .gitignore .gitattributes notes/lifecycle-policy.md notes/self-evolution-policy.md logs/signals/README.md raw/README.md
+   ```
+
+   `notes/source-roots.md` is left out because it holds your rows. Change
+   its `type:` to `topic` and add `updated: <today>` by hand.
+5. **Remove what v1.3 deleted** — `git checkout` adds and replaces files but
+   never removes them:
+
+   ```
+   git rm -r -q .agents/skills/recall .agents/skills/harvest scripts/retrieval-eval.mjs scripts/tests/retrieval-eval.test.mjs .claude/templates/knowledge.md
+   git rm -q --ignore-unmatch .claude/eval/golden-set.md .claude/eval/real-prompts.md .claude/eval/expansions.md
+   ```
+
+   Skip a path in the second line if step 3 turned it into your answer eval.
+6. **Reclassify your pages.** `node .claude/hooks/checks.mjs --all` lists
+   every page in `notes/` that still says `knowledge` or `memory` as
+   `legacy-type` (lesson files are exempt). For each one, ask the three
+   questions in `.agents/write-gate.md` step 2:
+   - **Something to act on, then done with** (a list of listings, a set of
+     ideas, a one-day inventory): a deliverable.
+     `git mv notes/x.md outputs/YYYY-MM-DD_x.md`, with the date it was
+     written; set `type: deliverable`, `expires:`, `for:` and
+     `topic: "[[subject]]"`. Already past its use? Move it to `archive/`
+     instead.
+   - **Sourced claims as of one date** (a research run, a comparison): a
+     report. `git mv notes/x.md reports/YYYY-MM-DD_x.md`; set
+     `type: report`, `confidence: low`, `source:` and `topic:`. From here on
+     it is never edited.
+   - **How a subject stands now**: a topic page. Keep it in `notes/`, set
+     `type: topic` and `updated:` to the day it was last confirmed true.
+
+   A page holding two lifetimes is split: research that ended in a choice
+   becomes a report plus a decision, and a section written for one-time use
+   becomes a deliverable. Pages named `-v2`, `-v3` merge into one topic page;
+   archive the rest. A plan you are still following is a topic page; when
+   only you can tell, the agent asks you once. Each report and deliverable
+   you moved gets a line and a link on its topic page (create the topic page
+   if the subject has none), and its row leaves `INDEX.md`.
+7. **Repoint links and the catalog.** Renaming a page breaks `[[x]]` links
+   to it: `node scripts/link-sweep.mjs` lists them. Take `INDEX.md`'s new
+   headings and the "Folders, not pages" table from
+   `git diff HEAD v1.3 -- INDEX.md`.
+8. **Project cards.** Delete the `harvested_at:` and `harvested_on:` lines
+   from every `type: project` card in `notes/`.
+9. **Lessons, optionally.** Vault lesson topics about how you want work done
+   in general, not about running the vault, can move to your kit's
+   `lessons/`. Head each moved copy with where it came from and the commit it
+   was copied at, and move the vault original to `archive/`.
+10. **Relink.** `node install.mjs --link-skills`, and
+    `node install.mjs --link-global-skills` again if you use it.
+11. **Commit the upgrade** by explicit path:
+    `git commit -m "upgrade: Second Brain OS v1.3"`.
+12. **Check it:** `node scripts/brain-doctor.mjs` (Retired terms lists any
+    skill of your own that still names the recall or harvest skills),
+    `node .claude/hooks/checks.mjs --all`, then `node scripts/maintenance.mjs`
+    to see what is due.
+
+In your projects nothing has to change. A repo with `docs/lessons/` keeps
+them; new owner-wide lessons start landing in the kit.
+
 ## What changed in v1.2
 
 v1.2 brings the template in line with the reference instance again, four
@@ -72,6 +233,9 @@ the decisions are recorded in full in `docs/decisions/` (0048, 0049, 0050,
 - The figures in the README show the wall and `/harvest`.
 
 ## Upgrading from v1.1
+
+From v1.1, go to v1.2 first with the steps below, then follow *Upgrading from
+v1.2* above. Several files these steps name were removed in v1.3.
 
 As with v1.0 → v1.1, there is no shared history to pull: you fetch v1.2 and
 take its machinery path by path. Your content — `core/`, `notes/`, `logs/`,

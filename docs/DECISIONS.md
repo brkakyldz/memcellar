@@ -42,7 +42,7 @@ tells you what it was protecting.
 | 0012 | amended by 0019 | A write rubric, independent corroboration, delta-only curation |
 | 0013 | amended by 0019 | Self-improvement flywheel on manufactured feedback; survival replaces acceptance as the outcome anchor *(the `/flywheel` pass itself was retired by 0038)* |
 | 0014 | amended by 0042 | Hooks are gated on an explicit vault activation marker — a fresh clone is inert |
-| 0015 | amended by 0029, 0036, 0046 | The vault is a personal tool first; this template is updated in batches, behind a two-week bar |
+| 0015 | amended by 0029, 0036, 0046, 0058 | The vault is a personal tool first; this template is updated in batches, behind a two-week bar |
 | 0016 | amended by 0028 | The working record lives in the private vault, not the template |
 | 0017 | amended by 0028 | The reporting contract is a global standard, not a vault-local habit *(reference instance only — the template ships no reporting contract)* |
 | 0018 | amended by 0024; reversed by 0057 | Retrieval is lexical + links + conventions; a retrieval-failure ledger is the only trigger to revisit it |
@@ -56,13 +56,13 @@ tells you what it was protecting.
 | 0026 | amended by 0032 | One approval surface (`PROPOSALS.md`); resurfacing is question-framed and inbound-poor *(proposal production was retired by 0038; `PROPOSALS.md` is kept by hand)* |
 | 0027 | superseded by 0042 | Stop checkpoints skip trace-only commits and debounce the push |
 | 0028 | accepted | The archive is flat — no subtree structure inside `archive/` |
-| 0029 | amended by 0036 | This template is re-derived from the vault; the old `_brain/` layout is retired |
+| 0029 | amended by 0036, 0058 | This template is re-derived from the vault; the old `_brain/` layout is retired |
 | 0030 | accepted | Tier-0 budgets are counted in characters and shown to the agent up front |
 | 0032 | amended by 0033, 0039 | Machine state leaves the tracked tree; the reuse metric gets a trigger that actually runs *(the reuse metric was retired by 0039)* |
 | 0033 | amended by 0034, 0038, 0042, 0049 | Unattended scheduled maintenance retired — the trigger becomes session start |
 | 0034 | amended by 0035 | The capture inbox and every mobile-capture plan are removed |
 | 0035 | amended by 0038, 0041, 0043 | A `raw/` source layer, `/ingest` to read a source into the wiki, `/file` to keep an answer, and `INDEX.md` as the page catalog (amends 0002 and 0034) |
-| 0036 | amended by 0046 | Template v1.0 published ahead of the two-week bar; the bar governs additions, never removals |
+| 0036 | amended by 0046, 0058 | Template v1.0 published ahead of the two-week bar; the bar governs additions, never removals |
 | 0037 | amended by 0040 | The owner's own-notes folder is structured into kind folders *(the folder ships since v1.2 as `my-notes/`, flat — see 0040)* |
 | 0038 | amended by 0039, 0048, 0049 | The flush mechanism and proposal production are removed; delivery, notices and measurement are made truthful (supersedes 0025) |
 | 0039 | accepted | The notes earn their keep, the instrumentation does not — reuse telemetry is retired |
@@ -72,7 +72,7 @@ tells you what it was protecting.
 | 0043 | accepted | A research report that crowds out retrieval is kept as an archived snapshot plus a short live distillation (amends 0035) |
 | 0044 | amended by 0051 | Claude Code and Codex are equal runtimes over one kit — `AGENTS.md` is the constitution, `.agents/skills/` the one skills copy (amends 0042) |
 | 0045 | amended by 0050, 0052 | Project execution state lives in the project repo (contract, `CURRENT_STATE`, run reports — `WORKLOG` until 0050); the vault keeps what outlives a project — [full record](decisions/0045-project-execution-state-lives-in-the-repo.md) |
-| 0046 | accepted | Template v1.1 published ahead of the two-week bar at the owner's request; an override for one batch, not a new rule (amends 0015, 0036) — [full record](decisions/0046-template-v1-1-published-ahead-of-the-bar.md) |
+| 0046 | amended by 0058 | Template v1.1 published ahead of the two-week bar at the owner's request; an override for one batch, not a new rule (amends 0015, 0036) — [full record](decisions/0046-template-v1-1-published-ahead-of-the-bar.md) |
 | 0047 | reversed | A weekly social-media writing routine runs as two read-only scheduled tasks *(reference instance only, reversed after three weeks; the template schedules nothing)* |
 | 0048 | amended by 0052 | Lessons are one file per recurring behaviour, entries appended verbatim, routed to a rule when a second correction lands (amends 0019, 0038) — [full record](decisions/0048-lessons-are-topic-files-routed-at-capture.md) |
 | 0049 | accepted | Session start says once a day what maintenance is due, computed from state; nothing runs until the owner says yes (amends 0033, 0038) — [full record](decisions/0049-maintenance-due-notice-runs-on-yes.md) |
@@ -84,6 +84,7 @@ tells you what it was protecting.
 | 0055 | accepted | A note is typed by its lifetime when it is written: topic pages live in `notes/`, reports are dated in `reports/`, deliverables expire in `outputs/`; neighbours are closed in the same commit (amends 0035) — [full record](decisions/0055-notes-are-typed-by-lifetime-at-write-time.md) |
 | 0056 | accepted | Three homes — the repo, the user-level kit, the vault: owner-wide lessons and cross-project technical knowledge live in the kit, `/harvest` is retired for a read-only project board (amends 0048, 0052) — [full record](decisions/0056-three-homes-repo-user-kit-vault.md) |
 | 0057 | accepted | The retrieval machinery is retired — ranker eval, golden set, `/recall` and the retrieval-failure ledger; the agent reads `INDEX.md` and the notes, and quality is measured by owner-confirmed answers (reverses 0010, 0018) — [full record](decisions/0057-retrieval-machinery-retired.md) |
+| 0058 | accepted | The template is built first, on a branch, and tested on a copy of the reference instance; the change moves to the live vault behind a tag right after its checks pass — the two-week bar is retired (amends 0015, 0029, 0036, 0046) — [full record](decisions/0058-template-first-no-two-week-bar.md) |
 
 There is no 0031: the number was allocated to a decision that was abandoned
 before it was written. Gaps are left in place rather than renumbered — a

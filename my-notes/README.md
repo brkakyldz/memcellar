@@ -13,8 +13,8 @@ A file is created or appended here **only** when the owner says so: "note
 this", "write this down properly", "add it to my-notes", `/note ...` — or the
 same in their own language. Nothing else qualifies — not an interesting
 finding, not a decision made in passing, not a fact worth remembering. Those
-are distilled straight into `notes/` in the session they come up, the way
-everything else is.
+go through the write gate (`.agents/write-gate.md`) into `notes/`, `reports/`
+or `outputs/` in the session they come up, the way everything else does.
 
 If it isn't an explicit instruction, it doesn't land here. When in doubt, ask.
 
@@ -26,8 +26,7 @@ No automated pass may read-and-rewrite this folder:
 - `/curator` and the structural audit (`/audit`) skip it entirely.
 - Nothing here is archived, demoted, promoted, or deleted by an agent.
 - The agent may **edit** a file here only when the owner asks for that edit,
-  and may **read** it freely (it's searchable context like anything else —
-  `/recall` searches it).
+  and may **read** it freely (it's searchable context like anything else).
 
 Notes here are allowed to stand alone: the ≥1-outbound-wikilink rule in
 `AGENTS.md` does not apply to this folder, and `scripts/link-sweep.mjs` leaves
@@ -65,7 +64,7 @@ growing, so they are one file per topic with dated sections.
 of the above, not a value that feels tidy. Same gate the rest of the vault uses.
 Until then, pick the closest honest one and say so.
 
-Nothing enforces this list. `checks.mjs` scans only `notes/` and `core/`, and no
+Nothing enforces this list. `checks.mjs` never scans this folder, and no
 hook validates `kind:` — deliberately, because a guard advertised as stronger
 than it is costs more than no guard. It is a convention that a reader and an
 agent both follow.

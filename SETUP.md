@@ -54,17 +54,21 @@ short list, whichever fits the conversation:
    but explain properly" and move on — this field gets its real value later,
    from corrections.
 8. Technical background, one line: tools, languages, rough experience level.
-9. Current focus — their active projects. Offer to create a note in `notes/`
-   for each one they name.
+9. Current focus — their active projects. For each one with a repository,
+   ask for the path to its checkout; Step 3 writes a project card for it.
 10. Which agent runtimes they use: Claude Code, Codex, or both. Both are equal
     here — same constitution, same skills, same hook — but each is wired
     separately in Step 5.
 11. Whether they want `/closeout` and `/lesson` in their other projects.
     Explain it briefly: the brain itself loads only in sessions inside the
     vault, and a project never reads or writes it — each project keeps its own
-    state, decisions and lessons in its own repo, and the brain learns from a
-    project only when they run `/harvest` on it from a vault session. The two
-    skills help a project do that bookkeeping; they never touch the vault.
+    state, decisions and lessons in its own repo, and from the vault
+    `node scripts/project-doctor.mjs --board` shows every project's state,
+    read live. The two skills help a project do that bookkeeping. `/lesson`
+    writes to their user-level kit by default (a private `lessons/` folder
+    next to their user-level instruction file, or `BRAIN_KIT_DIR`), and
+    `/closeout` may add a trap any repo could hit to the kit's `reference/`.
+    Neither ever touches the vault.
 
 **Leave anything they skip blank rather than guessing.** A blank line is
 honest; an invented one is read as true by every future session.
@@ -109,10 +113,14 @@ In the new clone:
   with their answer to question 6, and delete the instruction comment above it.
   If they converse in English, simplify that section to a single line rather
   than leaving a split that doesn't apply to them.
-- **Projects they named** stay plain text under `## Current focus` in
-  `USER.md` for now — no `[[links]]` yet, and no cards. Project cards are
-  written only by `/harvest` (ADR 0052), which reads the project's repo; Step 7
-  tells your user how to run it for each project once setup is done.
+- **Projects they named.** For each one with a repo path, write a card
+  `notes/<project_id>.md` from `.claude/templates/project.md` — `project_id`
+  is a kebab-case slug, usually the repo name; `repo:` the absolute path with
+  forward slashes; `status: active`; why it exists in one line — add its row
+  to the Projects table in `INDEX.md`, and turn its focus line in `USER.md`
+  into a `[[link]]` to it. The card never copies the project's status; that
+  stays in the repo. A project with no repo, or whose path they don't know,
+  stays plain text under `## Current focus` for now.
 - **`core/MEMORY.md`** — leave it empty. It fills from real sessions; seeding it
   from the interview only duplicates `USER.md`.
 - **Link the skills.** Run `node install.mjs --link-skills`. It makes
@@ -216,16 +224,18 @@ It creates one link per skill in `~/.claude/skills` and `~/.codex/skills`
 (or `CLAUDE_CONFIG_DIR` / `CODEX_HOME`) for each runtime that is installed,
 pointing back into the vault. The only thing it ever replaces is a broken
 link; a real folder, or a link that still points somewhere else, is left
-alone. It also removes a `recall` link a v1.1 install left behind — recall
-works on the vault, so it is vault-only now. `node install.mjs
---unlink-global-skills` removes exactly its own links again.
+alone. It also removes a user-level link to the retired recall skill that a
+v1.1 install left behind. `node install.mjs --unlink-global-skills` removes
+exactly its own links again.
 
 In a project, `/closeout` brings `docs/CURRENT_STATE.md` up to date, writes
-the run report of an autonomous run, removes the task's merged worktrees and
-commits exactly the paths the task wrote; `/lesson` appends a correction to
-`docs/lessons/lesson-<topic>.md` and, on a second entry for the same
-behaviour, proposes a rule for that repo. The formats they expect:
-`.claude/templates/project-repo/README.md`.
+the run report of an autonomous run, removes the task's merged worktrees,
+adds a trap any repo could hit to the kit's `reference/`, and commits exactly
+the paths the task wrote. `/lesson` appends a correction to
+`<kit>/lessons/lesson-<topic>.md` by default, or to the repo's
+`docs/lessons/` when it is about that repo alone, and on a second entry for
+the same behaviour proposes a rule where the mistake was made. The formats
+they expect: `.claude/templates/project-repo/README.md`.
 
 **Check that Codex sees them.** Some Codex builds read user-level skills from
 `~/.agents/skills` rather than `~/.codex/skills`. Start Codex in any folder
@@ -276,8 +286,8 @@ From inside the clone:
 
 4. The whole brain path: `node scripts/brain-doctor.mjs`. Expect **PASS** for
    the hooks of each runtime they wired, the skills link, Tier-0 budgets,
-   SessionStart evidence (step 1 just produced it), recall and retrieval — and
-   **User-level skills** if they linked `/closeout` and `/lesson`. A **WARN**
+   SessionStart evidence (step 1 just produced it), Retired terms and Vault
+   root — and **User-level skills** if they linked `/closeout` and `/lesson`. A **WARN**
    for a runtime they don't use is fine, and so is **Git delivery FAIL** before
    the first push (no upstream yet) — push, then re-run. Any **FAIL** — stop
    and investigate before reporting success.
@@ -289,42 +299,47 @@ Tell your user, concretely:
 - What you created: the repo name, its URL, and that you verified it private.
 - Which runtimes they wired, and that the brain loads only in sessions inside
   the vault.
-- **How things get in.** Two inlets: talk to the agent and the note gets written
-  there and then; or drop something they read into `raw/` and run `/ingest`.
-  There is no inbox to triage — that was tried and removed.
+- **How things get in.** Two inlets: talk to the agent and the page gets
+  written there and then; or drop something they read into `raw/` and run
+  `/ingest`. There is no inbox to triage — that was tried and removed.
+- **Every page has a lifetime.** A topic page in `notes/` says how a subject
+  stands now and is kept current; a report in `reports/` is a dated reading,
+  written once; a deliverable in `outputs/` (a list, a draft) expires after
+  30 days unless they keep it. The agent picks the type before it writes and
+  says which one it chose — they can correct it.
 - **How things get committed.** Nothing commits automatically. Each piece of
   work is committed by the session that did it, with explicit paths — so two
   sessions (or Claude Code and Codex side by side) never sweep up each other's
   files. If a session ends without committing, `git status` shows what it left.
-- **Bring in their projects.** For each project they named in Step 1, they
-  can open a session in the vault and run `/harvest <path to its repo>`. It
-  writes the project's card in `notes/` with its `INDEX.md` row; they can
-  then turn the plain focus line in `USER.md` into a `[[link]]` to it.
+- **Bring in their projects.** Which cards you wrote in Step 3. For a later
+  project they open a session in the vault and ask for a card; it names the
+  repo and its state file and never copies status.
 - **Projects and the brain are walled off.** A project's status, decisions,
   lessons and run reports are committed in its own repo
   (`docs/CURRENT_STATE.md`, `docs/decisions/`, `docs/lessons/`,
   `docs/runs/`), and `git log` is its history. A project session never reads
-  or writes the brain. When they want the brain to learn from a project, they
-  open a session in the vault and run `/harvest <path to the repo>`: it reads
-  the repo and writes a thin card and a short log, never touching the repo.
-  To give a project those files: `.claude/templates/project-repo/README.md`.
+  or writes the brain. To see every project at once, they run
+  `node scripts/project-doctor.mjs --board` in the vault: one row per repo,
+  read live, nothing written. To give a project those files:
+  `.claude/templates/project-repo/README.md`.
 - **`my-notes/` is theirs.** A note they ask for in so many words ("note this
   down") goes there, in their own language, through `/note`. No pass ever
   edits, distills or archives it.
-- **`INDEX.md` is the map.** One line per page; it is what makes retrieval
-  cheap, and `link-sweep.mjs` reports any note missing from it.
+- **`INDEX.md` is the map.** One line per page of the living layer; the agent
+  reads it, and the pages it points at, before answering anything the vault
+  may already know. `link-sweep.mjs` reports any note missing from it.
 - **`PROPOSALS.md` is theirs.** A hand-kept list of open work; no pass writes
   to it. Findings are reported in the conversation, acted on or dropped.
-- The commands: `/ingest`, `/file`, `/note`, `/lesson`, `/recall`,
-  `/harvest`, `/curator`, `/audit` — and `/closeout` in projects.
+- The commands: `/ingest`, `/file`, `/note`, `/lesson`, `/curator`,
+  `/audit` — and `/closeout` in projects.
   Mention `/lesson` specifically — the first time the agent gets something
   wrong is the most useful thing that will happen this week. One file per
   recurring behaviour collects the corrections, and the second one on the same
   behaviour is where the agent proposes a rule or a check.
 - `node scripts/brain-doctor.mjs` whenever something feels off, and
-  `node scripts/project-doctor.mjs` from the vault before a `/harvest` — it
-  reads every repo a project card names and reports uncommitted project
-  memory, stale STATE and leftover worktrees.
+  `node scripts/project-doctor.mjs` from the vault now and then — it reads
+  every repo a project card names and reports uncommitted project memory,
+  stale STATE and leftover worktrees.
 - **Secret scanning is opt-in.** Recommend `pip install pre-commit`, then
   `pre-commit install` in the vault (wires gitleaks into every commit), and
   GitHub's secret-scanning push protection on the repo.

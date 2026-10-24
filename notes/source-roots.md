@@ -1,6 +1,7 @@
 ---
-type: knowledge
+type: topic
 created: 2026-09-03
+updated: 2026-10-24
 tags: [sources, registry]
 status: seedling
 aliases: [registered roots, external sources, source registry]

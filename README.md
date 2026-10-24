@@ -7,7 +7,7 @@ are and what you're working on the moment a session in the vault starts, in
 either runtime, and writes down what it learned as ordinary files you commit.
 
 <p>
-  <a href="docs/UPGRADING.md"><img alt="version v1.2" src="https://img.shields.io/badge/version-v1.2-1c3d63"></a>
+  <a href="docs/UPGRADING.md"><img alt="version v1.3" src="https://img.shields.io/badge/version-v1.3-1c3d63"></a>
   <a href="LICENSE"><img alt="license MIT" src="https://img.shields.io/badge/license-MIT-5b7150"></a>
   <a href="docs/ARCHITECTURE.md#5-runtime-two-runtimes-one-hook-each"><img alt="runtimes: Claude Code and Codex" src="https://img.shields.io/badge/runtimes-Claude%20Code%20%C2%B7%20Codex-b0573a"></a>
 </p>
@@ -32,7 +32,11 @@ either runtime, and writes down what it learned as ordinary files you commit.
   no dependency beyond Node itself, on Windows, macOS and Linux.
 - **Project status stays true.** It lives in each project's own repo,
   committed with the code, and a project session never sees the vault's
-  personal context. The vault learns from a project only when you ask it to.
+  personal context. From the vault you can read every project's state live,
+  and nothing is copied over.
+- **Old answers don't pose as current ones.** Every page gets a type when it
+  is written, and the type says how long the page stays true: a topic page is
+  kept current, a research report is dated, a one-off list expires.
 
 This is the generic projection of a vault that has been running daily since
 2026-08-18. Everything here is in use somewhere, and the parts that were tried
@@ -49,13 +53,17 @@ only plain files, Node and Git.
   once a day it may say which upkeep pass has real work waiting — it asks,
   it never runs one. Outside the vault it does nothing. That is all the
   automation there is.
-- **Three tiers of reading.** `core/` at every start; `INDEX.md` and the pages
-  it points at when a question needs them; `logs/` and a full-text search only
-  when those don't answer.
-- **You talk, the agent distills.** Something worth keeping becomes a note on
-  the spot; a source you drop in `raw/` becomes notes through `/ingest`.
-  Nothing waits in a queue. What you dictate word for word goes to
-  `my-notes/`, which no agent pass ever rewrites.
+- **Reading is a rule.** `core/` arrives at every start. Before answering
+  anything the vault may already know, the agent reads `INDEX.md` and the
+  pages it points at, greps `notes/`, `reports/` and `core/` in English and in
+  the language you asked in, and cites the page. `logs/` comes last.
+- **You talk, the agent distills.** Something worth keeping is written on the
+  spot; a source you drop in `raw/` is read through `/ingest`. Nothing waits
+  in a queue. Before any page is written, the agent runs a short write gate
+  (`.agents/write-gate.md`): write nothing if the fact is already written
+  somewhere, pick the page's type, list the pages on the same subject, and
+  close the ones the new page makes stale, in the same commit. What you dictate word for word goes
+  to `my-notes/`, which no agent pass ever rewrites.
 - **Commits belong to the task.** Each task commits the files it wrote, by
   name — never `git add -A` — so two sessions, or both runtimes, can share one
   checkout.
@@ -71,15 +79,19 @@ Tiers, budgets and the reasoning behind each part:
 
 ```
 core/         Tier 0: IDENTITY, USER, MEMORY inlined; OPEN_QUESTIONS by pointer
-notes/        the memory store — flat, wikilinked, told apart by type:
+notes/        the living layer — topic pages, decisions, playbooks, project
+              cards; flat, wikilinked, told apart by type:
+reports/      dated research and comparisons, written once
+outputs/      lists, drafts and other deliverables, each with an expiry date
 my-notes/     your own notes, written only when you ask, in your language
 raw/          immutable sources you put there; the agent reads, never writes
 logs/         append-only session logs + logs/signals/, the event ledger
 archive/      closed and superseded content — never deleted, always moved here
-scripts/      link sweep, retrieval eval, brain and project doctors, metrics
-.agents/      skills — the one copy both runtimes load
-.claude/      the shared SessionStart hook, the compiled checks, note and
-              project-repo templates, the golden set
+scripts/      link sweep, neighbour finder, brain and project doctors,
+              maintenance, metrics
+.agents/      skills and the write gate — the one copy both runtimes load
+.claude/      the shared SessionStart hook, the compiled checks, page and
+              project-repo templates
 .codex/       the thin Codex adapter into that same hook
 AGENTS.md     the constitution — the rules you and both agents work under
 CLAUDE.md     one line that imports AGENTS.md, plus Claude-only notes
@@ -102,23 +114,45 @@ docs/         architecture guide, decision index and full records from 0045,
   </picture>
 </p>
 
-| The vault — what outlives a project | Each project's repo — its execution state |
-|---|---|
-| knowledge and the vault's own lessons, in `notes/` | `AGENTS.md` — the contract: timeless, no status |
-| one thin card per project, `notes/<project_id>.md`: why it exists, where it lives, what it taught | `docs/CURRENT_STATE.md` — the only file that states status |
-| short harvest logs in `logs/` that point at the repo | `docs/lessons/` — corrections to how the agent works there; `docs/runs/` — one report per autonomous run; `git log` — the history |
+**Inside the vault, a page's type says how long it stays true**
+([ADR 0055](docs/decisions/0055-notes-are-typed-by-lifetime-at-write-time.md)):
+
+| Type | Example | Lives in | How it ages |
+|---|---|---|---|
+| `topic` | how your job search stands, what you know about a tool | `notes/<subject>.md` | kept current in place; carries `updated:` |
+| `report` | a research run, a comparison of three libraries | `reports/YYYY-MM-DD_<slug>.md` | written once; its date says how old it is |
+| `deliverable` | a list of listings to pick from, a draft, a one-week plan | `outputs/YYYY-MM-DD_<slug>.<ext>` | expires (30 days unless you set it), then archived |
+| `decision`, `playbook`, `project` | a choice and its reasons, steps proven by use, a project card | `notes/` | a decision is superseded, never edited; a playbook is revised on purpose; a card is updated in place |
+
+One subject has one topic page. A report or a deliverable adds a line and a
+link to its topic page, so `INDEX.md` lists only the living layer.
+
+**Outside the vault, there are three homes**
+([ADR 0056](docs/decisions/0056-three-homes-repo-user-kit-vault.md)):
+
+| The vault | Each project's repo | Your user-level kit (optional) |
+|---|---|---|
+| topic pages, decisions, reports, deliverables, the vault's own lessons | `AGENTS.md` — the contract: timeless, no status | your working rules, in the user-level instruction file every session loads |
+| one thin card per project, `notes/<project_id>.md`: why it exists, where it lives, what it taught | `docs/CURRENT_STATE.md` — the only file that states status | lessons about how you want work done, from every project, in `lessons/` |
+| | `docs/lessons/` for lessons tied to that repo; `docs/runs/` — one report per autonomous run; `git log` — the history | traps that would hit any repo (a tool quirk, a library surprise), in `reference/` |
+
+The kit is a private folder or repo next to your user-level instruction file
+(or wherever `BRAIN_KIT_DIR` points). If you have none, `/lesson` and
+`/closeout` use plain `lessons/` and `reference/` folders next to that file.
+Keep it private: lessons quote you word for word.
 
 **Projects and the vault are walled off.** A session in a project neither
 reads nor writes the vault: the hook does nothing there, and the project keeps
-its own state, decisions and lessons. When you want the vault to learn from a
-project, open a session in the vault and run `/harvest <path to the repo>`.
-It reads the repo — state, decisions, lessons and `git log` since the last
-harvest — and updates the card and the vault's notes, without writing into
-the repo. Optionally, `/closeout` and `/lesson` can be linked into every
-project to do the repo-side bookkeeping. Formats and adoption steps:
+its own state, decisions and lessons. To see every project at once, run
+`node scripts/project-doctor.mjs --board` from the vault: one row per repo,
+read live, with the last commit, the active milestone and the state file's
+Next line. It writes nothing. Optionally, `/closeout` and `/lesson` can be
+linked into every project to do the repo-side bookkeeping. Formats and
+adoption steps:
 [`.claude/templates/project-repo/`](.claude/templates/project-repo/README.md);
-the decisions: [ADR 0045](docs/decisions/0045-project-execution-state-lives-in-the-repo.md)
-and [ADR 0052](docs/decisions/0052-projects-and-the-vault-are-walled-off.md).
+the decisions: [ADR 0045](docs/decisions/0045-project-execution-state-lives-in-the-repo.md),
+[ADR 0052](docs/decisions/0052-projects-and-the-vault-are-walled-off.md)
+and [ADR 0056](docs/decisions/0056-three-homes-repo-user-kit-vault.md).
 
 ## Quickstart
 
@@ -159,56 +193,60 @@ wired in `~/.codex/hooks.json` — and not also in a project-level
 
 For `/closeout` and `/lesson` to load in your other projects, link them at
 user level: `node install.mjs --link-global-skills` (opt-in;
-`--unlink-global-skills` undoes it). They write into the project, never into
-the vault.
+`--unlink-global-skills` undoes it). They write into the project or your
+user-level kit, never into the vault.
 
 ## Everyday commands
 
 | Command | What it does |
 |---|---|
-| `/recall` | four-layer lexical retrieval; logs the misses, so a search failure becomes data |
-| `/lesson` | capture a correction verbatim into one file per recurring behaviour; the second correction on the same behaviour proposes a rule or a check |
-| `/file` | keep an analysis produced in conversation as a proper page, instead of losing it to the transcript |
-| `/ingest` | read a source in `raw/` into the wiki — discuss, distill, reconcile, catalog |
+| `/file` | keep an analysis produced in conversation as the right kind of page — an update to a topic page, a dated report or an expiring deliverable — instead of losing it to the transcript |
+| `/ingest` | read a source in `raw/` into a dated report, plus the lines it changes on its topic page — discuss, distill, reconcile, catalog |
 | `/note` | write what you dictate into `my-notes/`, your own notes, in your language |
-| `/harvest` | from a vault session, read one project repo and bring what it learned into the vault — its card, its lessons, its decisions |
-| `/closeout` | in a project: STATE up to date, the run report of an autonomous run, one commit of exactly the task's paths; never touches the vault |
-| `/curator` | consolidate memory, resolve stale facts, keep the core files inside budget |
+| `/lesson` | capture a correction verbatim into one file per recurring behaviour — in your kit by default, in a repo only when it is about that repo; the second correction on the same behaviour proposes a rule or a check |
+| `/closeout` | in a project: STATE up to date, the run report of an autonomous run, a trap any repo could hit added to your kit, one commit of exactly the task's paths; never touches the vault |
+| `/curator` | consolidate memory, close what time and new decisions made stale (expired deliverables, unlinked reports, topic pages behind their reports), keep the core files inside budget |
 | `/audit` | structural and semantic report — budgets, orphans, contradictions, tag sprawl; reports only, never fixes |
 
 Plus a few scripts you run when you want them — nothing runs on a schedule:
 `node scripts/maintenance.mjs` (what upkeep is due; `run` does the mechanical
 half after you say yes), `node scripts/brain-doctor.mjs` (is the setup healthy),
 `node scripts/project-doctor.mjs` (is each project's memory committed and its
-state fresh), `node scripts/link-sweep.mjs` (broken links, orphans — writes one
-report) and `node .claude/hooks/checks.mjs --staged` before a commit (link
-form, frontmatter, catalog). All of them: [`scripts/README.md`](scripts/README.md).
+state fresh; `--board` for one row per project), `node scripts/note-neighbours.mjs
+"<subject>"` (the pages already on a subject, before you write a new one),
+`node scripts/link-sweep.mjs` (broken links, orphans — writes one report) and
+`node .claude/hooks/checks.mjs --staged` before a commit (link form,
+frontmatter, page types and lifetimes, catalog). All of them:
+[`scripts/README.md`](scripts/README.md).
 
-## What's new in v1.2
+## What's new in v1.3
 
-**Projects and the vault are walled off, lessons become one file per
-behaviour, and the session start says when upkeep is due.**
+**Every page is typed by how long it stays true, lessons and traps from all
+your projects meet in one kit, and the search machinery is gone.**
 
-- The hook does nothing outside the vault: no pull, no injection. "Global
-  mode" is gone, and so is the vault log a project session used to write.
-- `/harvest` is how the vault learns from a project: from a vault session,
-  read-only, when you ask. Project cards are written only this way.
-- A project keeps its own lessons in `docs/lessons/`; `/closeout` never
-  touches the vault. `/recall` is vault-only.
-- `docs/WORKLOG.md` is retired — `git log` is a project's history, and each
-  fact has one home.
-- Lessons are one file per recurring behaviour; the second correction on the
-  same behaviour proposes a rule.
-- A once-a-day "Maintenance due" line, computed from outstanding work;
-  `scripts/maintenance.mjs` runs the mechanical half on your yes.
-- `my-notes/` and `/note` for notes you dictate yourself.
-- `/recall` rewrites a query into keyword variants and fuses the results;
-  the retrieval eval gained a held-out set and a sign-test gate.
-- `brain-doctor` checks Tier-0 integrity, provenance and stale references to
-  retired machinery.
+- Three page types replace `knowledge` and `memory`: `topic` pages in
+  `notes/`, kept current; `report`s in the new `reports/` folder, dated and
+  written once; `deliverable`s in the new `outputs/` folder, which expire.
+- A write gate (`.agents/write-gate.md`) that `/file`, `/ingest` and
+  `/curator` run before they write: skip what is already written, pick the
+  type, find the neighbours with `scripts/note-neighbours.mjs`, close what
+  the write made stale in the same commit.
+- New checks: `note-lifetime` catches a page of the wrong type or in the
+  wrong folder; `lifetime-sweep` finds expired deliverables, unlinked
+  reports, topic pages older than their newest report, and `-v2` pages. The
+  "Maintenance due" line counts these, and `/curator` works through them.
+- `/lesson` writes to your user-level kit by default, so a correction made in
+  two different repos counts as a second entry. `/closeout` adds a trap any
+  repo could hit to the kit's `reference/`.
+- `/harvest` is retired. `node scripts/project-doctor.mjs --board` shows every
+  project's state, read live from its repo.
+- The retrieval machinery is retired: `/recall`, `scripts/retrieval-eval.mjs`,
+  the golden set and the retrieval-failure signal. The agent reads `INDEX.md`
+  and greps the notes; quality is judged by whether answers are right.
 
-Several of these are younger than the template's usual two-week bar. The
-complete list and the step-by-step upgrade from v1.1:
+It was built in the template first and tested on a copy of a working vault
+before it shipped (ADR 0058). The complete list and the step-by-step upgrade
+from v1.2:
 [`docs/UPGRADING.md`](docs/UPGRADING.md).
 
 ## Safety
@@ -228,14 +266,15 @@ The details are in [`docs/FAQ.md`](docs/FAQ.md#safety).
 ## Learn more
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — the full design: principles,
-  the memory model, the two runtimes, retrieval, and the reasoning behind each.
+  the memory model, the two runtimes, how the agent reads, and the reasoning
+  behind each.
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — the decision index, including what
   was reversed and why.
 - [`SETUP.md`](SETUP.md) — the installation runbook your agent follows, and the
   manual path.
 - [`docs/FAQ.md`](docs/FAQ.md) — safety notes, and why there is no vector
   database, no schedule and no automatic commit.
-- [`docs/UPGRADING.md`](docs/UPGRADING.md) — everything v1.2 and v1.1
+- [`docs/UPGRADING.md`](docs/UPGRADING.md) — everything v1.3, v1.2 and v1.1
   changed, and how to upgrade an older vault.
 - [`scripts/README.md`](scripts/README.md) — what each script checks and when
   to run it.

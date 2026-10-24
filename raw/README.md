@@ -23,7 +23,8 @@ note (losing the fidelity that made it worth keeping) or is lost.
   carry a `source:` marker and go through the corroboration gate like any other
   untrusted external content (`AGENTS.md` § Memory rules).
 - **Full is healthy.** This is a corpus, not a queue. It is never emptied and a
-  file is never deleted after being read — the note links back to it forever.
+  file is never deleted after being read — the report links back to it
+  forever.
 
 ## Naming
 
@@ -54,8 +55,10 @@ everywhere else.
 
 ## How a source gets read
 
-`/ingest <file>` — reads it, talks it through with you, writes or merges the
-distilled note in `notes/`, updates `INDEX.md`, appends a log entry. A file
+`/ingest <file>` — reads it, talks it through with you, writes the
+distillation as a dated report in `reports/`, carries the one or two lines
+that change what is true now onto the subject's topic page in `notes/`,
+updates `INDEX.md`, appends a log entry. A file
 sitting here that has never been ingested appears in no index and no note; that
 is the visible symptom of this folder rotting into a graveyard, and three weeks
 of it is the signal to remove the inlet rather than keep feeding it.
