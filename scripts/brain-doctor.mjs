@@ -581,7 +581,7 @@ if (missingKits.length > 0) {
 // AGENTS.md first, then added here.
 const ROOT_ALLOWED = new Set([
   // vault content, one folder per lifecycle
-  'core', 'notes', 'logs', 'my-notes', 'raw', 'archive',
+  'core', 'notes', 'reports', 'outputs', 'logs', 'my-notes', 'raw', 'archive',
   // root documents
   'AGENTS.md', 'CLAUDE.md', 'INDEX.md', 'PROPOSALS.md', 'README.md', 'SETUP.md',
   'LICENSE', 'install.mjs', 'docs',

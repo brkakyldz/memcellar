@@ -49,10 +49,15 @@ import {
 
 // The `type:` values valid in notes/. `my-note` is left out on purpose: it is
 // valid only inside my-notes/, the owner's own notes, which no check here
-// scans (every scope below is notes/ or core/).
+// scans. `report` and `deliverable` are valid types but not in notes/ — they
+// have their own folders (ADR 0055), which `note-lifetime` checks. `knowledge`
+// and `memory` are retired as write-time types and stay valid only so that
+// pages written before ADR 0055 parse; `note-lifetime` flags them.
 const ALLOWED_TYPES = new Set([
-  'project', 'knowledge', 'memory', 'playbook', 'log', 'decision',
+  'topic', 'project', 'playbook', 'decision', 'log', 'knowledge', 'memory',
 ]);
+const LEGACY_TYPES = new Set(['knowledge', 'memory']);
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 // --- helpers ------------------------------------------------------------
 
@@ -125,7 +130,7 @@ const wikilinkShortForm = {
   scope: 'changed',
   run({ repoRoot, changedFiles }) {
     const findings = [];
-    const scanRoots = ['notes/', 'core/'];
+    const scanRoots = ['notes/', 'core/', 'reports/', 'outputs/'];
     for (const rel of changedFiles) {
       if (!rel.endsWith('.md')) continue;
       if (!scanRoots.some((r) => rel.startsWith(r))) continue;
@@ -166,11 +171,67 @@ const noteConventions = {
         findings.push({ file: rel, detail: 'missing-frontmatter' });
         continue;
       }
-      if (!fm.type || !ALLOWED_TYPES.has(fm.type)) {
+      if (!fm.type || !(ALLOWED_TYPES.has(fm.type) || fm.type === 'report' || fm.type === 'deliverable')) {
         findings.push({ file: rel, detail: 'frontmatter-type-invalid' });
       }
       if (!fm.created || !/^\d{4}-\d{2}-\d{2}$/.test(fm.created)) {
         findings.push({ file: rel, detail: 'frontmatter-created-invalid' });
+      }
+    }
+    return findings;
+  },
+};
+
+// --- note-lifetime ------------------------------------------------------
+
+// ADR 0055: a page is typed by how long it stays true, and each type has a
+// home. Checked on the files a task changed, so a page written today in the
+// wrong shape is caught before its commit; pages left from before the ADR
+// fire only when someone touches them. Expiry (a deliverable past `expires:`,
+// a topic page left behind its newest report) is the periodic check's job,
+// not this one's: it is about time passing, not about what a write did.
+//
+// Canary: a new `notes/x.md` with `type: knowledge` must fire `legacy-type`;
+// the same page as `type: topic` with `updated: 2026-10-24` must not.
+// Near-miss it must NOT fire on: `notes/lesson-x.md` with `type: memory`
+// (lesson topic files keep their ADR 0048 frontmatter).
+const noteLifetime = {
+  id: 'note-lifetime',
+  added: '2026-10-24',
+  source: 'ADR 0055 (notes are typed by lifetime at write time)',
+  scope: 'changed',
+  run({ repoRoot, changedFiles }) {
+    const findings = [];
+    for (const rel of changedFiles) {
+      const parts = rel.split('/');
+      if (parts.length !== 2 || parts[1] === 'README.md') continue; // top level of each folder only
+      const [dir, base] = parts;
+      if (!['notes', 'reports', 'outputs'].includes(dir)) continue;
+      const isMd = base.endsWith('.md');
+      if (dir === 'outputs' && !/^\d{4}-\d{2}-\d{2}_[a-z0-9][a-z0-9-]*\.[a-z0-9]+$/.test(base)) {
+        findings.push({ file: rel, detail: 'deliverable-filename' });
+      }
+      if (dir === 'reports' && !/^\d{4}-\d{2}-\d{2}_[a-z0-9][a-z0-9-]*\.md$/.test(base)) {
+        findings.push({ file: rel, detail: 'report-filename' });
+      }
+      if (!isMd) continue;
+      const text = readFileSafe(path.join(repoRoot, rel));
+      if (text === null) continue;
+      const fm = parseFrontmatter(text) || {};
+      if (dir === 'notes') {
+        if (fm.type === 'report' || fm.type === 'deliverable') {
+          findings.push({ file: rel, detail: `${fm.type}-in-notes` });
+        } else if (LEGACY_TYPES.has(fm.type) && !base.startsWith('lesson-')) {
+          findings.push({ file: rel, detail: 'legacy-type' });
+        } else if (fm.type === 'topic' && !DATE_RE.test(fm.updated ?? '')) {
+          findings.push({ file: rel, detail: 'topic-updated-missing' });
+        }
+      } else if (dir === 'reports') {
+        if (fm.type !== 'report') findings.push({ file: rel, detail: 'report-type' });
+        if (!/\[\[[^\]]+\]\]/.test(fm.topic ?? '')) findings.push({ file: rel, detail: 'report-topic-missing' });
+      } else if (dir === 'outputs') {
+        if (fm.type !== 'deliverable') findings.push({ file: rel, detail: 'deliverable-type' });
+        if (!DATE_RE.test(fm.expires ?? '')) findings.push({ file: rel, detail: 'deliverable-expires-missing' });
       }
     }
     return findings;
@@ -224,6 +285,7 @@ const indexCoverage = {
 export const CHECKS = [
   wikilinkShortForm,
   noteConventions,
+  noteLifetime,
   indexCoverage,
 ];
 

@@ -1,6 +1,6 @@
 ---
 name: ingest
-description: Reads a raw source into the wiki — a file in raw/, a registered source root, or a document the owner points at — and distills it into notes/, reconciling it against what the vault already believes. Use when the owner says "ingest this paper", "read this article into the notes", "take the file in raw/", the same in any language, or invokes /ingest.
+description: Reads a raw source into the wiki — a file in raw/, a registered source root, or a document the owner points at — and distills it into a dated report plus the lines it changes on its topic page, reconciling it against what the vault already believes through the write gate. Use when the owner says "ingest this paper", "read this article into the notes", "take the file in raw/", the same in any language, or invokes /ingest.
 ---
 
 # Ingest
@@ -10,8 +10,10 @@ after that the vault answers from the distillation, not by re-reading. That is
 the whole economics of the thing — the cross-references, the contradictions and
 the synthesis are compiled at ingest time instead of re-derived per question.
 
-Contracts this obeys: `raw/README.md` (sources are immutable), `AGENTS.md`
-§ Distillation and § Memory rules, ADR 0035, ADR 0012 (untrusted-source veto).
+Contracts this obeys: `.agents/write-gate.md` (the procedure every vault
+writer runs), `raw/README.md` (sources are immutable), `AGENTS.md`
+§ Distillation and § Memory rules, ADR 0035, ADR 0055 (a source becomes a
+report plus its topic page's lines), ADR 0012 (untrusted-source veto).
 
 ## Trigger
 
@@ -55,10 +57,11 @@ not the goal; not re-reading the source is.
 Never decide in one pass: in the reference instance, single-step freshness
 judging measured ~54% correct, the two-step split ~82-93%.
 
-**3a. List candidates.** Search for what this source touches: `INDEX.md`
-first, then `grep` over `notes/` in English and in the owner's language,
-then `core/MEMORY.md`, then `logs/`. Write down the pages that could conflict or
-absorb this material.
+**3a. List candidates.** `node scripts/note-neighbours.mjs "<the source's
+subject>" --tags <tags>`, once in English and once in the owner's language;
+then `INDEX.md`, `grep` over `notes/` and `reports/`, `core/MEMORY.md` and
+`logs/` for anything it missed. Write down the pages that could conflict
+with or absorb this material — above all the subject's topic page.
 
 **3b. Decide per fact** against that list — ADD / MERGE / SUPERSEDE / NARROW /
 NOOP (NARROW: cut a fact back to what its source supports,
@@ -86,10 +89,15 @@ The old belief and the date it died are themselves data.
   "seems", "unverified") and its explicit dates as written; never state a claim
   more firmly than the source does. Distilling turns hedged remarks into
   confident facts (arXiv 2606.29279), and gist compression drops dates.
-- New note → `.claude/templates/knowledge.md`, `status: seedling`,
-  `confidence: low` if the claim is single-sourced. Merge into an existing note
-  → append or revise the relevant section, never a wholesale rewrite of a note
-  the owner wrote themselves.
+- **Two writes, by ADR 0055.** The distillation of the source is a `report`:
+  `reports/YYYY-MM-DD_<slug>.md` from `.claude/templates/report.md`,
+  `confidence: low`, `topic:` naming the subject's page — write-once from here
+  on. The one or two lines that change what is true now go to the subject's
+  `topic` page in `notes/` (bump `updated:`; create it from
+  `.claude/templates/topic.md` if the subject has none), with a link to the
+  report. Never a wholesale rewrite of a page the owner wrote themselves.
+- A source that only refreshes perishable figures (prices, counts) is a
+  report and nothing else; the topic page just gains the link.
 - **≥1 outbound wikilink** before the note is closed, short form
   (`[[note-name]]`, no path).
 
@@ -97,14 +105,18 @@ The old belief and the date it died are themselves data.
 
 A real ingest touches more than one page. Add the inbound links that now make
 sense from existing notes — not a link dump, one sentence of context each. If
-the source contradicts something the vault says, the contradiction is recorded
-in both places, not just the new one.
+the source contradicts something the vault says, close the stale page in this
+same commit (`.agents/write-gate.md` step 4): `valid_to`, `superseded_by` and a
+visible first line. A comment that it "may be stale" is not a close.
 
 ### 6. Update `INDEX.md`
 
-- A row in **Ingested sources**: the source, the date, and the notes it fed.
-- A row in the right category for any new page, with its one-line description.
-- Fix the description of any page whose scope this ingest changed.
+- A row in **Ingested sources**: the source, the date, the report it became
+  and the topic page it fed.
+- A row in the right category for any new topic page, with its one-line
+  description. The report itself gets no row; its topic page lists it.
+- Fix the description of any page whose scope this ingest changed, and run
+  `node .claude/hooks/checks.mjs` before the commit.
 
 `node scripts/link-sweep.mjs` reports a note missing from `INDEX.md`. Do
 not rely on it — it is the net, not the procedure.
@@ -119,7 +131,7 @@ session does not re-ingest the same source hoping for more.
 ## Standing rules
 
 - **`MEMORY.md` is never written by an ingest.** A fact from a source enters
-  `notes/` as `type: memory`, `confidence: low`; it reaches `MEMORY.md` only
+  as a report, `confidence: low`; it reaches `MEMORY.md` only
   after a second *independent* source confirms it. External content is
   hard-vetoed from `USER.md` and `core/IDENTITY.md` entirely (ADR 0012).
 - **`raw/` is never modified.** Not renamed, not reformatted, not tidied, not
