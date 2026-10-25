@@ -977,6 +977,7 @@ export function lifetimeFindings(repoRoot, { now = new Date() } = {}) {
   for (const [n, text] of notes) {
     const slug = n.replace(/\.md$/, '');
     const fm = frontmatterOf(text);
+    if (/^author:\s*\S/m.test(fm)) continue; // the owner's page: time is theirs to judge (ADR 0060)
     const type = (fm.match(/^type:\s*(\S+)/m) || [])[1];
     const status = (fm.match(/^status:\s*(\S+)/m) || [])[1] || '';
     if (type === 'topic') {

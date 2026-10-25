@@ -83,6 +83,7 @@ const RETIRED_TERMS = [
   { term: 'golden-set', why: 'retrieval machinery retired (ADR 0057)', scope: 'all', allow: [] },
   { term: '/recall', why: 'retrieval machinery retired (ADR 0057)', scope: 'all', allow: [] },
   { term: ['/harvest', 'harvested_at'], why: 'harvest retired for the project board (ADR 0056)', scope: 'all', allow: [] },
+  { term: ['my-notes/', 'type: my-note'], why: 'owner pages live in notes/ with author: (ADR 0060)', scope: 'all', allow: [] },
   { term: '/flywheel', why: 'deleted 2026-09-06', scope: 'all', allow: [] },
   { term: 'acceptance rate', why: 'suggestion ledger and its rate retired (ADR 0039)', scope: 'all', allow: [], ignoreCase: true },
   { term: 'scripts/proposals.mjs', why: 'deleted 2026-09-06', scope: 'all', allow: [] },
@@ -582,7 +583,7 @@ if (missingKits.length > 0) {
 // AGENTS.md first, then added here.
 const ROOT_ALLOWED = new Set([
   // vault content, one folder per lifecycle
-  'core', 'notes', 'reports', 'outputs', 'logs', 'my-notes', 'raw', 'archive',
+  'core', 'notes', 'reports', 'outputs', 'logs', 'raw', 'archive',
   // root documents
   'AGENTS.md', 'CLAUDE.md', 'INDEX.md', 'PROPOSALS.md', 'README.md', 'SETUP.md',
   'LICENSE', 'install.mjs', 'docs',

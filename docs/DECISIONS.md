@@ -63,10 +63,10 @@ tells you what it was protecting.
 | 0034 | amended by 0035 | The capture inbox and every mobile-capture plan are removed |
 | 0035 | amended by 0038, 0041, 0043 | A `raw/` source layer, `/ingest` to read a source into the wiki, `/file` to keep an answer, and `INDEX.md` as the page catalog (amends 0002 and 0034) |
 | 0036 | amended by 0046, 0058 | Template v1.0 published ahead of the two-week bar; the bar governs additions, never removals |
-| 0037 | amended by 0040 | The owner's own-notes folder is structured into kind folders *(the folder ships since v1.2 as `my-notes/`, flat — see 0040)* |
+| 0037 | amended by 0040; superseded by 0060 | The owner's own-notes folder is structured into kind folders *(shipped in v1.2 as `my-notes/`, flat — see 0040; the folder is gone since 0060)* |
 | 0038 | amended by 0039, 0048, 0049 | The flush mechanism and proposal production are removed; delivery, notices and measurement are made truthful (supersedes 0025) |
 | 0039 | accepted | The notes earn their keep, the instrumentation does not — reuse telemetry is retired |
-| 0040 | accepted | The own-notes folder goes flat again; `kind:` is the only classifier *(ships since v1.2 as `my-notes/` with `/note`)* |
+| 0040 | superseded by 0060 | The own-notes folder goes flat again; `kind:` is the only classifier *(`kind:` survives on owner pages in `notes/`, 0060)* |
 | 0041 | accepted | `raw/` admits one named automatic writer, a video-transcript pipeline *(reference instance only — here `raw/` has no automatic writer)* |
 | 0042 | amended by 0044 | Vault commits are task-owned: no hook stages or commits the whole tree; one user-level SessionStart per runtime (supersedes 0008, 0027) |
 | 0043 | accepted | A research report that crowds out retrieval is kept as an archived snapshot plus a short live distillation (amends 0035) |
@@ -81,10 +81,12 @@ tells you what it was protecting.
 | 0052 | accepted | Projects and the vault are walled off: the hook does nothing outside the vault, a project keeps its own lessons, `/harvest` reads a project on request, `/recall` is vault-only (amends 0045, 0048) — [full record](decisions/0052-projects-and-the-vault-are-walled-off.md) |
 | 0053 | amended by 0054 | A project that goes public stays one public repo with its private material kept apart *(reference instance only — project publishing lives in its separate skills kit)* |
 | 0054 | accepted | A new project repo is chosen public-ready or private when it is created; a public-ready repo pairs with a private sibling repo *(reference instance only)* |
-| 0055 | accepted | A note is typed by its lifetime when it is written: topic pages live in `notes/`, reports are dated in `reports/`, deliverables expire in `outputs/`; neighbours are closed in the same commit (amends 0035) — [full record](decisions/0055-notes-are-typed-by-lifetime-at-write-time.md) |
+| 0055 | amended by 0060 | A note is typed by its lifetime when it is written: topic pages live in `notes/`, reports are dated in `reports/`, deliverables expire in `outputs/`; neighbours are closed in the same commit (amends 0035) — [full record](decisions/0055-notes-are-typed-by-lifetime-at-write-time.md) |
 | 0056 | accepted | Three homes — the repo, the user-level kit, the vault: owner-wide lessons and cross-project technical knowledge live in the kit, `/harvest` is retired for a read-only project board (amends 0048, 0052) — [full record](decisions/0056-three-homes-repo-user-kit-vault.md) |
-| 0057 | accepted | The retrieval machinery is retired — ranker eval, golden set, `/recall` and the retrieval-failure ledger; the agent reads `INDEX.md` and the notes, and quality is measured by owner-confirmed answers (reverses 0010, 0018) — [full record](decisions/0057-retrieval-machinery-retired.md) |
+| 0057 | amended by 0059 | The retrieval machinery is retired — ranker eval, golden set, `/recall` and the retrieval-failure ledger; the agent reads `INDEX.md` and the notes, and quality is measured by owner-confirmed answers (reverses 0010, 0018) — [full record](decisions/0057-retrieval-machinery-retired.md) |
 | 0058 | accepted | The template is built first, on a branch, and tested on a copy of the reference instance; the change moves to the live vault behind a tag right after its checks pass — the two-week bar is retired (amends 0015, 0029, 0036, 0046) — [full record](decisions/0058-template-first-no-two-week-bar.md) |
+| 0059 | accepted | Vault content is written in the owner's language; the English rule goes with the lexical ranker it served, and nothing is translated in bulk (amends 0057) — [full record](decisions/0059-vault-content-in-the-owners-language.md) |
+| 0060 | accepted | The owner's own pages live in `notes/` marked by `author:`, guarded by a check; `my-notes/` is retired; Obsidian opens on a home page and hides `archive/`, `logs/`, `raw/` (supersedes 0037, 0040; amends 0055) — [full record](decisions/0060-owner-pages-live-in-notes.md) |
 
 There is no 0031: the number was allocated to a decision that was abandoned
 before it was written. Gaps are left in place rather than renumbered — a

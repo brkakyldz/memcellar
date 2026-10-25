@@ -1,6 +1,6 @@
 ---
 name: curator
-description: Maintenance pass that reconciles the vault's live memory, closes what time and recent decisions made stale (expired deliverables, unlinked reports, topic pages behind their reports, -v2 pages, pages contradicting a new decision), distills due logs, archives stale evidence, and verifies Tier-0 budgets without touching my-notes. Run only when the owner types /curator or says yes to the session-start "Maintenance due" notice (ADR 0049) — never on the agent's own initiative.
+description: Maintenance pass that reconciles the vault's live memory, closes what time and recent decisions made stale (expired deliverables, unlinked reports, topic pages behind their reports, -v2 pages, pages contradicting a new decision), distills due logs, archives stale evidence, and verifies Tier-0 budgets without touching the owner's own pages. Run only when the owner types /curator or says yes to the session-start "Maintenance due" notice (ADR 0049) — never on the agent's own initiative.
 ---
 
 # Curator
@@ -8,8 +8,9 @@ description: Maintenance pass that reconciles the vault's live memory, closes wh
 Runs a maintenance pass over the memory core. It rewrites shared memory
 files, so it runs only when the owner types `/curator` or answers yes to the
 session-start "Maintenance due" notice (ADR 0049) — never on a clock and never
-on the agent's own initiative. `my-notes/` is the owner's own folder: this pass
-neither reads, distills, archives nor rewrites anything in it.
+on the agent's own initiative. Owner pages (`author:` in the
+frontmatter, ADR 0060) are the owner's: this pass neither distills, archives
+nor rewrites one, and lists one it finds stale for the owner instead.
 
 ## Standing rule — evidence pointers (anti-confabulation)
 

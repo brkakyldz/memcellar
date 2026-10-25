@@ -6,11 +6,12 @@ up to date. The README keeps the short version.
 ## What changed in v1.3
 
 The one-line version: **every page is typed by how long it stays true,
-lessons and traps from all your projects meet in one user-level kit, and the
-search machinery is gone.** It was built in the template and tested on a copy
+lessons and traps from all your projects meet in one user-level kit, the
+search machinery is gone, the vault is written in your language, and your own
+pages move into `notes/`.** It was built in the template and tested on a copy
 of a working vault before release; there is no two-week bar any more
 (ADR 0058). The decisions are recorded in full in `docs/decisions/` (0055,
-0056, 0057, 0058).
+0056, 0057, 0058, 0059, 0060).
 
 **Removed**
 
@@ -26,6 +27,10 @@ of a working vault before release; there is no two-week bar any more
 - `.claude/templates/knowledge.md`, and `knowledge` and `memory` as types to
   write (ADR 0055). Pages that already carry them still parse; the vault's
   lesson files keep `type: memory` from their template.
+- `my-notes/`, its README, `type: my-note` and the templates `my-note.md` and
+  `my-entity.md` (ADR 0060). Your pages move into `notes/`, step 8.
+- The English rule (ADR 0059). The vault writes in the language in
+  `core/IDENTITY.md`; nothing already written is translated in bulk.
 
 **Added**
 
@@ -58,7 +63,16 @@ of a working vault before release; there is no two-week bar any more
 - The brain doctor flags skills and hooks that still name `retrieval-eval`,
   `golden-set`, the recall skill, the harvest skill or `harvested_at`, and
   accepts `reports/` and `outputs/` at the top level.
-- Tests for the neighbour finder, the two new checks and the board.
+- Owner pages (ADR 0060): a page in `notes/` with `author:` is yours. The
+  agent never edits, moves, archives or deletes one unless you ask, and the
+  `owner-pages` check fires when one changed, lost `author:`, or was deleted
+  or moved. `/note` writes one from `.claude/templates/owner-page.md`.
+- `notes/home.md`, the front page for browsing in Obsidian, and
+  `notes/todo.md`, your own to-do and ideas page. `node install.mjs
+  --obsidian` hides `archive/`, `logs/` and `raw/` from Obsidian's search and
+  graph, merging into your `.obsidian/app.json`.
+- Tests for the neighbour finder, the new checks, the owner-page guard and
+  the board.
 
 **Changed**
 
@@ -104,16 +118,18 @@ do it in a session with the agent, page by page.
 4. **Take the machinery:**
 
    ```
-   git checkout v1.3 -- .agents .claude/hooks .claude/templates .claude/settings.json .codex scripts docs my-notes/README.md reports/README.md outputs/README.md AGENTS.md CLAUDE.md README.md SETUP.md install.mjs .gitignore .gitattributes notes/lifecycle-policy.md notes/self-evolution-policy.md logs/signals/README.md raw/README.md
+   git checkout v1.3 -- .agents .claude/hooks .claude/templates .claude/settings.json .codex scripts docs reports/README.md outputs/README.md AGENTS.md CLAUDE.md README.md SETUP.md install.mjs .gitignore .gitattributes notes/lifecycle-policy.md notes/self-evolution-policy.md notes/home.md logs/signals/README.md raw/README.md
    ```
 
    `notes/source-roots.md` is left out because it holds your rows. Change
-   its `type:` to `topic` and add `updated: <today>` by hand.
+   its `type:` to `topic` and add `updated: <today>` by hand. So is
+   `core/IDENTITY.md`, which is yours: replace its § Language with the one
+   line from `git show v1.3:core/IDENTITY.md`, in your language.
 5. **Remove what v1.3 deleted** — `git checkout` adds and replaces files but
    never removes them:
 
    ```
-   git rm -r -q .agents/skills/recall .agents/skills/harvest scripts/retrieval-eval.mjs scripts/tests/retrieval-eval.test.mjs .claude/templates/knowledge.md
+   git rm -r -q .agents/skills/recall .agents/skills/harvest scripts/retrieval-eval.mjs scripts/tests/retrieval-eval.test.mjs .claude/templates/knowledge.md .claude/templates/my-note.md .claude/templates/my-entity.md
    git rm -q --ignore-unmatch .claude/eval/golden-set.md .claude/eval/real-prompts.md .claude/eval/expansions.md
    ```
 
@@ -146,18 +162,30 @@ do it in a session with the agent, page by page.
    to it: `node scripts/link-sweep.mjs` lists them. Take `INDEX.md`'s new
    headings and the "Folders, not pages" table from
    `git diff HEAD v1.3 -- INDEX.md`.
-8. **Project cards.** Delete the `harvested_at:` and `harvested_on:` lines
+8. **Your own pages move into `notes/`** (ADR 0060). For each file in
+   `my-notes/` except the README: check its name is free in `notes/` (on a
+   clash, give yours a free name and link the other page in its first line),
+   `git mv my-notes/x.md notes/x.md`, and replace `type: my-note` with
+   `author: <your name>`, keeping `kind:`. Your to-do and ideas files merge
+   into `notes/todo.md` (take it with `git show v1.3:notes/todo.md`), under
+   "To do" and "Ideas". Then `git rm my-notes/README.md`. Anything outside
+   the vault that reads `my-notes/` paths needs its paths changed.
+9. **Obsidian and the home page.** `node install.mjs --obsidian`, then link
+   your topic hubs from `notes/home.md` and add its row to `INDEX.md`
+   (§ Start here, in `git diff HEAD v1.3 -- INDEX.md`).
+10. **Project cards.** Delete the `harvested_at:` and `harvested_on:` lines
    from every `type: project` card in `notes/`.
-9. **Lessons, optionally.** Vault lesson topics about how you want work done
+11. **Lessons, optionally.** Vault lesson topics about how you want work done
    in general, not about running the vault, can move to your kit's
    `lessons/`. Head each moved copy with where it came from and the commit it
    was copied at, and move the vault original to `archive/`.
-10. **Relink.** `node install.mjs --link-skills`, and
+12. **Relink.** `node install.mjs --link-skills`, and
     `node install.mjs --link-global-skills` again if you use it.
-11. **Commit the upgrade** by explicit path:
+13. **Commit the upgrade** by explicit path:
     `git commit -m "upgrade: Second Brain OS v1.3"`.
-12. **Check it:** `node scripts/brain-doctor.mjs` (Retired terms lists any
-    skill of your own that still names the recall or harvest skills),
+14. **Check it:** `node scripts/brain-doctor.mjs` (Retired terms lists any
+    skill of your own that still names the recall or harvest skills, or
+    `my-notes/`),
     `node .claude/hooks/checks.mjs --all`, then `node scripts/maintenance.mjs`
     to see what is due.
 

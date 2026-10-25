@@ -7,7 +7,7 @@
 // for:
 //   1. Broken [[wikilinks]] — target not found by filename or alias.
 //   2. Orphan notes — no inbound AND no outbound resolved wikilinks, further
-//      excluding logs/, my-notes/, archive/, raw/, core/, docs/, scripts/ and
+//      excluding logs/, archive/, raw/, core/, docs/, scripts/ and
 //      the repo docs from being reported (episodic, the owner's own notes,
 //      evidence, always-loaded or documentation — not part of the linked
 //      graph).
@@ -15,7 +15,7 @@
 //      whose target does not exist).
 //   4. Duplicate basenames — two files sharing a name anywhere in the tree.
 //      Wikilinks resolve by basename, so a collision makes [[foo]] ambiguous
-//      and it fails silently. `notes/` is flat, but `my-notes/`, `raw/`,
+//      and it fails silently. `notes/` is flat, but `reports/`, `raw/`,
 //      `archive/` and any folder you add can still collide with it.
 //   5. Notes missing from INDEX.md — a git-blind twin of the index-coverage
 //      check (ADR 0038).
@@ -86,9 +86,10 @@ const TARGET_ONLY_DIRS = new Set(['archive', 'raw']);
 // false positives long before it dies from missed orphans.
 // `docs/` and the root repo docs are documentation *about* the vault rather
 // than pages in it; they are read from the repo, not reached by wikilink.
-// `my-notes/` is the owner's own notes, exempt from the >=1-outbound-wikilink
-// rule (AGENTS.md), so an unlinked file there is not a finding.
-const EXCLUDE_FROM_ORPHAN_REPORT = ['logs', 'my-notes', 'archive', 'raw', 'core', 'docs', 'scripts'];
+// An owner page (`author:` in its frontmatter, ADR 0060) is exempt from the
+// >=1-outbound-wikilink rule, so an unlinked one is not a finding either;
+// that is checked per file below, not by folder.
+const EXCLUDE_FROM_ORPHAN_REPORT = ['logs', 'archive', 'raw', 'core', 'docs', 'scripts'];
 const ORPHAN_EXEMPT_FILES = new Set(['README.md', 'SETUP.md', 'AGENTS.md', 'CLAUDE.md']);
 
 function toPosix(p) {
@@ -282,6 +283,7 @@ function isExcludedFromOrphanReport(relPath) {
 const orphans = [];
 for (const note of notes) {
   if (isExcludedFromOrphanReport(note.relPath)) continue;
+  if (note.frontmatter.author) continue; // an owner page may stand alone (ADR 0060)
   const outCount = (outboundResolved.get(note.relPath) || new Set()).size;
   const inCount = (inboundResolved.get(note.relPath) || new Set()).size;
   if (outCount === 0 && inCount === 0) orphans.push(note.relPath);
@@ -326,6 +328,7 @@ if (existsSync(indexPath)) {
   for (const note of notes) {
     if (!note.relPath.startsWith('notes/')) continue;
     if (note.relPath.slice('notes/'.length).includes('/')) continue; // notes/ is flat
+    if (note.frontmatter.author) continue; // owner pages stay out of the catalog (ADR 0060)
     const name = path.basename(note.relPath, '.md');
     const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     // The explicit terminator is what keeps `lesson-...-style` from matching
@@ -408,7 +411,7 @@ lines.push('');
 lines.push('## Orphan notes');
 lines.push('');
 lines.push(
-  '(no inbound and no outbound resolved wikilinks; excludes episodic, my-notes, archived, source, always-loaded and documentation files)'
+  '(no inbound and no outbound resolved wikilinks; excludes episodic, owner pages, archived, source, always-loaded and documentation files)'
 );
 lines.push('');
 if (orphans.length === 0) {

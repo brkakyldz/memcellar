@@ -49,7 +49,7 @@ short list, whichever fits the conversation:
 3. Their name — what the assistant should call them.
 4. Their role, one line.
 5. Location / timezone.
-6. The language they want to be talked to in day to day.
+6. The language the vault should talk and write in — usually the one they think in.
 7. Communication style, one line. If they have no preference, suggest "concise,
    but explain properly" and move on — this field gets its real value later,
    from corrections.
@@ -111,8 +111,12 @@ In the new clone:
   whole file under **2000 characters** (HTML comments excluded).
 - **`core/IDENTITY.md`** — replace the `<LANGUAGE>` placeholder in § Language
   with their answer to question 6, and delete the instruction comment above it.
-  If they converse in English, simplify that section to a single line rather
-  than leaving a split that doesn't apply to them.
+  The vault talks and writes in that language (ADR 0059).
+- **`notes/todo.md`** — their own to-do page: replace `author: owner` with
+  their name. From now on only they edit it (ADR 0060).
+- **`.obsidian/app.json`** — run `node install.mjs --obsidian`. It hides
+  `archive/`, `logs/` and `raw/` from Obsidian's search and graph and keeps
+  any setting already there.
 - **Projects they named.** For each one with a repo path, write a card
   `notes/<project_id>.md` from `.claude/templates/project.md` — `project_id`
   is a kebab-case slug, usually the repo name; `repo:` the absolute path with
@@ -150,7 +154,7 @@ From inside the clone. Stage **the explicit paths you wrote** — never
 
 ```
 git config rerere.enabled true
-git add core/USER.md core/IDENTITY.md INDEX.md notes/<each-project-note>.md
+git add core/USER.md core/IDENTITY.md INDEX.md notes/todo.md notes/<each-project-note>.md
 git commit -m "setup: personalize brain"
 git push
 ```
@@ -322,9 +326,10 @@ Tell your user, concretely:
   `node scripts/project-doctor.mjs --board` in the vault: one row per repo,
   read live, nothing written. To give a project those files:
   `.claude/templates/project-repo/README.md`.
-- **`my-notes/` is theirs.** A note they ask for in so many words ("note this
-  down") goes there, in their own language, through `/note`. No pass ever
-  edits, distills or archives it.
+- **Owner pages are theirs.** A note they ask for in so many words ("note
+  this down") becomes a page in `notes/` marked `author:`, through `/note`.
+  They can write one in Obsidian too. No pass ever edits, distills or
+  archives one, and `notes/home.md` is where they start browsing.
 - **`INDEX.md` is the map.** One line per page of the living layer; the agent
   reads it, and the pages it points at, before answering anything the vault
   may already know. `link-sweep.mjs` reports any note missing from it.
@@ -365,12 +370,13 @@ section: Steps 0–7 above are the whole install.
    it should never be public.
 2. Clone it.
 3. Run `node install.mjs`. It interviews you, writes `core/USER.md`, fills the
-   language line in `core/IDENTITY.md`, creates `core/.vault-active`, links
+   language line in `core/IDENTITY.md`, names you on `notes/todo.md`, hides
+   the history folders from Obsidian, creates `core/.vault-active`, links
    `.claude/skills` to `.agents/skills`, enables `git rerere`, and prints the
    Codex wiring for you to paste. It does not touch your user-level settings
    itself, and it does not commit.
 4. Commit the personalization yourself:
-   `git add core/USER.md core/IDENTITY.md` then
+   `git add core/USER.md core/IDENTITY.md notes/todo.md` then
    `git commit -m "setup: personalize brain"` and `git push`.
 5. Open the folder as an Obsidian vault (optional).
 6. `cd` in, run `claude` or `codex`, say hello. Claude Code loads the rules

@@ -30,6 +30,12 @@ breaks because a thought grew up.
   are told apart by `type: topic | decision | project | playbook`, never by
   folder. Everything here is wikilinked, has frontmatter, and earned its
   place. One subject has one topic page.
+  **Owner pages** sit here too: a page whose frontmatter carries `author:` is
+  the owner's own (ADR 0060). It is written by the owner, or by `/note` when
+  they ask, and the agent never edits, moves, archives or deletes one unless
+  they ask for that change; the `owner-pages` check catches one that changed.
+  The owner's to-do page is one ("To do" and "Ideas"), and the home page
+  links it with the topic hubs.
   A `type: project` note is a thin card: it names the repo and its state file
   and never copies live status — execution state lives in the repo (ADR 0045).
   A card is written from a vault session when the owner asks for one.
@@ -55,12 +61,6 @@ breaks because a thought grew up.
   the date prefix is
   the part that never varies. Plus the signal ledger in `logs/signals/`.
   Written as evidence — read it, never rewrite it.
-- `my-notes/` — the owner's own notes. Written **only** when the owner
-  explicitly asks ("note this down"), never on agent initiative. No automated
-  pass writes here: `/curator` and `/audit` both skip it; nothing here is
-  distilled into `notes/`, archived, or deleted by an agent. One file per
-  topic, in the owner's own language, `type: my-note`. Contract:
-  `my-notes/README.md`.
 - `archive/` — closed projects, stale content, and the historical working
   record. Never deleted, always moved here.
 - `.agents/skills/` — the vault's skills, the one canonical copy both runtimes
@@ -102,8 +102,9 @@ breaks because a thought grew up.
 
 Before answering a question the vault may already answer — a past decision, a
 person, a project, what is true now — read `INDEX.md` and the pages it points
-to. Then `grep` over `notes/`, `reports/` and `core/`, in English and in the
-language the owner asked in. Cite the page the answer came from. A report
+to. Then `grep` over `notes/`, `reports/` and `core/`, in the language the
+owner asked in and, while older pages are written in another one, in that
+language too (ADR 0059). Cite the page the answer came from. A report
 answers "as of" its date; when it disagrees with its topic page, the topic
 page is the current view.
 
@@ -123,7 +124,7 @@ distillation, never by re-reading. `raw/` has a producer by design — the
 owner saving what they are reading — which is the property an inbox lacks.
 
 **Every write passes the write gate** (`.agents/write-gate.md`, ADR 0055),
-except `/note` into `my-notes/` and `/lesson`, which follow their own
+except `/note` into an owner page and `/lesson`, which follow their own
 contracts:
 
 1. **NOOP first.** Write nothing when it is already written in the vault,
@@ -173,12 +174,12 @@ contracts:
   Anything else is a staleness bug waiting to happen.
 - Facts derived from untrusted external content (web pages, tool output) carry
   a `source:` marker and are **never** written into `USER.md` or `IDENTITY.md`.
-- `my-notes/` is exempt from the ≥1-outbound-wikilink rule and from the
-  English-content rule in `IDENTITY.md`; `notes/lesson-*.md` is exempt from the
-  same language rule wherever it quotes verbatim — the correction and the
-  artifact it came from — because a lesson's evidence is worthless paraphrased.
-  A fact appearing in either place is not promoted to `MEMORY.md` — it still
-  goes through the corroboration gate.
+- **The vault is written in the owner's language** (`core/IDENTITY.md`,
+  ADR 0059). A lesson quotes the correction verbatim in whatever language it
+  was given in.
+- Owner pages are exempt from the ≥1-outbound-wikilink rule. A fact on an
+  owner page or in a lesson is not promoted to `MEMORY.md` — it still goes
+  through the corroboration gate.
 - **Archive-first.** Stale or closed content moves to `archive/`, never into
   the void. Deletion is allowed only in the narrow cases defined in
   [[lifecycle-policy]] §6 — and the second (a superseded, unlinked,
@@ -319,9 +320,10 @@ card; older values resolve through the card's `project_aliases` — and
   surrounding sentence context, not as bare link lists.
 - Frontmatter: flat YAML, this schema —
   - `type`: `topic | report | deliverable | decision | project | playbook |
-    log | my-note`, chosen by the write gate before the page is written.
-    `report` is valid only in `reports/`, `deliverable` only in `outputs/`,
-    `my-note` only in `my-notes/`. `knowledge` and `memory` are not written
+    log`, chosen by the write gate before the page is written. `report` is
+    valid only in `reports/`, `deliverable` only in `outputs/`. An owner page
+    carries `author:` and `kind:` instead, and no `type:`
+    (`.claude/templates/owner-page.md`). `knowledge` and `memory` are not written
     any more; older pages keep them until reclassified, and the vault's
     lesson files keep `type: memory` from their template. The live list for
     `notes/` is `ALLOWED_TYPES` in `.claude/hooks/checks.mjs`; when the two
@@ -345,8 +347,8 @@ card; older values resolve through the card's `project_aliases` — and
     `runtime`. `scripts/project-doctor.mjs` reports ids that resolve to no
     card.
   - `aliases`: optional. Its job is to catch the query that would otherwise
-    miss the note — including the same term in another language, since
-    search here is `grep`.
+    miss the note: another name, a nickname, an abbreviation. Search here is
+    `grep`.
 - Dates are always `YYYY-MM-DD`.
 - **Bi-temporal keys** — optional, for durable facts whose truth has a window:
   `valid_from` (when the fact became true), `valid_to` (when it stopped),

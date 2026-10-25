@@ -36,6 +36,16 @@ open without opening it.
 
 ---
 
+## Start here
+
+| Page | What it is | Status |
+|---|---|---|
+| [[home]] | The front page for browsing in Obsidian: topic hubs and the owner's lists | seedling |
+| [[todo]] | The owner's own to-do and ideas list — an owner page, edited only by them | owner |
+
+Owner pages (`author:` in the frontmatter, ADR 0060) need no row here; list
+the ones the owner returns to. `grep -l "^author:" notes/*.md` finds them all.
+
 ## Projects
 
 | Page | What it is | Status |

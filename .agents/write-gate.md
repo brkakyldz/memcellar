@@ -4,8 +4,9 @@ ADR 0055 is the decision; this is the procedure. `/file`, `/ingest`,
 `/curator`, and any outside skill that writes into the vault (a research
 pipeline, for one), run these four steps before they write a page.
 
-Two writers are exempt, each for its own reason. `/note` writes `my-notes/`,
-the owner's own words on their request, and nothing here applies to it.
+Two writers are exempt, each for its own reason. `/note` writes owner pages
+(`author:`, ADR 0060), the owner's own words on their request, and nothing
+here applies to it.
 `/lesson` follows ADR 0048 instead: a correction is captured verbatim, its
 "find the topic" step is its neighbour step, and it has no type to choose.
 
@@ -47,11 +48,13 @@ creating one is part of the write.
 ## 3. Find the neighbours
 
 ```bash
-node scripts/note-neighbours.mjs "<subject in English>" --tags <tags> [--slug <topic-page>]
+node scripts/note-neighbours.mjs "<subject>" --tags <tags> [--slug <topic-page>]
 ```
 
-Run it again with the owner's-language words if they asked in another
-language. Open every page it lists above 0.5 and any it flags as a version.
+Run it again with the other language's words while older pages are written
+in one (ADR 0059). Open every page it lists above 0.5 and any it flags as a
+version. An owner page in the list (`author:`) is read, never edited: if the
+write makes it stale, say so in your own page and tell the owner.
 For each, decide ADD / MERGE / SUPERSEDE / NARROW / NOOP (`AGENTS.md` §
 Memory rules). A flagged `-v2` is never answered with a `-v3`: update the
 first page and archive the rest.
@@ -62,7 +65,8 @@ If this write changes what is true, every neighbour that still says the old
 thing is closed **in the same commit**: `valid_to: <today>`,
 `superseded_by: "[[new]]"`, and a visible first line —
 `> **Superseded <today>:** <what changed> → [[new]]`. A tag or a comment that
-it "may be stale" is not a close. Check the owner's topic page and
+it "may be stale" is not a close. The one exception is an owner page: it is
+never closed by the agent, only reported to the owner. Check the owner's topic page and
 `core/MEMORY.md` too: a pointer line there that now says the old thing is a
 neighbour like any other.
 

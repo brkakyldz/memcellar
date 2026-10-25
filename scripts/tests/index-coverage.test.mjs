@@ -105,16 +105,15 @@ writeFileSync(path.join(work, 'INDEX.md'), INDEX_TABLE);
   check('every finding says why', findings.every((f) => f.detail === 'missing-from-index'));
 }
 
-// --- my-notes/: the owner's own notes are outside every check ------------
+// --- owner pages: the owner's own pages trip none of the shape checks -----
 {
-  mkdirSync(path.join(work, 'my-notes'), { recursive: true });
   writeFileSync(
-    path.join(work, 'my-notes', 'Kendi Notum.md'),
-    '---\ntype: my-note\ncreated: 2026-10-23\n---\n\nNo outbound link, see [[archive/x]].\n'
+    path.join(work, 'notes', 'Kendi Notum.md'),
+    '---\nauthor: owner\nkind: idea\n---\n\nNo outbound link, no type, no row in the index.\n'
   );
-  const found = CHECKS.flatMap((c) => c.run({ repoRoot: work, changedFiles: ['my-notes/Kendi Notum.md'] }) || []);
-  check('a type: my-note file in my-notes/ trips no check', found.length === 0, JSON.stringify(found));
-  rmSync(path.join(work, 'my-notes'), { recursive: true, force: true });
+  const found = CHECKS.flatMap((c) => c.run({ repoRoot: work, changedFiles: ['notes/Kendi Notum.md'] }) || []);
+  check('an owner page (author:) in notes/ trips no shape check', found.length === 0, JSON.stringify(found));
+  rmSync(path.join(work, 'notes', 'Kendi Notum.md'), { force: true });
 }
 
 // --- the sweep, which sees notes nobody is committing right now ----------

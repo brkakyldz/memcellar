@@ -128,6 +128,27 @@ A report or a deliverable still adds a line and a link to its topic page, so
 row each, as folders. The two folders' contracts are `reports/README.md` and
 `outputs/README.md`.
 
+### Owner pages
+
+The owner's own pages live in `notes/` too, next to the topic pages on the
+same subjects (ADR 0060). A page whose frontmatter carries `author:` belongs
+to the owner. It has `kind:` instead of `type:`, the shape checks and the
+lifetime findings skip it, and the agent never edits, moves, archives or
+deletes it unless the owner asks for that change. `/note` writes one when the
+owner asks, from `.claude/templates/owner-page.md`, and the owner can write one
+in Obsidian. The vault can't tell an asked-for edit from an unasked one, so
+the `owner-pages` check fires on every change to an owner page against its
+committed copy, and on a lost `author:`, a delete or a move. When the owner
+made the change, they ignore it; when the agent did, it sees it before the
+commit.
+
+The owner's to-do page (`notes/todo.md`, "To do" and "Ideas") is one such
+page. `notes/home.md` is the front page for browsing in Obsidian: it links the
+topic hubs and the to-do page. Setup merges `archive/`, `logs/` and `raw/`
+into Obsidian's ignore filters (`node install.mjs --obsidian`), so search and
+the graph show the current view. Pages are written in the owner's language
+(ADR 0059); field names stay English for the checks.
+
 ## 4. Reading: tiers, not search
 
 - **Tier 0 — always loaded in a vault session.** `IDENTITY.md` (40 lines),
@@ -140,8 +161,9 @@ row each, as folders. The two folders' contracts are `reports/README.md` and
 - **Tier 1 — the catalog, then the page.** `INDEX.md` lists every page of the
   living layer in one line each, and each topic page lists its reports. Read
   it, pick the two or three pages that matter, open those. When the catalog
-  is not enough, `grep` over `notes/`, `reports/` and `core/`, in English and
-  in the language the question was asked in. This is a rule in `AGENTS.md`,
+  is not enough, `grep` over `notes/`, `reports/` and `core/`, in the
+  language the question was asked in, and in the language older pages are
+  written in while the vault holds both (ADR 0059). This is a rule in `AGENTS.md`,
   not a skill (ADR 0057): before answering a question the vault may already
   answer, read, then cite the page.
 - **Tier 2 — the episodic stream.** `logs/`, when the first two don't answer.

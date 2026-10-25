@@ -38,9 +38,9 @@ one line rather than writing.
 | The material is | Skill | Lands in |
 |---|---|---|
 | A correction they made to the agent | `/lesson` | the kit, the repo or the vault, by ADR 0056, verbatim |
-| The owner's own words, as they said them | `/note` | `my-notes/`, the owner's language |
+| The owner's own words, as they said them | `/note` | an owner page in `notes/` (`author:`), never edited after |
 | An external document | `/ingest` | a report in `reports/`, plus its topic page |
-| Analysis worked out together in the session | **`/file`** | a topic page, a report or a deliverable, English |
+| Analysis worked out together in the session | **`/file`** | a topic page, a report or a deliverable |
 
 ## Steps
 
@@ -79,10 +79,8 @@ wiki page are different artifacts:
 - **Keep the evidence, drop the hedging.** Numbers, file paths, dates, counts —
   those are what make the page worth having. "Probably", "it seems", "I think"
   either become a confidence marker in frontmatter or become a claim.
-- **In the vault's language**, per `core/IDENTITY.md`, even when the
-  conversation was in another one. An `aliases:` entry in the conversation
-  language is welcome: search is lexical, and the alias is what lets a
-  question in the owner's language find the page.
+- **In the owner's language**, per `core/IDENTITY.md` (ADR 0059). An
+  `aliases:` entry is for another name of the same thing, not a translation.
 
 ### 4. Frontmatter
 

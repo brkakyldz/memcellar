@@ -48,9 +48,9 @@ import {
   lifetimeFindings,
 } from './lib.mjs';
 
-// The `type:` values valid in notes/. `my-note` is left out on purpose: it is
-// valid only inside my-notes/, the owner's own notes, which no check here
-// scans. `report` and `deliverable` are valid types but not in notes/ — they
+// The `type:` values valid in notes/. An owner page (`author:` set, ADR 0060)
+// needs none and is checked only by `owner-pages`; the `my-note` type went with
+// its folder. `report` and `deliverable` are valid types but not in notes/ — they
 // have their own folders (ADR 0055), which `note-lifetime` checks. `knowledge`
 // and `memory` are retired as write-time types and stay valid only so that
 // pages written before ADR 0055 parse; `note-lifetime` flags them.
@@ -115,6 +115,28 @@ function parseFrontmatter(text) {
   return fields;
 }
 
+// An owner page is one whose frontmatter names an author (ADR 0060). The
+// value is the owner's name; only the field's presence counts.
+function isOwnerPage(text) {
+  const fm = text === null ? null : parseFrontmatter(text);
+  return Boolean(fm && fm.author);
+}
+
+// The committed copy of a file, or null when HEAD has none.
+function headCopy(repoRoot, rel) {
+  try {
+    return execFileSync('git', ['show', `HEAD:${rel}`], {
+      cwd: repoRoot,
+      timeout: 10000,
+      encoding: 'utf8',
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+  } catch {
+    return null;
+  }
+}
+
 // --- the checks ---------------------------------------------------------
 // Contract: { id, added, source, scope, run(ctx) }, ctx being
 // { repoRoot, changedFiles, sessionId, transcriptPath, ledgerText }. scope
@@ -162,12 +184,13 @@ const noteConventions = {
     for (const rel of changedFiles) {
       if (!rel.startsWith('notes/') || !rel.endsWith('.md')) continue;
       if (rel.slice('notes/'.length).includes('/')) continue; // notes/ is flat; subdirs are another problem
+      const text = readFileSafe(path.join(repoRoot, rel));
+      if (text === null) continue;
+      if (isOwnerPage(text)) continue; // the owner's page, the owner's shape (ADR 0060)
       const base = path.basename(rel);
       if (!/^[a-z0-9][a-z0-9-]*\.md$/.test(base)) {
         findings.push({ file: rel, detail: 'filename-not-kebab-case' });
       }
-      const text = readFileSafe(path.join(repoRoot, rel));
-      if (text === null) continue;
       const fm = parseFrontmatter(text);
       if (!fm) {
         findings.push({ file: rel, detail: 'missing-frontmatter' });
@@ -221,6 +244,7 @@ const noteLifetime = {
       const text = readFileSafe(path.join(repoRoot, rel));
       if (text === null) continue;
       const fm = parseFrontmatter(text) || {};
+      if (dir === 'notes' && fm.author) continue; // owner page: `owner-pages` checks it
       if (dir === 'notes') {
         if (fm.type === 'report' || fm.type === 'deliverable') {
           findings.push({ file: rel, detail: `${fm.type}-in-notes` });
@@ -268,6 +292,64 @@ const lifetimeSweep = {
   },
 };
 
+// --- owner-pages --------------------------------------------------------
+
+// ADR 0060: a page in notes/ with `author:` is the owner's. The agent edits,
+// moves or deletes one only when the owner asks, and nothing else in the
+// vault can tell an asked-for edit from an unasked one. So this check fires
+// on every change to an owner page against its committed copy; the owner,
+// who made the edit, ignores it, and the agent, who did not mean to, sees it
+// before the commit. A new owner page (nothing in HEAD) is `/note` at work and
+// does not fire.
+//
+// Canary: change one line of a committed `notes/x.md` carrying `author: o`
+// → `owner-page-edited`; drop its `author:` line → `owner-mark-removed`;
+// `git rm` it → `owner-page-removed`. Near-miss it must NOT fire on: a
+// changed `notes/y.md` without `author:` in HEAD, or a new owner page.
+const ownerPages = {
+  id: 'owner-pages',
+  added: '2026-10-25',
+  source: 'ADR 0060 (the owner\'s pages live in notes/)',
+  scope: 'changed',
+  run({ repoRoot, changedFiles }) {
+    const findings = [];
+    let status = '';
+    try {
+      status = execFileSync('git', ['status', '--porcelain', '-uall'], {
+        cwd: repoRoot, timeout: 10000, encoding: 'utf8', windowsHide: true,
+      });
+    } catch {
+      return findings; // no git, nothing to compare against — fail open
+    }
+    const wanted = new Set(changedFiles);
+    for (const line of status.split('\n')) {
+      if (line.trim() === '') continue;
+      const xy = line.slice(0, 2);
+      let p = line.slice(3).trim().replace(/^"(.*)"$/, '$1');
+      let from = p;
+      const arrow = p.indexOf(' -> ');
+      if (arrow !== -1) { from = p.slice(0, arrow); p = p.slice(arrow + 4); }
+      from = normalizeRel(from);
+      p = normalizeRel(p);
+      if (!from.startsWith('notes/') || !from.endsWith('.md')) continue;
+      const head = headCopy(repoRoot, from);
+      if (!isOwnerPage(head)) continue;
+      const msg = (what) => `${from}: owner page ${what} — keep it only if the owner asked for this change (ADR 0060)`;
+      if (xy.includes('D')) {
+        findings.push({ file: from, detail: 'owner-page-removed', message: msg('deleted') });
+      } else if (from !== p) {
+        findings.push({ file: from, detail: 'owner-page-moved', message: msg(`moved to ${p}`) });
+      } else if (wanted.has(p)) {
+        const now = readFileSafe(path.join(repoRoot, p));
+        if (now === null) continue;
+        if (!isOwnerPage(now)) findings.push({ file: p, detail: 'owner-mark-removed', message: msg('lost its author: line') });
+        else if (now.replace(/\r\n/g, '\n') !== head.replace(/\r\n/g, '\n')) findings.push({ file: p, detail: 'owner-page-edited', message: msg('edited') });
+      }
+    }
+    return findings;
+  },
+};
+
 // The 'uncaptured-correction' check lived here, with the transcript readers it
 // needed: it scanned the owner's own messages for correction phrases and, finding
 // one, told the agent to run /lesson. Removed 2026-09-06 (ADR 0038) — it is
@@ -302,6 +384,7 @@ const indexCoverage = {
     for (const rel of changedFiles) {
       if (!rel.startsWith('notes/') || !rel.endsWith('.md')) continue;
       if (rel.slice('notes/'.length).includes('/')) continue; // notes/ is flat
+      if (isOwnerPage(readFileSafe(path.join(repoRoot, rel)))) continue; // the owner's, not the catalog's (ADR 0060)
       const name = path.basename(rel, '.md');
       const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       if (!new RegExp(`\\[\\[${escaped}(?:[#|]|\\]\\])`).test(indexText)) {
@@ -317,6 +400,7 @@ export const CHECKS = [
   noteConventions,
   noteLifetime,
   lifetimeSweep,
+  ownerPages,
   indexCoverage,
 ];
 

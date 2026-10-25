@@ -7,7 +7,8 @@
 //   3. creates core/.vault-active — the marker the SessionStart hook is gated on,
 //   4. links .claude/skills to .agents/skills, the one skills copy both
 //      runtimes load (a junction on Windows, a symlink elsewhere — ADR 0044),
-//   5. turns on git rerere,
+//   5. turns on git rerere, names you as the author of notes/todo.md and
+//      hides the history folders from Obsidian (.obsidian/app.json, merged),
 //   6. prints the Codex wiring for you to paste, and does NOT write it
 //      (Claude Code needs none: this repo's .claude/settings.json wires it).
 //
@@ -30,6 +31,10 @@
 // exactly those links again. That is why it may touch user-level folders when
 // step 6 may not: you ask for it by name, it changes nothing but its own
 // links, and it reverses cleanly — a settings file merge is none of those.
+//
+// `node install.mjs --obsidian` merges the history folders (archive/, logs/,
+// raw/) into Obsidian's ignore filters in .obsidian/app.json and exits; the
+// interview does the same. Every other Obsidian setting is kept (ADR 0060).
 //
 // `node install.mjs --help` prints the usage and touches nothing.
 //
@@ -237,6 +242,34 @@ function globalSkills(remove) {
   return ok;
 }
 
+// Obsidian is how the owner browses the vault (ADR 0060). The history folders
+// stay where they are but leave search, the graph and quick switcher. A
+// missing app.json is created; an existing one is merged, never replaced, and
+// one that does not parse is left alone and reported.
+const OBSIDIAN_HIDDEN = ['archive/', 'logs/', 'raw/'];
+
+function obsidianIgnore() {
+  const file = path.join(ROOT, '.obsidian', 'app.json');
+  let app = {};
+  if (fs.existsSync(file)) {
+    try {
+      app = JSON.parse(fs.readFileSync(file, 'utf8'));
+    } catch (err) {
+      return { ok: false, note: `.obsidian/app.json does not parse (${err.message}); left as it is` };
+    }
+    if (app === null || typeof app !== 'object' || Array.isArray(app)) {
+      return { ok: false, note: '.obsidian/app.json is not a JSON object; left as it is' };
+    }
+  }
+  const filters = Array.isArray(app.userIgnoreFilters) ? app.userIgnoreFilters : [];
+  const missing = OBSIDIAN_HIDDEN.filter((f) => !filters.includes(f));
+  if (missing.length === 0) return { ok: true, note: 'already hides archive/, logs/, raw/' };
+  app.userIgnoreFilters = [...filters, ...missing];
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, `${JSON.stringify(app, null, 2)}\n`, 'utf8');
+  return { ok: true, note: `now hides ${missing.join(', ')}` };
+}
+
 const USAGE = `Second Brain OS — install.mjs
 
   node install.mjs                         one-time setup: interview, core/USER.md,
@@ -248,12 +281,14 @@ const USAGE = `Second Brain OS — install.mjs
                                            every project can use them (they write into
                                            the project, never the vault)
   node install.mjs --unlink-global-skills  remove exactly those links again
+  node install.mjs --obsidian              hide archive/, logs/, raw/ from Obsidian's
+                                           search and graph, keeping your other settings
   node install.mjs --help                  this text
 
 Nothing here commits, and the interview writes nothing until you confirm it.
 `;
 
-const KNOWN_ARGS = ['--link-skills', '--link-global-skills', '--unlink-global-skills', '--help', '-h'];
+const KNOWN_ARGS = ['--link-skills', '--link-global-skills', '--unlink-global-skills', '--obsidian', '--help', '-h'];
 const args = process.argv.slice(2);
 if (args.includes('--help') || args.includes('-h')) {
   stdout.write(USAGE);
@@ -268,6 +303,12 @@ if (unknown.length) {
 if (process.argv.includes('--link-skills')) {
   const r = linkSkills();
   stdout.write(`.claude/skills -> .agents/skills: ${r.ok ? r.note : `FAILED — ${r.note}`}\n`);
+  process.exit(r.ok ? 0 : 1);
+}
+
+if (process.argv.includes('--obsidian')) {
+  const r = obsidianIgnore();
+  stdout.write(`.obsidian/app.json: ${r.note}\n`);
   process.exit(r.ok ? 0 : 1);
 }
 
@@ -341,7 +382,7 @@ is honest, an invented one is read as true by every future session.
 const name = await ask('Your name (what should the assistant call you?): ');
 const role = await ask('Your role, one line: ');
 const where = await ask('Location / timezone: ');
-const lang = await ask('Language you want to be talked to in [English]: ', 'English');
+const lang = await ask('Language the vault talks and writes in [English]: ', 'English');
 const style = await ask('Communication style, one line [concise, explain properly]: ',
   'concise, but explain properly — a summary that needs a follow-up failed');
 const background = await ask('Technical background, one line: ');
@@ -362,8 +403,7 @@ ${role || '<!-- unanswered -->'}
 ${where || '<!-- unanswered -->'}
 
 ## Communication style
-- Converses in **${lang}**; durable vault content is written in English —
-  rationale in \`IDENTITY.md\`.
+- Talks and writes in **${lang}** (\`IDENTITY.md\`, ADR 0059).
 - ${style}
 
 ## Technical background
@@ -385,6 +425,8 @@ About to write:
 
   core/USER.md          (${userMd.length} chars)
   core/IDENTITY.md      (language line only)
+  notes/todo.md         (your name as its author, if you gave one)
+  .obsidian/app.json    (hide archive/, logs/, raw/; other settings kept)
   core/.vault-active    (switches the SessionStart hook on)
   .claude/skills        (link to .agents/skills — the one skills copy)
   git config rerere.enabled true
@@ -403,6 +445,17 @@ if (fs.existsSync(idPath)) {
   const filled = id.replace('<LANGUAGE>', lang);
   if (filled !== id) fs.writeFileSync(idPath, filled, 'utf8');
 }
+
+// The to-do page is the owner's (ADR 0060); it ships with a placeholder author.
+const todoPath = path.join(ROOT, 'notes', 'todo.md');
+if (name && fs.existsSync(todoPath)) {
+  const todo = fs.readFileSync(todoPath, 'utf8');
+  const named = todo.replace(/^author: owner$/m, `author: ${name}`);
+  if (named !== todo) fs.writeFileSync(todoPath, named, 'utf8');
+}
+
+const obsidian = obsidianIgnore();
+stdout.write(`  .obsidian/app.json: ${obsidian.ok ? obsidian.note : `SKIPPED — ${obsidian.note}`}\n`);
 
 fs.writeFileSync(
   MARKER,
@@ -443,7 +496,7 @@ Done. Your brain is live in this folder.
 Commit the personalization yourself, with explicit paths — nothing here commits
 for you, and nothing ever stages the whole tree:
 
-    git add core/USER.md core/IDENTITY.md
+    git add core/USER.md core/IDENTITY.md notes/todo.md
     git commit -m "setup: personalize brain"
 ${focus.length ? `
 Your current-focus projects have no card in notes/ yet. Open a session in

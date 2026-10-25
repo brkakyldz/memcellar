@@ -16,6 +16,7 @@
       "Bash(node scripts/tests/index-coverage.test.mjs:*)",
       "Bash(node scripts/tests/lifetime-sweep.test.mjs:*)",
       "Bash(node scripts/tests/note-lifetime.test.mjs:*)",
+      "Bash(node scripts/tests/owner-pages.test.mjs:*)",
       "Bash(node scripts/tests/note-neighbours.test.mjs:*)",
       "Bash(node scripts/tests/project-doctor.test.mjs:*)",
       "Bash(node scripts/tests/session-start.test.mjs:*)",

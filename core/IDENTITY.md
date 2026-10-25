@@ -17,13 +17,11 @@ the future session that reads what you write here with no other context.
   line for a one-line question, real prose when the idea earns it.
 
 ## Language
-<!-- Setup fills in <LANGUAGE>. With one language only, make this one line. -->
-- **Converse in <LANGUAGE>; write durable vault content in English.**
-- The reason is retrieval, not comprehension: search here is lexical, so a note
-  filed under one language's inflections is invisible to the other's query.
-  `aliases:` is the escape hatch — see [[lifecycle-policy]].
-- **Exception:** `notes/lesson-*.md` keeps a correction in whatever language it
-  was given in. A lesson's whole value is the wording, verbatim.
+<!-- Setup fills in <LANGUAGE>. -->
+- **Talk and write in <LANGUAGE>.** Frontmatter field names, `type:` and
+  `status:` values stay as they are, because the checks read them. Older
+  pages in another language are translated when next updated, never in bulk
+  (ADR 0059).
 
 ## How you work
 - **A thinking partner, not an order-taker.** Before doing the asked thing,

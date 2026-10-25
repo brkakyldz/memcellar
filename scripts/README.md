@@ -80,11 +80,12 @@ survives as a convention for the skills and feeds nothing that scores them.
 - **When:** step 3 of `.agents/write-gate.md`, run by `/file`, `/ingest` and
   `/curator`, or by hand:
   `node scripts/note-neighbours.mjs "<subject words>" [--tags a,b] [--slug name] [--min 0.3] [--json]`.
-  Run it once with English words and once with the owner's-language words;
-  Turkish letters are folded to ASCII on both sides, and another language
-  with its own case rules adapts `lower()` and `STOP` in the script.
+  Run it in the owner's language, and once more in the language older pages
+  are written in while the vault holds both (ADR 0059). Turkish letters are
+  folded to ASCII on both sides, and another language with its own case
+  rules adapts `lower()` and `STOP` in the script.
 - **Output:** a Markdown table on stdout (score, page, type, status, date,
-  why, flags), at most 15 rows. Read-only.
+  why, flags), at most 15 rows; an owner page shows as read only. Read-only.
 - **Failure that demanded it:** in the reference instance, versions of the
   same list were all live and nothing said which was current, and pages
   describing an old decision kept saying it after it changed (ADR 0055).
@@ -197,7 +198,10 @@ survives as a convention for the skills and feeds nothing that scores them.
 
 - **What:** the rules that are checked as code — wikilink short form (in
   `notes/`, `core/`, `reports/` and `outputs/`), note frontmatter, `INDEX.md`
-  coverage (ADR 0019, 0022, 0035), and two lifetime checks (ADR 0055).
+  coverage (ADR 0019, 0022, 0035), two lifetime checks (ADR 0055) and the
+  owner-page guard (ADR 0060). `owner-pages` fires when a page carrying
+  `author:` differs from its committed copy, lost the field, or was deleted
+  or moved; the other checks and the lifetime findings skip owner pages.
   `note-lifetime` checks each type in its home: a topic page carries
   `updated:`; a report in `reports/` is named `YYYY-MM-DD_<slug>.md` and
   carries `type: report`, `topic:`, `source:` and `confidence:`; a
@@ -236,6 +240,9 @@ with `node scripts/tests/<name>.test.mjs`; each exits 1 on a failure.
   home, with the fields its lifetime needs.
 - `lifetime-sweep.test.mjs` — `lifetimeFindings`, the `lifetime-sweep` check
   and the maintenance notice that counts them.
+- `owner-pages.test.mjs` — ADR 0060: the `owner-pages` check (edited, unmarked,
+  deleted and moved owner pages), the lifetime findings skipping them, and
+  `install.mjs --obsidian`.
 - `note-neighbours.test.mjs` — the neighbour finder: versions, aliases in
   another language, links in either direction.
 - `session-start.test.mjs` — the SessionStart hook: inert outside the vault,

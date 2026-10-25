@@ -58,7 +58,8 @@ Never decide in one pass: in the reference instance, single-step freshness
 judging measured ~54% correct, the two-step split ~82-93%.
 
 **3a. List candidates.** `node scripts/note-neighbours.mjs "<the source's
-subject>" --tags <tags>`, once in English and once in the owner's language;
+subject>" --tags <tags>`, in the owner's language and, while older pages
+are in another one, once in that language too;
 then `INDEX.md`, `grep` over `notes/` and `reports/`, `core/MEMORY.md` and
 `logs/` for anything it missed. Write down the pages that could conflict
 with or absorb this material — above all the subject's topic page.
@@ -143,4 +144,4 @@ session does not re-ingest the same source hoping for more.
   raising go in the note and the log, not into a list of suggestions.
 - If the source is the owner's own writing, this is the wrong skill. Their own
   words are theirs; the vault distills what they read, not what they wrote.
-  Keeping them is `/note`, and `my-notes/` is never distilled.
+  Keeping them is `/note`, and an owner page is never distilled.

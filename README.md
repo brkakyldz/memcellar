@@ -55,15 +55,20 @@ only plain files, Node and Git.
   automation there is.
 - **Reading is a rule.** `core/` arrives at every start. Before answering
   anything the vault may already know, the agent reads `INDEX.md` and the
-  pages it points at, greps `notes/`, `reports/` and `core/` in English and in
-  the language you asked in, and cites the page. `logs/` comes last.
+  pages it points at, greps `notes/`, `reports/` and `core/` in the language
+  you asked in, and cites the page. `logs/` comes last.
 - **You talk, the agent distills.** Something worth keeping is written on the
   spot; a source you drop in `raw/` is read through `/ingest`. Nothing waits
   in a queue. Before any page is written, the agent runs a short write gate
   (`.agents/write-gate.md`): write nothing if the fact is already written
   somewhere, pick the page's type, list the pages on the same subject, and
-  close the ones the new page makes stale, in the same commit. What you dictate word for word goes
-  to `my-notes/`, which no agent pass ever rewrites.
+  close the ones the new page makes stale, in the same commit. What you dictate word for word becomes
+  an owner page in `notes/`, marked `author:`, which no agent pass ever
+  rewrites.
+- **Your language, your browser.** The vault talks and writes in the
+  language you chose at setup. In Obsidian, `notes/home.md` links the topic
+  hubs and your to-do page, and `archive/`, `logs/` and `raw/` stay out of
+  search and the graph.
 - **Commits belong to the task.** Each task commits the files it wrote, by
   name — never `git add -A` — so two sessions, or both runtimes, can share one
   checkout.
@@ -80,10 +85,10 @@ Tiers, budgets and the reasoning behind each part:
 ```
 core/         Tier 0: IDENTITY, USER, MEMORY inlined; OPEN_QUESTIONS by pointer
 notes/        the living layer — topic pages, decisions, playbooks, project
-              cards; flat, wikilinked, told apart by type:
+              cards, and your own pages (author:); flat, wikilinked, told
+              apart by frontmatter; home.md is the front page
 reports/      dated research and comparisons, written once
 outputs/      lists, drafts and other deliverables, each with an expiry date
-my-notes/     your own notes, written only when you ask, in your language
 raw/          immutable sources you put there; the agent reads, never writes
 logs/         append-only session logs + logs/signals/, the event ledger
 archive/      closed and superseded content — never deleted, always moved here
@@ -202,7 +207,7 @@ user-level kit, never into the vault.
 |---|---|
 | `/file` | keep an analysis produced in conversation as the right kind of page — an update to a topic page, a dated report or an expiring deliverable — instead of losing it to the transcript |
 | `/ingest` | read a source in `raw/` into a dated report, plus the lines it changes on its topic page — discuss, distill, reconcile, catalog |
-| `/note` | write what you dictate into `my-notes/`, your own notes, in your language |
+| `/note` | write what you dictate into an owner page in `notes/` (`author:`), which the agent never edits afterwards |
 | `/lesson` | capture a correction verbatim into one file per recurring behaviour — in your kit by default, in a repo only when it is about that repo; the second correction on the same behaviour proposes a rule or a check |
 | `/closeout` | in a project: STATE up to date, the run report of an autonomous run, a trap any repo could hit added to your kit, one commit of exactly the task's paths; never touches the vault |
 | `/curator` | consolidate memory, close what time and new decisions made stale (expired deliverables, unlinked reports, topic pages behind their reports), keep the core files inside budget |

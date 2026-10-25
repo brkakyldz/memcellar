@@ -24,8 +24,9 @@ const USAGE = `Usage: node scripts/note-neighbours.mjs "<subject words>" [--tags
 Lists pages in notes/, reports/ and outputs/ that look like the same subject:
 by title words, aliases and shared tags, and (with --slug) by wikilinks in
 either direction. Prints score, path, type, status, last date and flags.
-Read-only. Use English words; add the owner's-language words too, since
-aliases may be in either. The vault is BRAIN_DIR if set, else the folder
+Read-only. Use the owner's-language words, and while older pages are in
+another language run it once in that one too (ADR 0059). An owner page
+(author:) is listed as read only. The vault is BRAIN_DIR if set, else the folder
 above this script.
 `;
 
@@ -198,7 +199,7 @@ function main() {
   console.log('| score | page | type | status | date | why | flags |');
   console.log('|---|---|---|---|---|---|---|');
   for (const r of found) {
-    console.log(`| ${r.score.toFixed(2)} | ${r.rel} | ${r.fm.type ?? ''} | ${r.fm.status ?? ''} | ${r.fm.updated || r.fm.created || ''} | ${r.reasons.join(', ')} | ${(r.flags ?? []).join('; ')} |`);
+    console.log(`| ${r.score.toFixed(2)} | ${r.rel} | ${r.fm.author ? 'owner page — read only' : (r.fm.type ?? '')} | ${r.fm.status ?? ''} | ${r.fm.updated || r.fm.created || ''} | ${r.reasons.join(', ')} | ${(r.flags ?? []).join('; ')} |`);
   }
 }
 

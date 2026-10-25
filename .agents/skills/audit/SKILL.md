@@ -48,8 +48,8 @@ the pointer claims); facts that appear in two places with different dates or
 wording; a `MEMORY.md` line whose detail note has since moved on; an ADR
 whose `status:` no longer matches what later ADRs did to it.
 
-Not read and not reported: anything in `my-notes/`, the owner's own notes,
-which no automated pass touches.
+Not read and not reported: owner pages (`author:` in the frontmatter, ADR
+0060), which no automated pass touches.
 
 Run the compiled checks over the whole vault, read-only:
 `node .claude/hooks/checks.mjs --all` (never `--record` here — that writes
@@ -97,4 +97,4 @@ finding resolved / still open / regressed.
   wrong, not the ADR whose status is stale. Report, propose, stop.
 - No fact is inferred by combining two others; no claim enters the report
   without the line it was read from.
-- `my-notes/` is out of scope entirely.
+- Owner pages (`author:`) are out of scope entirely.
