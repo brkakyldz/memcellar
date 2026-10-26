@@ -177,6 +177,12 @@ test('Provenance WARNs on source: notes without confidence, listing a count and 
   for (const name of ['rated.md', 'no-source.md', 'body-only.md']) assert.ok(!detail.includes(name), `${name} is not a finding`);
 });
 
+test('Provenance leaves an owner page with source: and no confidence alone (ADR 0060)', (t) => {
+  const notes = { 'jane-doe': '---\nauthor: owner\nkind: person\nsource: https://example.com\n---\n\n# Jane\n' };
+  const run = diagnose(fixture(t, { notes }));
+  assert.equal(run.rows.Provenance.status, 'PASS', verdict(run, 'Provenance'));
+});
+
 test('Provenance WARNs on MEMORY bullets that are neither dated nor pointers', (t) => {
   const long = `Vague claim number five ${'x'.repeat(80)}`;
   const memory = [

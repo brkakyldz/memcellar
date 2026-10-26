@@ -519,9 +519,11 @@ if (memoryText === null) {
     const note = readText(path.join(notesDir, `${name}.md`));
     return note !== null && frontmatter(note)?.confidence?.toLowerCase() === 'low';
   });
+  // An owner page (`author:`, ADR 0060) may cite a source without rating it:
+  // it is the owner's, not a once-seen fact on its way to MEMORY.md.
   const unrated = noteFiles(notesDir).filter((name) => {
     const fields = frontmatter(readText(path.join(notesDir, name)));
-    return fields && 'source' in fields && !('confidence' in fields);
+    return fields && 'source' in fields && !('confidence' in fields) && !('author' in fields);
   });
   const loose = memoryBullets(memoryText).filter((bullet) => !isDatedOrPointer(bullet));
   const parts = [
