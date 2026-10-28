@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <a href="docs/UPGRADING.md"><img alt="Version v2" src="https://img.shields.io/badge/version-v2-3a556e?style=flat-square&labelColor=13263a"></a>
+  <a href="docs/UPGRADING.md#what-changed-in-v2"><img alt="Version v2" src="https://img.shields.io/badge/version-v2-3a556e?style=flat-square&labelColor=13263a"></a>
   <a href="docs/ARCHITECTURE.md#5-runtime-two-runtimes-one-hook-each"><img alt="Runtimes: Claude Code and Codex" src="https://img.shields.io/badge/runtimes-Claude_Code_·_Codex-5a7086?style=flat-square&labelColor=13263a"></a>
   <a href="docs/FAQ.md"><img alt="Storage: Markdown and Git" src="https://img.shields.io/badge/storage-Markdown_%2B_Git-a8916f?style=flat-square&labelColor=13263a"></a>
   <a href="LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/license-MIT-8aa0b2?style=flat-square&labelColor=13263a"></a>
@@ -279,8 +279,9 @@ projects and the vault are walled off, and the search machinery is gone.**
   `my-notes/`. The vault is written in your language.
 - **New in v2.** `/truth`, `/truth-test`, `/import` and the four skill packs.
 
-The complete list and the upgrade from v1.1, step by step:
-[`docs/UPGRADING.md`](docs/UPGRADING.md).
+The complete list is in [`docs/UPGRADING.md`](docs/UPGRADING.md#what-changed-in-v2),
+and the upgrade from v1.1, step by step, in
+[Upgrading from v1.1](docs/UPGRADING.md#upgrading-from-v11).
 
 ## Safety
 
