@@ -32,6 +32,15 @@
 // step 6 may not: you ask for it by name, it changes nothing but its own
 // links, and it reverses cleanly — a settings file merge is none of those.
 //
+// `node install.mjs --pack <name>` links one optional skill pack — the skills in
+// .agents/packs/<name>/ — into the same user-level folders, with the same
+// rules: one link per skill per runtime, only a broken link is ever replaced,
+// a real folder or a link elsewhere (your own kit's copy, say) is reported and
+// left alone. `--unpack <name>` removes exactly those links; `--list-packs`
+// shows every pack, its skills and where each is linked. Pack skills work in
+// any project and in the vault; the template is their one source, so a user
+// with their own kit links them, never copies them (ADR 0061, 0062).
+//
 // `node install.mjs --obsidian` merges the history folders (archive/, logs/,
 // raw/) into Obsidian's ignore filters in .obsidian/app.json and exits; the
 // interview does the same. Every other Obsidian setting is kept (ADR 0060).
@@ -70,6 +79,25 @@ const GLOBAL_SKILLS = ['closeout', 'lesson'];
 // --link-global-skills and --unlink-global-skills remove such a link, and
 // only when it points into this vault.
 const RETIRED_GLOBAL_SKILLS = ['recall'];
+
+// Optional packs (ADR 0062): .agents/packs/<pack>/<skill>/SKILL.md. Discovered,
+// not listed here, so a pack is added by adding its folder.
+const PACKS_DIR = path.join(ROOT, '.agents', 'packs');
+
+function listPacks() {
+  if (!fs.existsSync(PACKS_DIR)) return [];
+  return fs.readdirSync(PACKS_DIR, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .map((e) => ({
+      name: e.name,
+      skills: fs.readdirSync(path.join(PACKS_DIR, e.name), { withFileTypes: true })
+        .filter((s) => s.isDirectory() && fs.existsSync(path.join(PACKS_DIR, e.name, s.name, 'SKILL.md')))
+        .map((s) => s.name)
+        .sort(),
+    }))
+    .filter((p) => p.skills.length)
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
 
 function userSkillDirs() {
   const home = os.homedir();
@@ -148,11 +176,11 @@ function linkSkills() {
 // One user-level link per skill per runtime. The only thing it replaces is a
 // broken link (a moved vault leaves one behind); a real folder, or a link that
 // resolves somewhere else, is someone's own setup and is reported instead.
-function linkGlobalSkill(dir, name) {
-  const target = path.join(SKILLS_TARGET, name);
+function linkGlobalSkill(dir, name, source = SKILLS_TARGET) {
+  const target = path.join(source, name);
   const link = path.join(dir, name);
   if (!fs.existsSync(path.join(target, 'SKILL.md'))) {
-    return { ok: false, note: `.agents/skills/${name} is missing` };
+    return { ok: false, note: `${path.relative(ROOT, target).split(path.sep).join('/')} is missing` };
   }
   let st = null;
   try {
@@ -190,7 +218,7 @@ function linkGlobalSkill(dir, name) {
 
 // Removes only links that point into this vault's .agents/skills — anything
 // else in the user-level folder is not this installer's to touch.
-function unlinkGlobalSkill(dir, name) {
+function unlinkGlobalSkill(dir, name, source = SKILLS_TARGET) {
   const link = path.join(dir, name);
   let st = null;
   try {
@@ -200,7 +228,7 @@ function unlinkGlobalSkill(dir, name) {
   }
   if (!st.isSymbolicLink()) return { ok: true, note: 'a real folder, not a link from here — left alone' };
   const to = linkTarget(link);
-  const ours = path.join(SKILLS_TARGET, name);
+  const ours = path.join(source, name);
   let real = null;
   try {
     real = fs.realpathSync(link);
@@ -242,6 +270,77 @@ function globalSkills(remove) {
   return ok;
 }
 
+// Where a user-level skill link stands, for --list-packs: 'linked' (to this
+// vault's copy), 'elsewhere', 'real folder', 'broken' or '-'.
+function linkState(dir, name, source) {
+  const link = path.join(dir, name);
+  let st = null;
+  try {
+    st = fs.lstatSync(link);
+  } catch {
+    return '-';
+  }
+  if (!st.isSymbolicLink()) return 'real folder';
+  let real = null;
+  try {
+    real = fs.realpathSync(link);
+  } catch {
+    return 'broken';
+  }
+  const ours = path.join(source, name);
+  return fs.existsSync(ours) && samePath(real, fs.realpathSync(ours)) ? 'linked' : 'elsewhere';
+}
+
+function packCommand(names, remove) {
+  const packs = listPacks();
+  const unknown = names.filter((n) => !packs.some((p) => p.name === n));
+  if (unknown.length) {
+    process.stderr.write(`Unknown pack: ${unknown.join(', ')}. Available: ${packs.map((p) => p.name).join(', ') || 'none'}\n`);
+    return 2;
+  }
+  let ok = true;
+  let anyHome = false;
+  for (const { runtime, home, dir } of userSkillDirs()) {
+    if (!fs.existsSync(home)) {
+      stdout.write(`${runtime}: ${home} not found — skipped\n`);
+      continue;
+    }
+    anyHome = true;
+    for (const pack of packs.filter((p) => names.includes(p.name))) {
+      const source = path.join(PACKS_DIR, pack.name);
+      for (const skill of pack.skills) {
+        const r = remove ? unlinkGlobalSkill(dir, skill, source) : linkGlobalSkill(dir, skill, source);
+        if (!r.ok) ok = false;
+        stdout.write(`${runtime}: ${path.join(dir, skill)} [${pack.name}] — ${r.ok ? r.note : `FAILED: ${r.note}`}\n`);
+      }
+    }
+  }
+  if (!anyHome) {
+    stdout.write('No runtime home found (Claude Code or Codex) — nothing linked.\n');
+    return 1;
+  }
+  return ok ? 0 : 1;
+}
+
+function listPacksCommand() {
+  const packs = listPacks();
+  if (!packs.length) {
+    stdout.write('No packs in .agents/packs/.\n');
+    return 0;
+  }
+  const homes = userSkillDirs().filter((r) => fs.existsSync(r.home));
+  stdout.write(`Optional skill packs (link one with: node install.mjs --pack <name>)\n\n`);
+  for (const pack of packs) {
+    stdout.write(`${pack.name}\n`);
+    const source = path.join(PACKS_DIR, pack.name);
+    for (const skill of pack.skills) {
+      const where = homes.map((h) => `${h.runtime}: ${linkState(h.dir, skill, source)}`).join(', ');
+      stdout.write(`  ${skill.padEnd(28)} ${where || 'no runtime home found'}\n`);
+    }
+  }
+  return 0;
+}
+
 // Obsidian is how the owner browses the vault (ADR 0060). The history folders
 // stay where they are but leave search, the graph and quick switcher. A
 // missing app.json is created; an existing one is merged, never replaced, and
@@ -281,6 +380,12 @@ const USAGE = `Second Brain OS — install.mjs
                                            every project can use them (they write into
                                            the project or your kit, never the vault)
   node install.mjs --unlink-global-skills  remove exactly those links again
+  node install.mjs --list-packs            show the optional skill packs, their skills
+                                           and where each is linked
+  node install.mjs --pack <name>           link one pack's skills into the user-level
+                                           skills folder of each installed runtime
+                                           (repeat --pack, or name,name, for several)
+  node install.mjs --unpack <name>         remove exactly that pack's links again
   node install.mjs --obsidian              hide archive/, logs/, raw/ from Obsidian's
                                            search and graph, keeping your other settings
   node install.mjs --help                  this text
@@ -288,16 +393,46 @@ const USAGE = `Second Brain OS — install.mjs
 Nothing here commits, and the interview writes nothing until you confirm it.
 `;
 
-const KNOWN_ARGS = ['--link-skills', '--link-global-skills', '--unlink-global-skills', '--obsidian', '--help', '-h'];
+const KNOWN_ARGS = ['--link-skills', '--link-global-skills', '--unlink-global-skills', '--obsidian', '--list-packs', '--help', '-h'];
+const VALUE_ARGS = ['--pack', '--unpack'];
 const args = process.argv.slice(2);
 if (args.includes('--help') || args.includes('-h')) {
   stdout.write(USAGE);
   process.exit(0);
 }
-const unknown = args.filter((a) => !KNOWN_ARGS.includes(a));
+const packArgs = { '--pack': [], '--unpack': [] };
+const unknown = [];
+for (let i = 0; i < args.length; i++) {
+  const a = args[i];
+  const eq = VALUE_ARGS.find((v) => a.startsWith(`${v}=`));
+  if (eq) {
+    packArgs[eq].push(...a.slice(eq.length + 1).split(','));
+  } else if (VALUE_ARGS.includes(a)) {
+    const v = args[i + 1];
+    if (!v || v.startsWith('--')) {
+      process.stderr.write(`${a} needs a pack name (see --list-packs)\n`);
+      process.exit(2);
+    }
+    packArgs[a].push(...v.split(','));
+    i++;
+  } else if (!KNOWN_ARGS.includes(a)) {
+    unknown.push(a);
+  }
+}
 if (unknown.length) {
   process.stderr.write(`Unknown argument: ${unknown.join(' ')}\n\n${USAGE}`);
   process.exit(2);
+}
+
+if (args.includes('--list-packs')) process.exit(listPacksCommand());
+if (packArgs['--pack'].length || packArgs['--unpack'].length) {
+  if (packArgs['--pack'].length && packArgs['--unpack'].length) {
+    process.stderr.write('Use --pack or --unpack, not both at once.\n');
+    process.exit(2);
+  }
+  const remove = packArgs['--unpack'].length > 0;
+  const names = [...new Set((remove ? packArgs['--unpack'] : packArgs['--pack']).map((n) => n.trim()).filter(Boolean))];
+  process.exit(packCommand(names, remove));
 }
 
 if (process.argv.includes('--link-skills')) {
@@ -534,6 +669,13 @@ the brain. To make them loadable everywhere — opt-in, and undone by
 --unlink-global-skills:
 
     node install.mjs --link-global-skills
+
+Optional — skill packs. Research, a build-and-review chain, release and idea
+scoping ship as packs you link only if you want them; they work in any
+project and in this vault:
+
+    node install.mjs --list-packs
+    node install.mjs --pack research
 
 Check the wiring any time with:  node scripts/brain-doctor.mjs
 

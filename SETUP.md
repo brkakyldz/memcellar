@@ -69,6 +69,17 @@ short list, whichever fits the conversation:
     next to their user-level instruction file, or `BRAIN_KIT_DIR`), and
     `/closeout` may add a trap any repo could hit to the kit's `reference/`.
     Neither ever touches the vault.
+12. Which optional skill packs they want, if any (several may be picked; none
+    is a fine answer): **research** — web research that ends in one short,
+    dated, sourced report; **build** — taking a project from intent to a
+    verified build: repo contract, plans run autonomously, independent
+    acceptance scenarios, review; **release** — a templated GitHub release
+    and a whole-app bug sweep; **ideas** — scoping a product idea before
+    researching it, auditing someone else's design, an evolution pass.
+    Packs work in every project and in the vault.
+13. Whether they already have an existing notes folder (another Obsidian
+    vault, a Markdown export) to bring in. If so, note its path for the
+    hand-off: `/import` does it later, from a dry run they approve.
 
 **Leave anything they skip blank rather than guessing.** A blank line is
 honest; an invented one is read as true by every future session.
@@ -256,6 +267,24 @@ In Git Bash on Windows, `ln -s` makes a copy by default, so use the
 PowerShell line there. `brain-doctor.mjs` accepts a Codex link in either
 folder.
 
+### Skill packs (optional)
+
+If your user picked packs in question 12, show the command and get a yes —
+it writes into the user-level skills folders, like the step above:
+
+```
+node install.mjs --pack research --pack build
+```
+
+One link per skill per installed runtime, pointing into the vault's
+`.agents/packs/<pack>/<skill>/`, with the same rules as
+`--link-global-skills`: only a broken link is ever replaced; a real folder or
+a link that points somewhere else (their own copy of a skill with the same
+name) is reported and left alone — tell them, don't remove it. `node
+install.mjs --list-packs` shows every pack and where each skill is linked;
+`--unpack <name>` removes exactly that pack's links. The Codex note above
+(`~/.agents/skills`) applies to pack skills too.
+
 Tell your user this wiring is per-machine. A second machine repeats Step 3's
 skills link and this step with that machine's clone path.
 
@@ -335,8 +364,16 @@ Tell your user, concretely:
   may already know. `link-sweep.mjs` reports any note missing from it.
 - **`PROPOSALS.md` is theirs.** A hand-kept list of open work; no pass writes
   to it. Findings are reported in the conversation, acted on or dropped.
+- **Keeping it true.** `/truth` asks them, claim by claim, what is still
+  true, keeps the answers on one page and closes the pages that contradict
+  it; a re-run asks only about what has not been confirmed lately.
+  `/truth-test` then checks a fresh session's answers on a clone of the
+  vault, after telling them the cost. If they named an old notes folder in
+  question 13, `/import` brings it in from a dry run they approve.
 - The commands: `/ingest`, `/file`, `/note`, `/lesson`, `/curator`,
-  `/audit` — and `/closeout` in projects.
+  `/audit`, `/truth`, `/truth-test`, `/import` — and `/closeout` in
+  projects, plus the skills of any pack they linked
+  (`node install.mjs --list-packs`).
   Mention `/lesson` specifically — the first time the agent gets something
   wrong is the most useful thing that will happen this week. One file per
   recurring behaviour collects the corrections, and the second one on the same
@@ -384,3 +421,5 @@ section: Steps 0–7 above are the whole install.
    Codex reads `AGENTS.md` natively but gets `core/` only once its
    hook is wired — see [Step 5](#step-5--runtime-wiring).
 7. Check the wiring: `node scripts/brain-doctor.mjs`.
+8. Optional: `node install.mjs --list-packs`, then `--pack <name>` for any
+   skill pack you want in every project (research, build, release, ideas).

@@ -1,0 +1,22 @@
+# Offline gate only: no secrets, no paid or live calls. Slots: <node-version>, <commands>.
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: <node-version>
+          cache: npm
+      - run: npm ci
+      # <commands>: e.g. npm run typecheck / npm test / npm run build
+      - run: npm test

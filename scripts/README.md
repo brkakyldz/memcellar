@@ -248,6 +248,20 @@ with `node scripts/tests/<name>.test.mjs`; each exits 1 on a failure.
 - `session-start.test.mjs` — the SessionStart hook: inert outside the vault,
   notices recorded only once delivered, the pull skipped while another task's
   rebase or merge is in progress.
+- `packs.test.mjs` — ADR 0062: `install.mjs --list-packs`, `--pack`,
+  `--unpack` against a fixture home (links made and removed, someone else's
+  folder or link left alone, a broken link repaired), the shape of every pack
+  skill, and a grep that no pack or new skill carries owner names, machine
+  paths, model names or the reference instance's private files.
+- `holdout-scripts.test.mjs` — the build pack's held-out scripts: the
+  `LOCK.json` lock (land, trim, tamper detection), the static check before
+  landing, and `verify-holdout.mjs` refusing a broken lock or an unexecuted
+  scenario.
+- `skill-scripts.test.mjs` — `/truth-test`'s runner (key parsing, the
+  session stream, the clone without the key, the dry run), `/import`'s
+  read-only inventory, and the research pack's scaffold.
+- `ship.test.mjs` — the release pack's `ship.mjs` preflight and secret scan,
+  offline, in dry-run mode.
 
 ## Retired — kept here so nobody re-adds them by accident
 

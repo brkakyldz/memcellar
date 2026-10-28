@@ -73,8 +73,16 @@ breaks because a thought grew up.
   they write into the repo the session is in or the owner's user-level kit,
   never into the vault. `.agents/write-gate.md` is the procedure every vault
   writer runs (§ Distillation).
+- `.agents/packs/` — optional skill packs, `<pack>/<skill>/` (`research`,
+  `build`, `release`, `ideas`). Nothing here loads on its own: `node
+  install.mjs --pack <name>` links a pack's skills at user level, where they
+  work in any project and in the vault, and `--unpack` removes the links
+  (ADR 0062). This folder is their one source; a pack skill run in a
+  project never touches the vault, and one run here writes through the
+  write gate.
 - `.claude/` — the shared machinery both runtimes call: `hooks/`,
-  `templates/`, and `eval/` when the owner keeps an answer eval. The name is
+  `templates/`, and `eval/` when the owner keeps an answer eval
+  (`/truth-test`'s key and results; never read by a vault session). The name is
   historical, not ownership. `.codex/` holds only the thin Codex SessionStart
   adapter. Not vault content; this is how the agent runs, not what it knows
   about the world.
@@ -122,6 +130,15 @@ root, discusses it with the owner, and distills it into a report in
 page. The source is read once and stays read; the vault then answers from the
 distillation, never by re-reading. `raw/` has a producer by design — the
 owner saving what they are reading — which is the property an inbox lacks.
+`/import` does the same for a whole notes folder the owner brings in: a dry
+run table first, approved group by group, the source folder never modified.
+
+**What is true now is the owner's to say.** `/truth` asks the owner, claim
+by claim, keeps the answers in `notes/current-truth.md` with a `confirmed:`
+date per section, closes the pages that contradict it and rebuilds Tier 0
+from it; `/truth-test` asks a fresh session the questions in
+`.claude/eval/truth-questions.md` on a clone of the vault and names the pages
+behind every stale answer.
 
 **Every write passes the write gate** (`.agents/write-gate.md`, ADR 0055),
 except `/note` into an owner page and `/lesson`, which follow their own

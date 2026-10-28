@@ -33,20 +33,29 @@ Never resume from a chat or compaction summary. Re-anchor: STATE, then
 | Intent, scope, non-goals | `<INTENT.md>` | owner | — |
 | Architecture | `<docs/architecture.md>` | owner; a change needs an ADR | `<focused check>` |
 | Decisions | `<docs/decisions/>` | owner, or the session the owner asks | superseded chain intact |
-| Milestones, acceptance IDs, exit commands | `<plan path>` | owner | the acceptance commands |
+| Milestones, acceptance IDs, exit commands | `<plan path>` | owner; the implementing session may refresh the active milestone's build notes against the code, never its acceptance | the acceptance commands |
 | Status | `docs/CURRENT_STATE.md` | the implementing session | no code commit after the last STATE commit |
 | History: milestone results, direction changes | `git log` — the commit subject | every commit | `git log --oneline` reads as the history |
 | Run reports: checks, evidence, assumptions, cost | `docs/runs/` | the session that ran the work (`/closeout`) | frontmatter `status` set |
 | Lessons: corrections to how the agent works here | `docs/lessons/` | `/lesson`, entries appended verbatim | — |
 | Evidence *(optional)* | `docs/evidence/` | the check that produced it | revision recorded |
-| Held-out acceptance *(optional)* | `tests/acceptance/holdout/` | owner only | `<acceptance command>` |
+| Review findings *(optional)* | `docs/reviews/findings.md` | a reviewer in a fresh context, append-only | last `LAST_REVIEWED:` line |
+| Held-out acceptance *(optional)* | `tests/acceptance/holdout/` | the owner, or an author outside the builder's context; never the implementing agent | `<acceptance command>`; every file matches `LOCK.json` |
 | `<source area>` | `<path>` | `<owner or lane>` | `<focused command>` |
 | Generated output | `<path>` | `<generator>` only | `<regen command>` |
+| Integration *(optional)* | `<branch>` | single integrator | `<full offline gate>` |
 
 A fact lives in one row; everything else links to it. Status appears nowhere
 but STATE: a plan defines acceptance and never ticks it, and a README or
 architecture doc carries no "Status:" line (ADR frontmatter is the exception).
 Delete the rows that do not apply rather than leaving slots in place.
+
+Held-out scenarios are run and read by the implementing agent, never edited:
+a failing one is fixed in the product, a wrong one is an Open gate
+(`unreliable-oracle`). Only the owner waives them for this repo, by writing
+`waived` in the Held-out row. Review findings, when the repo keeps them, are
+committed by the implementing session together with the STATE edit that
+promotes them — the one file it commits without having written it.
 
 ## Commands
 
@@ -56,9 +65,16 @@ Delete the rows that do not apply rather than leaving slots in place.
 | Focused (while iterating) | `<command>` |
 | Full offline gate | `<command list>` |
 | Product-level acceptance | `<command>` |
+| Held-out lock check *(optional)* | `<command>` |
+| Held-out verification *(optional, final gate)* | `<command>` |
 | Live (opt-in, never in CI) | `<command>` |
+| Fresh-checkout verification | `<command>` |
 
 Only commands that ran green here are listed; anything else is `UNVERIFIED`.
+The full offline gate never holds a paid or live call. It runs before every
+milestone commit, and so does the held-out lock check when the repo has one;
+red is not committed, and each result is a line in the run report. These are
+checks the agent runs and records; an enforcing hook is optional.
 
 ## Environment
 
@@ -76,6 +92,19 @@ output or user input may never decide, secrets.>
 <Named failure patterns a green suite does not catch, each with the scenario
 that would expose it. "Look for bugs" is not an entry.>
 
+## Tests
+
+- One behaviour is tested once, at the lowest layer that can observe it. A
+  held-out scenario is a user journey; an end-to-end test holds only what
+  those journeys cannot observe. At most 40 held-out scenarios.
+- Tests assert outcomes. An exact string, size or colour is asserted only
+  where the contract marks it exact.
+- No sleeps, fixed waits or elapsed-time assertions: wait on named states.
+- Each test file has its own server, port and data directory.
+- A flaky test is tagged `@quarantine` the day it is seen. Retries stay 0.
+- A removed feature takes its tests in the same change. A test deleted as a
+  duplicate is named, with the test that still covers it, in the commit.
+
 ## Autonomy contract
 
 One launch of an autonomous run authorizes every milestone in its scope.
@@ -88,7 +117,13 @@ to confirm a reversible local choice (module layout, compatible patch versions,
 test helpers, small refactors) — record it under Assumptions in the run
 report. Never relax an invariant, weaken or delete a failing acceptance test,
 or put a test double into the product's default path to get green. Never push,
-merge, deploy, force, reset or rewrite history.
+merge, deploy, force, reset or rewrite history, and never make a paid or live
+call beyond the allowance the owner approved for the run.
+
+A run stops only for a failed check it cannot fix, a blocker whose dependents
+block every remaining milestone, a contract change, or a stop the plan itself
+names. Everything else is an assumption, an Open gate or `BLOCKED(<type>)`,
+and the run keeps building.
 
 Documentation changes authorize no implementation; implementation starts when
 the owner launches the work. Before a compaction or a long pause, checkpoint

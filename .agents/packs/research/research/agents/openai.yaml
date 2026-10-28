@@ -1,0 +1,6 @@
+interface:
+  display_name: "Research"
+  short_description: "Delegated web research with checked findings and one short, dated report — in a project or through the vault's write gate"
+  default_prompt: "Use $research to answer this with a dated, sourced report: frame the decision, split it into non-overlapping sub-questions, verify the load-bearing facts, and land the report where this folder keeps research."
+policy:
+  allow_implicit_invocation: false

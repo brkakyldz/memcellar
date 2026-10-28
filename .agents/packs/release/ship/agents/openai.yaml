@@ -1,0 +1,6 @@
+interface:
+  display_name: "Ship"
+  short_description: "Templated release: preflight and secret scan, a private GitHub repo, push without force, tag and release; going public stays the owner's step"
+  default_prompt: "Use $ship to release this finished repo: fill README, LICENSE, CHANGELOG and CI from the templates, run scripts/ship.mjs with --dry-run, then for real, and leave the visibility change to the owner."
+policy:
+  allow_implicit_invocation: false

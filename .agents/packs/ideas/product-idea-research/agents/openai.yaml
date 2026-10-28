@@ -1,0 +1,6 @@
+interface:
+  display_name: "Product idea research"
+  short_description: "Asks purpose, budget, focus and deliverable first, then researches inside those constraints with the zero-cost runtime path always considered"
+  default_prompt: "Use $product-idea-research on this idea: ask me the intake questions with options first, then research inside my constraints and recommend one option."
+policy:
+  allow_implicit_invocation: false

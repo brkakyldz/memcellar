@@ -1,0 +1,6 @@
+interface:
+  display_name: "Scenario author"
+  short_description: "Held-out acceptance scenarios by an author who never saw the code, checked statically and landed under a hash lock"
+  default_prompt: "Use $scenario-author to build the pack (spec, contracts, built list, test names only), brief an independent author, run scripts/check-scenarios.mjs, and land the scenarios with scripts/lock.mjs."
+policy:
+  allow_implicit_invocation: false

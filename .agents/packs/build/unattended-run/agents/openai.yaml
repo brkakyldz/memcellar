@@ -1,0 +1,6 @@
+interface:
+  display_name: "Unattended Run"
+  short_description: "Carries an accepted plan's milestones through one autonomous run in its own worktree"
+  default_prompt: "Use $unattended-run only in a finalized repo with CURRENT_STATE and acceptance commands: PREPARE in the primary checkout, RUN in the run worktree, RESUME after an interruption."
+policy:
+  allow_implicit_invocation: false

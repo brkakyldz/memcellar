@@ -1,0 +1,6 @@
+interface:
+  display_name: "Idea import"
+  short_description: "Audits an external system or design against the current one; adopts only what fills a documented gap, records every rejection"
+  default_prompt: "Use $idea-import to audit this external repo or design against our current system: inventory it, map each mechanism, and report adopted, rejected and conflicting ideas with reasons."
+policy:
+  allow_implicit_invocation: false

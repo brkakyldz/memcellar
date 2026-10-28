@@ -169,8 +169,11 @@ see the failure it prevents.
   offline suite before a `git commit` is allowed, and warns when code is
   committed without a STATE update.
 - **Holdout lock** — a `PreToolUse` hook that refuses agent edits under
-  `tests/acceptance/holdout/`, so the owner's product-level acceptance
-  scenarios cannot be "fixed" by the agent that has to pass them.
+  `tests/acceptance/holdout/`, so the independently written acceptance
+  scenarios cannot be "fixed" by the agent that has to pass them. Without
+  it, the build pack's `scenario-author` still detects any change: it lands
+  the scenarios with a `LOCK.json` of file hashes, and its `lock.mjs check`
+  and `verify-holdout.mjs` refuse to pass a folder that differs from it.
 - **Test gate** — a `Stop` hook that runs the fast offline suite before a
   session may end.
 

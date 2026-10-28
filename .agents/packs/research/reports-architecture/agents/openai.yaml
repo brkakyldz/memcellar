@@ -1,0 +1,6 @@
+interface:
+  display_name: "Reports architecture"
+  short_description: "Scaffold a project's reports/research store (not for the vault)"
+  default_prompt: "Use $reports-architecture to scaffold reports/research/ in this project repo with scripts/scaffold.mjs."
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Slice Reviewer"
+  short_description: "Reviews one milestone read-only and appends findings to docs/reviews/findings.md"
+  default_prompt: "Use $slice-reviewer only on a named repo and commit after a milestone completes; read-only except the findings file, and start with the BEHIND line."
+policy:
+  allow_implicit_invocation: false

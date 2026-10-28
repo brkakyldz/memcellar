@@ -1,0 +1,6 @@
+interface:
+  display_name: "Evolve"
+  short_description: "Self-analysis plus outside research over the vault or a project; ranked proposals tied to documented failures, nothing applied"
+  default_prompt: "Use $evolve on this system: read its own claims, run research on a few distinct angles, and return tiered proposals each tied to a documented failure."
+policy:
+  allow_implicit_invocation: false

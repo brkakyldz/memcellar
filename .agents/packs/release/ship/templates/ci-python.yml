@@ -1,0 +1,16 @@
+# Offline gate only: no secrets, no paid or live calls. Slots: <python-version>, <commands>.
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv python install <python-version>
+      - run: uv sync --all-extras --dev
+      # <commands>
+      - run: uv run pytest -q

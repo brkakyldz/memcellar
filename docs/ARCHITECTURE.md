@@ -195,8 +195,14 @@ Quality is measured by answers, not by a ranker. If you keep an eval, it is a
 short list of questions whose right answer you have confirmed, kept in
 `.claude/eval/` so the vault can never read its own answer key. Each question
 is asked in a fresh session, and you record whether the answer was right and
-which pages were read. The template ships no eval set; `/audit` names the
-latest result when one exists.
+which pages were read. The template ships no eval set; `/truth` offers to
+write one from the truth you confirmed, marking as traps the questions stale
+pages used to answer wrongly. `/truth-test` runs it: it clones the vault's
+committed state to a scratch folder, deletes the key from the clone, asks
+each question in a fresh headless session with read-only tools, scores the
+answers correct, stale or wrong, and names the pages behind each stale one —
+after telling you the cost and waiting for a yes. `/audit` names the latest
+result.
 
 ## 5. Runtime: two runtimes, one hook each
 
@@ -337,6 +343,20 @@ a rule, which is why it is drawn rather than described.
 What you work out in conversation follows the same gate through `/file`: an
 update to a topic page, a dated report, or a deliverable in `outputs/` that
 expires.
+
+Two more paths use the same gate. `/import` brings a whole notes folder in —
+an old Obsidian vault, an export — from a read-only inventory and a dry-run
+table (source file → page type → destination → reason) that the owner
+approves group by group; originals kept verbatim go to `raw/`, and the source
+folder is never touched. `/truth` runs the other way: it collects every
+"true now" claim the vault holds, asks the owner about each with selectable
+options, writes the answers to `notes/current-truth.md` with a `confirmed:`
+date per section, then closes (`valid_to`, `superseded_by`, a visible first
+line), fixes or archives the pages that contradict it and rebuilds `USER.md`,
+`MEMORY.md` and `INDEX.md` from it — every list on the owner's approval,
+owner pages untouched. In the reference instance one such run took the vault
+from 146 notes to 74 and a fresh session from stale answers to 15 of 15
+right. A re-run asks only about sections whose `confirmed:` date is old.
 
 Three properties are deliberate:
 
@@ -510,6 +530,18 @@ How the pieces meet:
   the vault. `node install.mjs --link-global-skills` links them into each
   runtime's user-level skills folder, opt-in and reversible. Everything else
   in `.agents/skills/` works on the vault and stays vault-scoped.
+- **Optional skill packs cross too, on request** (ADR 0062). Four packs live
+  in `.agents/packs/`: `research` (research, reports-architecture), `build`
+  (repo-bootstrap through software-factory: the contract, the coordinator
+  and its lanes, unattended runs, held-out scenarios, review, ADRs),
+  `release` (ship, bug-sweep) and `ideas` (product-idea-research,
+  idea-import, evolve). `node install.mjs --pack <name>` links a pack's
+  skills into each runtime's user-level folder by the same rules as above;
+  `--unpack` removes them, `--list-packs` shows where each is linked. They
+  run in any project and in the vault: in a project they write only into
+  that repo, in the vault through the write gate. Each is written for any
+  user and names only skills that ship; one that leans on another pack says
+  what it does when that pack is not linked.
 - **The vault reads a project, and never writes one.** From a vault session,
   `node scripts/project-doctor.mjs --board` shows every project at once, read
   live from each repo. A vault session may also read a repo to answer a
@@ -532,4 +564,7 @@ How the pieces meet:
 Deliberately not shipped: the reference instance also has commit-gate,
 holdout-lock and test-gate hooks for its project repos. They are runtime hooks
 with their own configs, and a template user adds one when they see the failure
-it prevents. The project-repo README describes them.
+it prevents. The project-repo README describes them. The build pack runs the
+same checks without them: each is a command the agent runs and records in the
+run report, and held-out scenarios are guarded by a `LOCK.json` of file
+hashes that the held-out verification refuses to pass when anything changed.

@@ -18,6 +18,11 @@ head_sha:
      Only what git and STATE do not hold: the commits are `git log base_sha..head_sha`,
      open gates and the next action live in STATE. -->
 
+## Plan refresh
+<!-- one line per milestone, written before its code: "<M>: no change" or
+     "<M>: <what changed> — <file:line that shows why>". Build notes only; the
+     edits themselves are `git diff base_sha..head_sha -- <plan path>`. -->
+
 ## Checks run
 <!-- exact command → result; "not run" is a line, not a silence -->
 

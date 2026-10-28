@@ -1,0 +1,6 @@
+interface:
+  display_name: "Repository Bootstrap"
+  short_description: "Seeds or finalizes a repository contract at lifecycle boundaries"
+  default_prompt: "Use $repo-bootstrap only for an explicit SEED, FINALIZE, or repository-contract REPAIR of this repo."
+policy:
+  allow_implicit_invocation: false

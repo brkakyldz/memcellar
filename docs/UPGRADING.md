@@ -71,8 +71,29 @@ of a working vault before release; there is no two-week bar any more
   `notes/todo.md`, your own to-do and ideas page. `node install.mjs
   --obsidian` hides `archive/`, `logs/` and `raw/` from Obsidian's search and
   graph, merging into your `.obsidian/app.json`.
-- Tests for the neighbour finder, the new checks, the owner-page guard and
-  the board.
+- `/truth`, `/truth-test` and `/import` (ADR 0061). `/truth` asks you what
+  is true now, claim by claim, writes `notes/current-truth.md` with a
+  `confirmed:` date per section, closes or archives the pages that
+  contradict it on lists you approve, and rebuilds `USER.md`, `MEMORY.md`
+  and `INDEX.md` from it; a re-run asks only about old sections. `/truth-test`
+  asks the questions in `.claude/eval/truth-questions.md` on a clone of the
+  vault, in fresh read-only sessions, after showing the cost, and names the
+  pages behind every stale answer. `/import` brings an existing notes folder
+  in through the write gate, from a dry-run table you approve group by
+  group; the source folder is never touched.
+- Optional skill packs in `.agents/packs/` (ADR 0062): `research`, `build`,
+  `release` and `ideas`. Nothing loads until you run
+  `node install.mjs --pack <name>`, which links a pack's skills into each
+  runtime's user-level folder like `--link-global-skills`; `--unpack`
+  removes them and `--list-packs` shows them. The build pack runs its gates
+  as recorded checks, ships no hooks, and locks held-out scenarios with a
+  `LOCK.json` of file hashes.
+- The project-repo templates gain the rows and commands the build pack
+  needs: Held-out, review findings and integration in the ownership map,
+  the held-out lock check and verification in Commands, and a Plan refresh
+  section in the run-report template.
+- Tests for the neighbour finder, the new checks, the owner-page guard, the
+  board, the pack installer and the new skills' scripts.
 
 **Changed**
 
@@ -180,7 +201,11 @@ do it in a session with the agent, page by page.
    `lessons/`. Head each moved copy with where it came from and the commit it
    was copied at, and move the vault original to `archive/`.
 12. **Relink.** `node install.mjs --link-skills`, and
-    `node install.mjs --link-global-skills` again if you use it.
+    `node install.mjs --link-global-skills` again if you use it. For any
+    skill pack you want: `node install.mjs --list-packs`, then
+    `--pack <name>`. If you already keep your own copy of a skill with the
+    same name at user level, the installer leaves it and says so; remove
+    your copy first if the template's should take its place.
 13. **Commit the upgrade** by explicit path:
     `git commit -m "upgrade: Second Brain OS v1.3"`.
 14. **Check it:** `node scripts/brain-doctor.mjs` (Retired terms lists any
@@ -188,6 +213,10 @@ do it in a session with the agent, page by page.
     `my-notes/`),
     `node .claude/hooks/checks.mjs --all`, then `node scripts/maintenance.mjs`
     to see what is due.
+15. **Optionally, check what is still true.** An upgraded vault carries
+    every page the old one had. `/truth` walks you through its claims and
+    closes the stale pages; `/truth-test` then measures a fresh session's
+    answers.
 
 In your projects nothing has to change. A repo with `docs/lessons/` keeps
 them; new owner-wide lessons start landing in the kit.

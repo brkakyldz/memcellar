@@ -1,0 +1,6 @@
+interface:
+  display_name: "Parallel Lane Runner"
+  short_description: "Executes one frozen implementation lane from a coordination packet"
+  default_prompt: "Use $parallel-lane-runner only with a named coordination packet, frozen contract, isolated worktree and assigned lane."
+policy:
+  allow_implicit_invocation: false

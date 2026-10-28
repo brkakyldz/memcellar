@@ -1,0 +1,6 @@
+interface:
+  display_name: "Bug sweep"
+  short_description: "Whole-app bug hunt by area, deduped issues filed on the owner's yes, file-disjoint fix PRs, then a one-at-a-time merge train"
+  default_prompt: "Use $bug-sweep to hunt bugs across this app by area, verify and dedupe the findings, ask me before filing them as issues, then fix them in PRs that never share a file and merge them one at a time."
+policy:
+  allow_implicit_invocation: false
