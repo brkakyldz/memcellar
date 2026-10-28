@@ -33,11 +33,16 @@ only database: `git log` is the audit trail, `git revert` is undo.
 
 ## See it run
 
-https://github.com/user-attachments/assets/192b50d7-d13d-4450-a454-8f72c741e4a6
+<p align="center">
+  <picture>
+    <source media="(max-width: 600px)" srcset="docs/assets/see-it-run-mobile.svg">
+    <img src="docs/assets/see-it-run.svg" width="100%" alt="You ask your agent what your stack is. It reads its own index, INDEX.md, opens notes/stack.md, and answers TypeScript, Postgres and Vitest, citing notes/stack.md as the source.">
+  </picture>
+</p>
 
-An agent answers a question about your stack and cites a page. The vault
-opens: it read `INDEX.md`, then the page. The change it saves is one commit,
-and `git revert` undoes it. The git output is from a real run on a demo vault.
+You ask a question about your stack. The agent reads its own `INDEX.md`,
+opens the page it points to, and answers with that page as its source, so
+you can check it and correct it where it is wrong.
 
 ## Why
 
