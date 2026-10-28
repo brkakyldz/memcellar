@@ -15,6 +15,7 @@
 </p>
 
 <p align="center">
+  <a href="#see-it-run">See it run</a> ·
   <a href="#quickstart">Quickstart</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#everyday-commands">Commands</a> ·
@@ -29,6 +30,14 @@ are and what you are working on from the first message of a session. Before
 it answers, it reads its own index and cites the page the answer came from.
 What it learns lands as Markdown you can open, edit and commit. Git is the
 only database: `git log` is the audit trail, `git revert` is undo.
+
+## See it run
+
+https://github.com/user-attachments/assets/192b50d7-d13d-4450-a454-8f72c741e4a6
+
+An agent answers a question about your stack and cites a page. The vault
+opens: it read `INDEX.md`, then the page. The change it saves is one commit,
+and `git revert` undoes it. The git output is from a real run on a demo vault.
 
 ## Why
 
