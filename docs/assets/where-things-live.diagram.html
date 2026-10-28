@@ -1,0 +1,78 @@
+<style>
+  .canvas { --w: 1600px; --h: 1060px; }
+  .stage > .grid { --cols: 440px 440px 440px; --gap-x: 76px; --gap-y: 96px; }
+</style>
+<div class="canvas">
+  <h1 class="title">Three homes, <i>walled off</i></h1>
+  <p class="subtitle">A project session works in its repo and reads your kit; the vault only reads projects.</p>
+
+  <div class="stage"><div class="grid">
+
+    <div class="card llm sm" id="vs" data-icon="spark" style="grid-column: 1; grid-row: 1">
+      <div class="head"><span class="name">Vault session</span><span class="tag">LLM</span></div>
+      <div class="body"><div class="fn">in your vault</div><div class="note">Knows you; writes the vault</div></div>
+    </div>
+    <div class="card llm sm" id="ps" data-icon="code" style="grid-column: 3; grid-row: 1">
+      <div class="head"><span class="name">Project session</span><span class="tag">LLM</span></div>
+      <div class="body"><div class="fn">/closeout · /lesson</div><div class="note">Never reads the vault</div></div>
+    </div>
+
+    <div class="zone" id="z-vault" style="grid-column: 1; grid-row: 2; --cols: 1fr; --gap-y: 22px">
+      <div class="zone-label">The vault</div>
+      <div class="card data sm" data-icon="file">
+        <div class="head"><span class="name">notes/</span></div>
+        <div class="body"><div class="fn">topics · decisions</div></div>
+      </div>
+      <div class="card data sm" data-icon="book">
+        <div class="head"><span class="name">Project cards</span></div>
+        <div class="body"><div class="fn">why it exists, what it taught</div></div>
+      </div>
+      <div class="card code sm" id="board" data-icon="chart">
+        <div class="head"><span class="name">Project board</span></div>
+        <div class="body"><div class="fn">project-doctor --board</div></div>
+      </div>
+    </div>
+
+    <div class="zone" id="z-kit" style="grid-column: 2; grid-row: 2; --cols: 1fr; --gap-y: 22px">
+      <div class="zone-label">Your kit</div>
+      <div class="card data sm" data-icon="shield">
+        <div class="head"><span class="name">Working rules</span></div>
+        <div class="body"><div class="fn">user-level instructions</div></div>
+      </div>
+      <div class="card data sm" data-icon="check">
+        <div class="head"><span class="name">Lessons</span></div>
+        <div class="body"><div class="fn">lessons/, from every project</div></div>
+      </div>
+      <div class="card data sm" data-icon="tool">
+        <div class="head"><span class="name">Traps</span></div>
+        <div class="body"><div class="fn">reference/</div></div>
+      </div>
+    </div>
+
+    <div class="zone" id="z-repo" style="grid-column: 3; grid-row: 2; --cols: 1fr; --gap-y: 22px">
+      <div class="zone-label">Each project's repo</div>
+      <div class="card data sm" data-icon="layers">
+        <div class="head"><span class="name">Current state</span></div>
+        <div class="body"><div class="fn">docs/CURRENT_STATE.md</div></div>
+      </div>
+      <div class="card data sm" data-icon="file">
+        <div class="head"><span class="name">AGENTS.md</span></div>
+        <div class="body"><div class="fn">the rules, no status</div></div>
+      </div>
+      <div class="card data sm" data-icon="db">
+        <div class="head"><span class="name">Git log</span></div>
+        <div class="body"><div class="fn">the history</div></div>
+      </div>
+    </div>
+
+  </div></div>
+
+  <div class="footer"><div class="legend" data-auto></div><span>memcellar</span></div>
+</div>
+
+<script type="application/json" id="edges">[
+  {"from": "ps",     "to": "z-repo",  "fs": "b", "ts": "t", "fa": 0.5, "straight": true, "hot": true, "step": 1, "label": "works here"},
+  {"from": "ps",     "to": "z-kit",   "fs": "l", "ts": "t", "ta": 0.7, "hot": true, "step": 2, "label": "your rules"},
+  {"from": "vs",     "to": "z-vault", "fs": "b", "ts": "t", "fa": 0.5, "straight": true, "hot": true, "step": 3, "label": "knowledge"},
+  {"from": "z-repo", "to": "board",   "fs": "b", "ts": "b", "out": 46, "label": "read live, read-only", "style": "result"}
+]</script>
