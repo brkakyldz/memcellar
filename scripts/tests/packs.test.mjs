@@ -97,8 +97,14 @@ test('no skill name is used twice across packs and the default set', () => {
 });
 
 // Pack skills and the new default skills are written for any user (ADR 0061 §3).
+// Names from your own setup go in leftover-terms.local next to this file, one
+// regex per line; it is gitignored, so the list never ships with the template.
 test('no owner-specific leftovers in packs or the new default skills', () => {
-  const LEFTOVER = /berke|C:[\\/]|my-brain|berke-skills|\bopus\b|\bsonnet\b|\bhaiku\b|\bfable\b|gpt-\d|archdrawer|architecture-drawer|spanflow|issuepilot|codex-runtime|runtimes\.json|public-writing|leak-scan|commit-gate|holdout-lock|test-gate|run-fence|\.publish\.json|vault ADR/i;
+  const local = path.join(path.dirname(fileURLToPath(import.meta.url)), 'leftover-terms.local');
+  const own = fs.existsSync(local)
+    ? fs.readFileSync(local, 'utf8').split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith('#'))
+    : [];
+  const LEFTOVER = new RegExp(['C:[\\\\/]', '\\bopus\\b', '\\bsonnet\\b', '\\bhaiku\\b', '\\bfable\\b', 'gpt-\\d', 'vault ADR', ...own].join('|'), 'i');
   const roots = [PACKS, ...['truth', 'truth-test', 'import'].map((s) => path.join(DEFAULT_SKILLS, s))];
   const hits = [];
   const walk = (d) => {

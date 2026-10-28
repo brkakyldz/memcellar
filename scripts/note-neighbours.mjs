@@ -57,8 +57,8 @@ export function parseArgs(argv) {
 
 // Lowercase without the Turkish dotted-I trap ('İ'.toLowerCase() is 'i̇', i
 // plus a combining dot, which then matches nothing), then fold the Turkish
-// letters to ASCII on both sides, so "is ilanlari" typed on an English
-// keyboard still meets an alias written "iş ilanları".
+// letters to ASCII on both sides, so "kisa sehir gezisi" typed on an English
+// keyboard still meets an alias written "kısa şehir gezisi".
 const FOLD = { ç: 'c', ğ: 'g', ı: 'i', ö: 'o', ş: 's', ü: 'u' };
 function lower(s) {
   return s.replace(/İ/g, 'i').replace(/I/g, 'ı').toLowerCase().replace(/[çğıöşü]/g, (c) => FOLD[c]);

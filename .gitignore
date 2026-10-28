@@ -48,3 +48,6 @@ scripts/.last-push
 # clone, and deliberately never committed, so a fresh clone stays inert until
 # it has been personalized (ADR 0014)
 core/.vault-active
+
+# the owner's own names for the pack leftover test — personal, never shipped
+scripts/tests/leftover-terms.local

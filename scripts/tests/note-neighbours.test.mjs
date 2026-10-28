@@ -21,14 +21,14 @@ const run = (root, argv) => neighbours(loadPages(root), parseArgs(argv));
 
 test('a second list for the same subject is found and flagged as a version', (t) => {
   const root = vault(t, {
-    'notes/job-target-list.md': page('topic', 'tags: [career]\n'),
-    'notes/job-target-list-v2.md': page('topic', 'tags: [career]\n'),
-    'notes/hotel-platforms.md': page('topic'),
+    'notes/reading-list.md': page('topic', 'tags: [books]\n'),
+    'notes/reading-list-v2.md': page('topic', 'tags: [books]\n'),
+    'notes/garden-plants.md': page('topic'),
   });
-  const found = run(root, ['job target list']);
-  assert.deepEqual(found.map((r) => r.slug).sort(), ['job-target-list', 'job-target-list-v2']);
-  const v2 = found.find((r) => r.slug === 'job-target-list-v2');
-  assert.match(v2.flags.join(' '), /version of job-target-list/);
+  const found = run(root, ['reading list']);
+  assert.deepEqual(found.map((r) => r.slug).sort(), ['reading-list', 'reading-list-v2']);
+  const v2 = found.find((r) => r.slug === 'reading-list-v2');
+  assert.match(v2.flags.join(' '), /version of reading-list/);
 });
 
 test('reports on one subject are never flagged as versions', (t) => {
@@ -43,19 +43,19 @@ test('reports on one subject are never flagged as versions', (t) => {
 
 test('an alias in the owner\'s language finds an English page', (t) => {
   const root = vault(t, {
-    'notes/job-search.md': page('topic', 'aliases: [iş arama, İş ilanları]\n'),
+    'notes/city-trips.md': page('topic', 'aliases: [kısa şehir gezisi, İstanbul gezileri]\n'),
   });
-  assert.equal(run(root, ['iş ilanları'])[0]?.slug, 'job-search');
-  assert.equal(run(root, ['is ilanlari'])[0]?.slug, 'job-search', 'ASCII-typed Turkish still matches');
-  assert.deepEqual(tokens('İŞ İLANLARI'), ['is', 'ilanlari']);
+  assert.equal(run(root, ['kısa şehir gezisi'])[0]?.slug, 'city-trips');
+  assert.equal(run(root, ['kisa sehir gezisi'])[0]?.slug, 'city-trips', 'ASCII-typed Turkish still matches');
+  assert.deepEqual(tokens('İSTANBUL GEZİLERİ'), ['istanbul', 'gezileri']);
 });
 
 test('a topic page and its same-slug report are not versions of each other', (t) => {
   const root = vault(t, {
-    'notes/job-search.md': page('topic'),
-    'reports/2026-10-24_job-search.md': page('report'),
+    'notes/city-trips.md': page('topic'),
+    'reports/2026-10-24_city-trips.md': page('report'),
   });
-  const found = run(root, ['job search']);
+  const found = run(root, ['city trips']);
   assert.equal(found.length, 2);
   assert.ok(found.every((r) => !r.flags), JSON.stringify(found.map((r) => [r.slug, r.flags])));
 });
@@ -81,15 +81,15 @@ test('--slug adds pages linked in either direction, even with no title overlap',
 
 test('one shared word in a long title is not a neighbour; archive/ is never scanned', (t) => {
   const root = vault(t, {
-    'notes/linkedin-brand-strategy-for-agent-builders.md': page('topic'),
-    'archive/job-search.md': page('topic'),
+    'notes/brand-strategy-notes-for-a-small-bakery.md': page('topic'),
+    'archive/city-trips.md': page('topic'),
   });
-  assert.equal(run(root, ['job search']).length, 0);
+  assert.equal(run(root, ['city trips']).length, 0);
 });
 
 test('arguments: words or --slug are required; unknown flags fail', () => {
   assert.throws(() => parseArgs([]), /subject words, --tags or --slug/);
-  assert.equal(parseArgs(['--tags', 'career']).tags[0], 'career');
+  assert.equal(parseArgs(['--tags', 'books']).tags[0], 'books');
   assert.throws(() => parseArgs(['x', '--bogus']), /unknown argument --bogus/);
   assert.deepEqual(parseArgs(['a', 'b', '--tags', 'X, y']).tags, ['x', 'y']);
 });
