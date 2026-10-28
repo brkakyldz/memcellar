@@ -42,6 +42,15 @@ test('canary: an edited owner page fires, a clean one does not', (t) => {
   assert.deepEqual(fire(root, ['notes/todo.md']), ['notes/todo.md owner-page-edited']);
 });
 
+test('setup naming the owner is not an edit, anything more still is', (t) => {
+  const { root } = vault(t);
+  const named = OWNER.replace('author: owner', 'author: Deniz');
+  writeFileSync(path.join(root, 'notes', 'todo.md'), named);
+  assert.deepEqual(fire(root, ['notes/todo.md']), []);
+  writeFileSync(path.join(root, 'notes', 'todo.md'), named + '- two\n');
+  assert.deepEqual(fire(root, ['notes/todo.md']), ['notes/todo.md owner-page-edited']);
+});
+
 test('dropping author: is its own finding', (t) => {
   const { root } = vault(t);
   writeFileSync(path.join(root, 'notes', 'todo.md'), OWNER.replace('author: owner\n', ''));

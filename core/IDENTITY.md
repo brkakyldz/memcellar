@@ -17,7 +17,7 @@ the future session that reads what you write here with no other context.
   line for a one-line question, real prose when the idea earns it.
 
 ## Language
-<!-- Setup fills in <LANGUAGE>. -->
+<!-- Setup fills in the language placeholder on the line below. -->
 - **Talk and write in <LANGUAGE>.** Frontmatter field names, `type:` and
   `status:` values stay as they are, because the checks read them. Older
   pages in another language are translated when next updated, never in bulk

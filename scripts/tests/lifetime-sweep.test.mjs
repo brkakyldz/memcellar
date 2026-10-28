@@ -55,7 +55,7 @@ test('every failure the 2026-10-24 cleanup found by hand is found', (t) => {
 
 test('the same vault after the fixes is quiet', (t) => {
   const root = vault(t, {
-    'core/USER.md': '# User\n\n## Current focus\n- ArchDrawer\n- The learning-only week (2026-10-11 → 10-18) is over.\n',
+    'core/USER.md': '# User\n\n## Current focus\n- Project X\n- The learning-only week (2026-10-11 → 10-18) is over.\n',
     'core/MEMORY.md': '# Memory\n\n- Every ADR (0001–0054) lives in archive/.\n',
     'docs/decisions/0054-latest.md': '# 0054\n',
     'outputs/2026-10-20_job-listings.md': fm('type: deliverable\ncreated: 2026-10-20\nexpires: 2026-11-19'),

@@ -279,7 +279,7 @@ const USAGE = `Second Brain OS — install.mjs
   node install.mjs --link-global-skills    link /closeout and /lesson into the user-level
                                            skills folder of each installed runtime, so
                                            every project can use them (they write into
-                                           the project, never the vault)
+                                           the project or your kit, never the vault)
   node install.mjs --unlink-global-skills  remove exactly those links again
   node install.mjs --obsidian              hide archive/, logs/, raw/ from Obsidian's
                                            search and graph, keeping your other settings
@@ -442,7 +442,7 @@ fs.writeFileSync(path.join(CORE, 'USER.md'), userMd, 'utf8');
 const idPath = path.join(CORE, 'IDENTITY.md');
 if (fs.existsSync(idPath)) {
   const id = fs.readFileSync(idPath, 'utf8');
-  const filled = id.replace('<LANGUAGE>', lang);
+  const filled = id.replaceAll('<LANGUAGE>', lang);
   if (filled !== id) fs.writeFileSync(idPath, filled, 'utf8');
 }
 
@@ -528,7 +528,8 @@ if you set it), so they are correct from any working directory.
 
 Optional — /closeout and /lesson in your other projects. /closeout ends project
 work (state file, run report, one commit of exactly the task's paths) and
-/lesson keeps a correction in that project's docs/lessons/. Neither touches
+/lesson keeps a correction in your user-level kit, or in that project's
+docs/lessons/ when it is tied to the project's code (ADR 0056). Neither touches
 the brain. To make them loadable everywhere — opt-in, and undone by
 --unlink-global-skills:
 

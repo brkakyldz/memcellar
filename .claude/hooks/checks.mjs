@@ -122,6 +122,15 @@ function isOwnerPage(text) {
   return Boolean(fm && fm.author);
 }
 
+// Setup names the owner on the pages that ship with the placeholder
+// `author: owner` (install.mjs). That one-line change is not an edit of the
+// owner's page; any other change still is.
+function isSetupNaming(head, now) {
+  const lf = (s) => s.replace(/\r\n/g, '\n');
+  if (!/^author: owner$/m.test(lf(head))) return false;
+  return lf(now).replace(/^author: .*$/m, 'author: owner') === lf(head);
+}
+
 // The committed copy of a file, or null when HEAD has none.
 function headCopy(repoRoot, rel) {
   try {
@@ -343,7 +352,7 @@ const ownerPages = {
         const now = readFileSafe(path.join(repoRoot, p));
         if (now === null) continue;
         if (!isOwnerPage(now)) findings.push({ file: p, detail: 'owner-mark-removed', message: msg('lost its author: line') });
-        else if (now.replace(/\r\n/g, '\n') !== head.replace(/\r\n/g, '\n')) findings.push({ file: p, detail: 'owner-page-edited', message: msg('edited') });
+        else if (!isSetupNaming(head, now) && now.replace(/\r\n/g, '\n') !== head.replace(/\r\n/g, '\n')) findings.push({ file: p, detail: 'owner-page-edited', message: msg('edited') });
       }
     }
     return findings;
