@@ -47,6 +47,13 @@ from last month that answers half the question is cheaper than any leg.
   `reports/` for the topic's key terms — in the vault's language and, while
   older pages are in another language, in that one too (ADR 0059).
 
+List the folders for real, every run — never assume one is empty because
+you just created or scaffolded it: a scaffold never deletes, and the folder
+may hold reports from before. In a reference-instance test, a run that had
+just scaffolded the store wrote "none found" next to a month-old report on
+the same question. Every report it finds on the topic is named in the new
+report's *Prior work consulted*, with what was reused from it.
+
 Open only plausible hits. Reuse what still holds, date-check anything
 perishable, and let a stale report sharpen the sub-questions ("what changed
 since <its date>") instead of repeating them.
@@ -167,8 +174,8 @@ their language.
 the recommendation and the constraint that decided it.
 
 ## Findings
-Grouped by theme, never by leg. Source URL inline, a date on anything
-perishable, single-source claims marked.
+Grouped by theme, never by leg. Each source as an inline Markdown link
+([title](url)), a date on anything perishable, single-source claims marked.
 
 ## Contradictions & unknowns
 Where sources disagree and how you weighed them; what you could not verify;
@@ -225,7 +232,8 @@ old one. Researched facts never go into `core/USER.md` or
 informs a recorded decision but never reverses one on its own authority:
 write the conflict up and hand the call over.
 
-Finish in chat with the TL;DR and where the file landed. The file is the
+Finish in chat with the TL;DR and the report's full path from the repo or
+vault root (`reports/research/2026-05-02_x.md`). The file is the
 record; the message is the delivery.
 
 ## Quality bar

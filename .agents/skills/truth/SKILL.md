@@ -32,7 +32,11 @@ keys), ADR 0055 (page types), ADR 0059 (the vault's language), ADR 0060
 - **Re-run mode.** If `notes/current-truth.md` exists, read each section's
   `confirmed:` date. With `--stale <days>` (default 90), only sections
   confirmed longer ago than that are asked again; say which ones, and which
-  are skipped as fresh, before asking anything.
+  are skipped as fresh, before asking anything. A fresh section is named and
+  nothing more: don't quote its claims, comment on them or ask about them
+  — the owner confirmed it recently, and re-raising it is the noise this
+  mode exists to cut. Extraction (step 1) and the page decisions (step 4)
+  also cover only the stale sections' subjects.
 
 ## 1. Extract every "true now" claim
 

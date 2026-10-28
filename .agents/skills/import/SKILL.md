@@ -21,11 +21,15 @@ another language is rewritten, not translated line by line.
 - **The source is read-only.** Never edit, move, rename or delete anything
   in it — not even its `.obsidian/` settings. If the source is inside this
   vault, stop: it must be a separate folder.
-- **Verbatim lives only in `raw/`.** An original kept as it is (a long
-  essay, a transcript, an exported article, an attachment that pages refer
-  to) is copied to `raw/YYYY-MM-DD_<slug>.<ext>` — the date the file was
-  written if the name or frontmatter says, otherwise its modified date — and
-  any page drawn from it carries `source: raw/<file>`. Copying into `raw/` is
+- **Every page drawn from the source points at a copy inside the vault.**
+  Each source file that a written page draws from — whatever kind it is: a
+  clip, an essay, the owner's own summary, an attachment a page embeds — is
+  copied byte for byte to `raw/YYYY-MM-DD_<slug>.<ext>` (the date the file
+  was written if its name, frontmatter or body says, otherwise its modified
+  date), and every page drawn from it, topic pages included, carries
+  `source: raw/<that file>`. A path into the source folder is not a source:
+  that folder may be moved or deleted after the import. Verbatim text lives
+  only in that copy. Files typed NOOP are not copied. Copying into `raw/` is
   the one write there, and it happens because the owner asked for this
   import.
 - **Old notes are not current truth.** A claim distilled from the source
@@ -60,7 +64,7 @@ For every source file, one row:
 |---|---|---|---|
 | `Projects/Garden.md` | topic (merge) | `notes/garden.md` | the vault already has the subject; adds the soil test results |
 | `Daily/2024-03-02.md` | NOOP | — | a day log; nothing still true or worth keeping |
-| `Reading/Deep Work.md` | report + raw | `reports/2024-05-10_deep-work-notes.md`, original to `raw/` | dated notes on a book |
+| `Reading/Deep Work.md` | report | `reports/2024-05-10_deep-work-notes.md`, original to `raw/` | dated notes on a book |
 | `Ideas/app ideas.md` | owner page? | `notes/app-ideas.md` | the owner's own list — **flag: keep as theirs, or distill?** |
 
 Types follow the gate, in order: something to act on and then done with →
@@ -96,10 +100,12 @@ questions. Ask everything for a group at once, not row by row.
 
 For each approved group:
 
-1. Copy the originals marked raw into `raw/` (byte-for-byte, renamed to the
-   raw naming). Attachments go only when a written page embeds them.
+1. Copy into `raw/` (byte for byte, renamed to the raw naming) every source
+   file a page in this group draws from, and every "raw only" file.
+   Attachments go only when a written page embeds them.
 2. Write the pages through the write gate: flat YAML frontmatter, a
-   `[[wikilink]]` out, `source:` on everything drawn from the source,
+   `[[wikilink]]` out, `source: raw/<file>` on every page drawn from the
+   source — topic pages too, not only reports —
    `confidence: low` on reports, nothing verbatim outside `raw/` beyond a
    quoted line where the wording is the point. Rewrite the source's links to
    the new page names; a link to a page not imported becomes plain text.
@@ -108,7 +114,9 @@ For each approved group:
    confirmed newer in step 3.
 4. `INDEX.md` rows for new `notes/` pages; topic pages list their new
    reports.
-5. `node .claude/hooks/checks.mjs`, fix what it reports, then commit the
+5. Before committing, check that every page this group wrote or changed
+   names a `raw/` file in `source:` that exists. Then
+   `node .claude/hooks/checks.mjs`, fix what it reports, and commit the
    group's explicit paths: `import: <group> — <n> pages, <n> merged, <n> raw`.
 
 ## 5. Finish
