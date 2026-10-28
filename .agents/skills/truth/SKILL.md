@@ -136,7 +136,7 @@ one only when they ask for that change.
 
 ## 6. Finish
 
-- `node .claude/hooks/checks.mjs` and `node scripts/brain-doctor.mjs`; fix
+- `node .claude/hooks/checks.mjs` and `node scripts/vault-doctor.mjs`; fix
   what this run broke (dead links to archived pages, index rows).
 - Commit per group, explicit paths only, subject
   `truth: <group> — <n> fixed, <n> closed, <n> archived`; Tier 0 and the

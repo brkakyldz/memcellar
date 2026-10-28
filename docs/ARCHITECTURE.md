@@ -206,7 +206,7 @@ result.
 
 ## 5. Runtime: two runtimes, one hook each
 
-Claude Code and Codex are equal (ADR 0044). Each has exactly one brain
+Claude Code and Codex are equal (ADR 0044). Each has exactly one vault
 SessionStart, and both land in the same implementation:
 
 - **Claude Code:** `.claude/settings.json` (project scope, the default) or
@@ -269,7 +269,7 @@ Only the parts of the policy that exist as running code belong here.
   "until <date>" that has passed or a cited ADR range that newer ADRs have
   outrun. Those counts ride on the `/curator` item. It announces;
   `scripts/maintenance.mjs run` acts, and only after the owner's yes.
-- **`brain-doctor.mjs`** reports, read-only, whether each runtime has exactly
+- **`vault-doctor.mjs`** reports, read-only, whether each runtime has exactly
   one SessionStart and no retired git-writing hook, whether the skills link
   resolves, whether the optional user-level `/closeout` and `/lesson` links
   resolve (and no other vault skill is linked at user level), whether the budgets hold,
@@ -387,7 +387,7 @@ Three properties are deliberate:
   appends; real multi-device concurrent editing would need more than that.
 - **The Windows skills junction stores an absolute path.** Move the vault
   folder and the link breaks; `node install.mjs --link-skills` repairs it and
-  `brain-doctor.mjs` reports it. The optional user-level links from
+  `vault-doctor.mjs` reports it. The optional user-level links from
   `--link-global-skills` behave the same way, and rerunning that flag repairs
   them.
 - **The policy is only as good as its enforcement.** Anything enforced only by

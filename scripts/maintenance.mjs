@@ -9,7 +9,7 @@
 // the owner before anything runs. `run` is what the agent executes after a yes for
 // the "sweep" item: the link sweep (writes logs/YYYY-MM-DD_link-sweep.md), the
 // compiled checks over every note (writes check-fire ledger lines) and the
-// brain doctor (read-only). `/curator`, `/audit`
+// vault doctor (read-only). `/curator`, `/audit`
 // and lesson routing are judgment passes, so they stay skills; this script
 // only names them.
 //
@@ -35,7 +35,7 @@ const USAGE = [
   'due  list what is due and why (the default; read-only)',
   'run  the deterministic sweep: link sweep (writes logs/YYYY-MM-DD_link-sweep.md),',
   '     compiled checks over every note (records new check-fire lines in',
-  '     logs/signals/) and brain doctor (read-only).',
+  '     logs/signals/) and vault doctor (read-only).',
   '     Commits nothing.',
 ].join('\n');
 
@@ -101,7 +101,7 @@ try {
   console.log(`failed: ${err.message}`);
 }
 
-runNode('Brain doctor', [path.join('scripts', 'brain-doctor.mjs')]);
+runNode('Vault doctor', [path.join('scripts', 'vault-doctor.mjs')]);
 runNode('Project board', [path.join('scripts', 'project-doctor.mjs'), '--board']);
 
 console.log('');

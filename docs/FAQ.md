@@ -68,13 +68,13 @@ sessions — or two runtimes — work in one checkout, a hook cannot know which
 changed file belongs to which task. The reference instance's checkpoint swept
 53 files from several sessions into one commit before it was retired. The
 price: a session that ends without committing leaves its files for the next
-one. `brain-doctor.mjs` and `git status` show them.
+one. `vault-doctor.mjs` and `git status` show them.
 
 **Where does a project's status go?** Into the project's own repo, in
 `docs/CURRENT_STATE.md` — the only file that states it — committed with the
-code it describes. The brain's card for that project says where the repo and
+code it describes. The vault's card for that project says where the repo and
 that file are and never restates them: a copied status is right for a day and
-wrong afterwards. The reference instance tried the opposite (the brain as the
+wrong afterwards. The reference instance tried the opposite (the vault as the
 only working record) and no coding session ever resumed from it.
 
 **What if I work offline?** Everything works locally. The pull at start fails
@@ -113,7 +113,7 @@ the vault, so the answer never goes stale.
 **What happens if a memory file gets too big?** `MEMORY.md` and `USER.md` have
 character budgets. Going over never silently truncates — the session-start
 header shows usage before you write, marks a file that is over budget, and
-`brain-doctor.mjs` fails on it until `/curator` consolidates.
+`vault-doctor.mjs` fails on it until `/curator` consolidates.
 
 **Isn't `raw/` just the inbox you removed?** No, and the difference is the test
 for any folder like it: an inbox is a queue whose healthy state is *empty* and

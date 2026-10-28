@@ -63,7 +63,7 @@ tells you what it was protecting.
 | 0034 | amended by 0035 | The capture inbox and every mobile-capture plan are removed |
 | 0035 | amended by 0038, 0041, 0043 | A `raw/` source layer, `/ingest` to read a source into the wiki, `/file` to keep an answer, and `INDEX.md` as the page catalog (amends 0002 and 0034) |
 | 0036 | amended by 0046, 0058 | Template v1.0 published ahead of the two-week bar; the bar governs additions, never removals |
-| 0037 | amended by 0040; superseded by 0060 | The owner's own-notes folder is structured into kind folders *(shipped in v1.2 as `my-notes/`, flat — see 0040; the folder is gone since 0060)* |
+| 0037 | amended by 0040; superseded by 0060 | The owner's own-notes folder is structured into kind folders *(built as a flat `my-notes/` in v1.2, which was never published — see 0040; replaced by owner pages in `notes/` in 0060, so no release ever shipped the folder)* |
 | 0038 | amended by 0039, 0048, 0049 | The flush mechanism and proposal production are removed; delivery, notices and measurement are made truthful (supersedes 0025) |
 | 0039 | accepted | The notes earn their keep, the instrumentation does not — reuse telemetry is retired |
 | 0040 | superseded by 0060 | The own-notes folder goes flat again; `kind:` is the only classifier *(`kind:` survives on owner pages in `notes/`, 0060)* |

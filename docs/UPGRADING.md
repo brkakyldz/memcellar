@@ -3,6 +3,15 @@
 What each release changed, and how to bring a vault made from an earlier one
 up to date. The README keeps the short version.
 
+## Since v2.0
+
+- `scripts/brain-doctor.mjs` is now `scripts/vault-doctor.mjs`, so the docs
+  and scripts say "vault" throughout. An upgrade that copies `scripts/` and
+  `.claude/settings.json` from the template picks it up; delete the old file.
+  `BRAIN_DIR` and `BRAIN_KIT_DIR` keep their names.
+- `setup: personalize vault` commits `.obsidian/app.json` with the rest, so a
+  new vault's first `git status` is clean.
+
 ## What changed in v2
 
 The one-line version: **the template is now called memcellar, projects and
@@ -72,7 +81,7 @@ as two upgrades (ADR 0061). The decisions are recorded in full in
   and cards. The "Maintenance due" line counts these under `/curator`.
 - `/curator` step 3a, which works through those findings and through pages
   that a decision from the last 30 days made stale.
-- `scripts/brain-doctor.mjs`: Tier-0 integrity, provenance (the
+- `scripts/vault-doctor.mjs`: Tier-0 integrity, provenance (the
   corroboration gate) and skills or hooks that still name retired machinery;
   it accepts `reports/` and `outputs/` at the top level.
 - `node scripts/project-doctor.mjs --board` — one row per project, read live:
@@ -110,7 +119,7 @@ as two upgrades (ADR 0061). The decisions are recorded in full in
   needs: Held-out, review findings and integration in the ownership map,
   the held-out lock check and verification in Commands, and a Plan refresh
   section in the run-report template.
-- Tests for the brain doctor, the SessionStart hook, the neighbour finder,
+- Tests for the vault doctor, the SessionStart hook, the neighbour finder,
   the new checks, the owner-page guard, the board, the pack installer and the
   new skills' scripts.
 
@@ -196,7 +205,7 @@ judgment work; do it in a session with the agent, page by page.
    vault's `.claude/settings.json`. If you ran v1.1 in global mode, delete the
    SessionStart entry that points at this vault from `~/.claude/settings.json`
    — the project-level one is now the default, and a user-level one would do
-   nothing outside the vault anyway. Keep exactly one; `brain-doctor.mjs`
+   nothing outside the vault anyway. Keep exactly one; `vault-doctor.mjs`
    fails when both are wired. Codex keeps its user-level entry.
 7. **Reclassify your pages.** `node .claude/hooks/checks.mjs --all` lists
    every page in `notes/` that still says `knowledge` or `memory` as
@@ -247,7 +256,7 @@ judgment work; do it in a session with the agent, page by page.
     your copy first if the template's should take its place.
 12. **Commit the upgrade** by explicit path:
     `git commit -m "upgrade: memcellar v2.0"`.
-13. **Check it:** `node scripts/brain-doctor.mjs` (Retired terms lists any
+13. **Check it:** `node scripts/vault-doctor.mjs` (Retired terms lists any
     skill of your own that still names the recall skill),
     `node .claude/hooks/checks.mjs --all`, then `node scripts/maintenance.mjs`
     to see what is due.
@@ -288,7 +297,7 @@ which ones.
 - Project work in the project's repo (ADR 0045): the repo-side formats in
   `.claude/templates/project-repo/`, thin project cards, `/closeout`, and
   `node install.mjs --link-global-skills` to reach it from any project.
-- `scripts/brain-doctor.mjs` and `scripts/project-doctor.mjs`, both
+- `scripts/vault-doctor.mjs` and `scripts/project-doctor.mjs`, both
   read-only; the ranked lookup `retrieval-eval.mjs --query`;
   `notes/self-evolution-policy.md`, split out of the lifecycle policy.
 - A command line for the compiled checks,
@@ -366,7 +375,7 @@ the same in bash and PowerShell.
    `SessionStart` entry. For Codex, add its entry as in
    [`SETUP.md`, Step 5](../SETUP.md#codex).
 
-8. **Check it:** `node scripts/brain-doctor.mjs` fails loudly on a retired
+8. **Check it:** `node scripts/vault-doctor.mjs` fails loudly on a retired
    hook still wired, a duplicate SessionStart or a missing skills link. Then,
    optionally, `node install.mjs --link-global-skills`, and turn your project
    notes into cards (`.claude/templates/project.md`).

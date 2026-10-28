@@ -60,9 +60,13 @@ you can check it and correct it where it is wrong.
 - **Projects keep their own memory.** Each project's status lives in its own
   repo, committed with the code. The vault stays out of it.
 
-This is the generic projection of a vault that has been in daily use since
-2026-08-18. Everything here runs somewhere, and what was tried and removed is
-listed as removed — see [`docs/DECISIONS.md`](docs/DECISIONS.md).
+This is a cleaned-up copy of a vault I have used every day since 2026-08-18,
+with the personal content taken out. Everything here runs somewhere, and what
+was tried and removed is listed as removed — see
+[`docs/DECISIONS.md`](docs/DECISIONS.md). Every choice in that vault got a
+numbered decision record (ADR), the reversed ones included, which is why the
+numbers run high; v1.0, v1.1 and v2 are snapshots of the same vault. Full
+records ship from ADR 0045 on; 0001–0044 are one line each in the index.
 
 ## How it works
 
@@ -127,8 +131,9 @@ needs ([ADR 0056](docs/decisions/0056-three-homes-repo-user-kit-vault.md)):
 - **the vault** — what you know, think and decide; read in vault sessions;
 - **each project's repo** — that project's state, decisions and lessons; read
   only in that project;
-- **your kit** — how you want work done, carried into every session, in the
-  vault and in every project.
+- **your kit** — your user-level instruction file and two folders beside it:
+  how you want work done, carried into every session, in the vault and in
+  every project.
 
 | The vault | Each project's repo | Your user-level kit |
 |---|---|---|
@@ -170,7 +175,8 @@ The decisions: [ADR 0045](docs/decisions/0045-project-execution-state-lives-in-t
 <summary><b>What's in the repo</b></summary>
 
 ```
-core/         Tier 0: IDENTITY, USER, MEMORY inlined; OPEN_QUESTIONS by pointer
+core/         loaded at every session start ("Tier 0"): IDENTITY, USER,
+              MEMORY inlined; OPEN_QUESTIONS by pointer
 notes/        the living layer — topic pages, decisions, playbooks, project
               cards, and your own pages (author:); flat, wikilinked, told
               apart by frontmatter; home.md is the front page
@@ -179,7 +185,7 @@ outputs/      lists, drafts and other deliverables, each with an expiry date
 raw/          immutable sources you put there; the agent reads, never writes
 logs/         append-only session logs + logs/signals/, the event ledger
 archive/      closed and superseded content — never deleted, always moved here
-scripts/      link sweep, neighbour finder, brain and project doctors,
+scripts/      link sweep, neighbour finder, vault and project doctors,
               maintenance, metrics
 .agents/      skills, the optional skill packs and the write gate — the one
               copy both runtimes load
@@ -219,7 +225,7 @@ Obsidian is optional; the vault is plain Markdown either way.
    interviews you, personalizes the core files, links the skills and checks
    that the hook fires. It asks before creating the repo and before writing
    user-level settings.
-3. **Check the wiring:** `node scripts/brain-doctor.mjs`.
+3. **Check the wiring:** `node scripts/vault-doctor.mjs`.
 4. **Work normally.** Talk to your agent inside the vault: plan a project,
    think a problem through, ask what you decided last month. When a piece of
    work is done, it commits exactly the files that work touched.
@@ -259,7 +265,7 @@ Scripts you run when you want them — nothing runs on a schedule:
 
 - `node scripts/maintenance.mjs`: what upkeep is due; `run` does the
   mechanical half after your yes.
-- `node scripts/brain-doctor.mjs`: is the setup healthy.
+- `node scripts/vault-doctor.mjs`: is the setup healthy.
 - `node scripts/project-doctor.mjs`: is each project's memory committed and
   its state fresh; `--board` gives one row per project.
 - `node scripts/note-neighbours.mjs "<subject>"`: the pages already on a
@@ -310,8 +316,9 @@ projects and the vault are walled off, and the search machinery is gone.**
   second correction on the same behaviour proposes a rule.
 - **Upkeep.** A once-a-day "Maintenance due" line, computed from outstanding
   work. Nothing runs until you say yes.
-- **Your own pages and language.** Owner pages (`author:`) in `notes/` replace
-  `my-notes/`. The vault is written in your language.
+- **Your own pages and language.** Pages you write yourself sit in `notes/`
+  with an `author:` field, and a check keeps the agent from rewriting them.
+  The vault is written in your language.
 - **New in v2.** `/truth`, `/truth-test`, `/import` and the four skill packs.
 
 The complete list is in [`docs/UPGRADING.md`](docs/UPGRADING.md#what-changed-in-v2),

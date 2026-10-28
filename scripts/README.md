@@ -15,11 +15,9 @@ computed from state — and the agent asks before anything runs
 (`maintenance.mjs` below, ADR 0049).
 
 Every script carries a **kill criterion**: a job with no defined way to fail is
-one nobody turns off. The numbering (B2, B11, …) is the reference instance's
-roster, kept so the ADRs that cite it still resolve; gaps are jobs that were
-retired.
+one nobody turns off.
 
-## B2 — `link-sweep.mjs`
+## `link-sweep.mjs`
 
 - **What:** scans every vault-content `.md` file (`.git/`, `.claude/`,
   `.codex/`, `.agents/`, `.obsidian/` are not walked; `archive/` is indexed as
@@ -37,7 +35,7 @@ retired.
   or delete it like any other log.
 - **Kill criterion:** orphan count flat for a month — simplify or drop it.
 
-## B4 — gitleaks pre-commit hook · **opt-in**
+## gitleaks pre-commit hook · **opt-in**
 
 `.pre-commit-config.yaml` declares `gitleaks` (pinned at `v8.30.1`;
 `pre-commit autoupdate` moves the pin). **Since
@@ -52,7 +50,7 @@ pre-commit`, then `pre-commit install` inside the vault.
   setting, not something a script can do.
 - **Kill criterion:** none — keep it as long as the vault has a remote.
 
-## B8 — acceptance logging, by hand
+## Acceptance logging, by hand
 
 A decision worth recording about an agent suggestion (a link, a merge, an
 archive) may get one `acceptance` or `rejection` line in the signal ledger,
@@ -93,9 +91,9 @@ survives as a convention for the skills and feeds nothing that scores them.
   keep appearing beside it, the step is ceremony — fold it back into a
   `grep` in the write gate.
 
-## B15 — `brain-doctor.mjs`
+## `vault-doctor.mjs`
 
-- **What:** one read-only table over the brain path of both runtimes: exactly
+- **What:** one read-only table over the vault path of both runtimes: exactly
   one SessionStart per runtime, no retired v1.0 git-writing hook still wired,
   the `.claude/skills` link, and — if you linked them — the user-level
   `closeout`/`lesson` links (any other vault skill linked at user level warns,
@@ -111,7 +109,7 @@ survives as a convention for the skills and feeds nothing that scores them.
   the `AGENTS.md` folder map, which now includes `reports/` and `outputs/`;
   and Git delivery state.
 - **When:** after setup, after changing hook wiring, after upgrading, or when
-  memory loading is suspected: `node scripts/brain-doctor.mjs`. `--json` for
+  memory loading is suspected: `node scripts/vault-doctor.mjs`. `--json` for
   tooling, `--strict` to exit 1 on any failure.
 - **Output:** stdout only. It never repairs, stages, commits, writes a report,
   or updates a sidecar.
@@ -119,7 +117,7 @@ survives as a convention for the skills and feeds nothing that scores them.
   the underlying files because this table cannot localize the fault, remove it
   rather than grow it into a dashboard.
 
-## B16 — `project-doctor.mjs`
+## `project-doctor.mjs`
 
 - **What:** a read-only view of project memory across every repo a project
   card names (`type: project` + `repo:`, ADR 0045): git present, a remote
@@ -171,7 +169,7 @@ survives as a convention for the skills and feeds nothing that scores them.
   topic pages behind their reports, and the rest the `lifetime-sweep` check
   lists). `node scripts/maintenance.mjs run` does the deterministic half:
   link sweep, compiled checks over every page in `notes/`, `reports/`,
-  `outputs/` and `core/`, brain doctor, project board. Last-run dates come
+  `outputs/` and `core/`, vault doctor, project board. Last-run dates come
   from the logs the passes already write, so there is no stamp file to keep.
 - **When:** after the owner says yes to the notice, or by hand. Never
   scheduled, never run unasked.
@@ -234,7 +232,7 @@ with `node scripts/tests/<name>.test.mjs`; each exits 1 on a failure.
   `--staged`, `--all`, `--record`; link-sweep's `BRAIN_DIR` and `--help`).
 - `project-doctor.test.mjs` — `project-doctor.mjs` on fixture vaults, repos
   and home folders, including `--board`.
-- `brain-doctor.test.mjs` — the Tier-0 integrity, provenance, retired-term
+- `vault-doctor.test.mjs` — the Tier-0 integrity, provenance, retired-term
   and user-level skill checks.
 - `note-lifetime.test.mjs` — the `note-lifetime` check: each type in its
   home, with the fields its lifetime needs.

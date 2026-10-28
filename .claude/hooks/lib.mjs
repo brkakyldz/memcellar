@@ -1100,7 +1100,7 @@ export function maintenanceDue(repoRoot, { now = new Date() } = {}) {
     items.push({ id: 'audit', run: '/audit', why: why.join('; ') });
   }
 
-  // The deterministic sweep: link sweep, compiled checks, brain doctor.
+  // The deterministic sweep: link sweep, compiled checks, vault doctor.
   const lastSweep = latestDay(logNames, '_link-sweep.md');
   const sweepAge = daysBetween(lastSweep, now);
   const sweepDue = sweepAge === null ? (neverRunAge === null || neverRunAge >= SWEEP_DUE_DAYS) : sweepAge >= SWEEP_DUE_DAYS;

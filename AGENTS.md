@@ -87,7 +87,7 @@ breaks because a thought grew up.
   adapter. Not vault content; this is how the agent runs, not what it knows
   about the world.
 - `scripts/` — helper jobs (link sweep, neighbour finder, metrics,
-  maintenance, brain doctor, project doctor), each invoked by hand or by a
+  maintenance, vault doctor, project doctor), each invoked by hand or by a
   skill. Nothing here runs on a clock: unattended scheduling was retired
   (ADR 0033).
 - `docs/` — documentation about the vault, not vault content: the

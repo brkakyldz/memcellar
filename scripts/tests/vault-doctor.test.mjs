@@ -1,4 +1,4 @@
-// Coverage for the brain-doctor checks added with the provenance work:
+// Coverage for the vault-doctor checks added with the provenance work:
 // Provenance (the corroboration gate), Retired terms, Tier-0 integrity, and
 // User-level skills (only closeout and lesson may be linked outside the vault).
 //
@@ -8,7 +8,7 @@
 // then reads the markdown table it prints; no real vault, kit or home is
 // touched.
 //
-// Run: node --test scripts/tests/brain-doctor.test.mjs
+// Run: node --test scripts/tests/vault-doctor.test.mjs
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -18,7 +18,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-const doctor = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'brain-doctor.mjs');
+const doctor = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'vault-doctor.mjs');
 
 function put(file, text) {
   mkdirSync(path.dirname(file), { recursive: true });
@@ -46,7 +46,7 @@ const NOTE = (fields = '') => `---\ntype: knowledge\nstatus: growing\n${fields}-
 // A vault and a kit that are clean on every rule the new checks apply, both
 // committed so the dirty-tree rule has something to compare against.
 function fixture(t, { memory, notes = {}, core = {}, vaultFiles = {}, kitFiles = {}, git: useGit = true } = {}) {
-  const root = mkdtempSync(path.join(os.tmpdir(), 'brain-doctor-'));
+  const root = mkdtempSync(path.join(os.tmpdir(), 'vault-doctor-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const vault = path.join(root, 'vault');
   const kit = path.join(root, 'kit');
@@ -100,7 +100,7 @@ function diagnose(fx, ...args) {
     env: doctorEnv(fx),
   });
   assert.equal(result.error, undefined, result.error?.message);
-  assert.ok(result.stdout.startsWith('# Brain doctor'), result.stderr || result.stdout);
+  assert.ok(result.stdout.startsWith('# Vault doctor'), result.stderr || result.stdout);
   const rows = {};
   for (const line of result.stdout.split(/\r?\n/)) {
     const match = line.match(/^\| (.+?) \| \*\*(PASS|WARN|FAIL)\*\* \| (.*) \|$/);
@@ -199,7 +199,7 @@ test('Provenance WARNs on MEMORY bullets that are neither dated nor pointers', (
     '- Dated on 2026-10-21, so fine',
     '- Wrapped pointer that only names its source',
     '  on the next line → [[kept]]',
-    '- Names the script `scripts/brain-doctor.mjs` so fine',
+    '- Names the script `scripts/vault-doctor.mjs` so fine',
     '- Names a note file `INDEX.md` so fine',
     '- A bare `word` in backticks is not a pointer',
     '- Decided in ADR 0052 so fine',
@@ -331,7 +331,7 @@ test('Retired terms: scope, case and folders', (t) => {
   const caseSensitive = diagnose(fixture(t, { vaultFiles: { '.agents/skills/audit/SKILL.md': 'See /FLYWHEEL\n' } }));
   assert.equal(caseSensitive.rows['Retired terms'].status, 'PASS', 'only acceptance rate ignores case');
 
-  const missingKit = diagnose({ ...fixture(t), kit: path.join(os.tmpdir(), 'brain-doctor-no-such-kit') });
+  const missingKit = diagnose({ ...fixture(t), kit: path.join(os.tmpdir(), 'vault-doctor-no-such-kit') });
   assert.equal(missingKit.rows['Retired terms'].status, 'WARN', 'a named kit that does not exist is a warning');
   assert.match(missingKit.rows['Retired terms'].detail, /skills kit not found/);
 });
@@ -351,7 +351,7 @@ test('an unknown argument exits 2 with the usage line', (t) => {
   const result = spawnSync(process.execPath, [doctor, '--bogus'], { encoding: 'utf8', windowsHide: true, env: doctorEnv(fx) });
   assert.equal(result.status, 2);
   assert.match(result.stderr, /unknown argument --bogus/);
-  assert.match(result.stderr, /Usage: node scripts\/brain-doctor\.mjs/);
+  assert.match(result.stderr, /Usage: node scripts\/vault-doctor\.mjs/);
 });
 
 test('User-level skills: closeout and lesson may be linked; note and ingest may not (ADR 0052)', (t) => {

@@ -5,7 +5,7 @@
 // runtimes run that same file: Claude Code calls it directly, Codex calls this
 // adapter from ~/.codex/hooks.json. The directory name is historical, not
 // ownership. Codex does not set CLAUDE_PROJECT_DIR, so this supplies it from
-// the session's working directory, and the brain root from this file's own
+// the session's working directory, and the vault root from this file's own
 // location — never from a hard-coded path, so the same file is correct in
 // every clone. BRAIN_DIR, if already set, still wins.
 

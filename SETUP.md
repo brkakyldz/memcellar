@@ -44,7 +44,7 @@ gh auth status
 Ask in whatever language your user is speaking to you. One at a time or as a
 short list, whichever fits the conversation:
 
-1. What should the private brain repo be called? Suggest `my-vault`.
+1. What should the private vault repo be called? Suggest `my-vault`.
 2. Where on disk should it live (the parent directory to clone into)?
 3. Their name — what the assistant should call them.
 4. Their role, one line.
@@ -109,7 +109,7 @@ gh repo view <repo-name> --json visibility
 ```
 
 If `visibility` is not `PRIVATE`, **stop and tell your user.** Do not continue
-past this point with a public brain — this vault will hold their memory.
+past this point with a public vault — it will hold their memory.
 
 ## Step 3 — personalize
 
@@ -168,15 +168,10 @@ From inside the clone. Stage **the explicit paths you wrote** — never
 
 ```
 git config rerere.enabled true
-git add core/USER.md core/IDENTITY.md INDEX.md notes/todo.md notes/<each-project-note>.md
-git commit -m "setup: personalize brain"
+git add core/USER.md core/IDENTITY.md INDEX.md notes/todo.md .obsidian/app.json notes/<each-project-note>.md
+git commit -m "setup: personalize vault"
 git push
 ```
-
-If you ran `node scripts/link-sweep.mjs` in Step 3, it left a report at
-`logs/YYYY-MM-DD_link-sweep.md`. Add it to the same commit, or delete it — it
-is a setup-time check, and leaving it untracked only puts noise in the first
-`git status` your user sees.
 
 If the machine has no git identity at all (`git config user.email` is empty),
 set it repo-locally before committing — otherwise the commit fails on identity,
@@ -213,7 +208,7 @@ Codex wiring goes through the thin adapter in `.codex/hooks/`. Merge this into
 definition in Codex. It fires in every Codex session but exits at once outside
 the vault, so other projects pay nothing for it. Do **not** also add a
 project-level `.codex/hooks.json` — Codex adds the layers together, so the hook
-would fire twice. `brain-doctor.mjs` fails the check when both layers carry it.
+would fire twice. `vault-doctor.mjs` fails the check when both layers carry it.
 
 ```json
 {
@@ -267,7 +262,7 @@ per skill, with `<VAULT>` as above:
   `New-Item -ItemType Directory -Force "$HOME\.agents\skills" | Out-Null; New-Item -ItemType Junction -Path "$HOME\.agents\skills\closeout" -Target "<VAULT>\.agents\skills\closeout"`
 
 In Git Bash on Windows, `ln -s` makes a copy by default, so use the
-PowerShell line there. `brain-doctor.mjs` accepts a Codex link in either
+PowerShell line there. `vault-doctor.mjs` accepts a Codex link in either
 folder.
 
 ### Skill packs (optional)
@@ -317,10 +312,10 @@ From inside the clone:
      `$env:CLAUDE_PROJECT_DIR = $HOME; node .claude/hooks/session-start.mjs`
 
    Expect **no output and exit code 0**: a project session gets nothing from
-   the brain (ADR 0052). Reset the variable afterwards in PowerShell
+   the vault (ADR 0052). Reset the variable afterwards in PowerShell
    (`Remove-Item Env:CLAUDE_PROJECT_DIR`).
 
-4. The whole brain path: `node scripts/brain-doctor.mjs`. Expect **PASS** for
+4. The whole vault path: `node scripts/vault-doctor.mjs`. Expect **PASS** for
    the hooks of each runtime they wired, the skills link, Tier-0 budgets,
    SessionStart evidence (step 1 just produced it), Retired terms and Vault
    root — and **User-level skills** if they linked `/closeout` and `/lesson`. A **WARN**
@@ -333,7 +328,7 @@ From inside the clone:
 Tell your user, concretely:
 
 - What you created: the repo name, its URL, and that you verified it private.
-- Which runtimes they wired, and that the brain loads only in sessions inside
+- Which runtimes they wired, and that the vault loads only in sessions inside
   the vault.
 - **How things get in.** Two inlets: talk to the agent and the page gets
   written there and then; or drop something they read into `raw/` and run
@@ -350,11 +345,11 @@ Tell your user, concretely:
 - **Bring in their projects.** Which cards you wrote in Step 3. For a later
   project they open a session in the vault and ask for a card; it names the
   repo and its state file and never copies status.
-- **Projects and the brain are walled off.** A project's status, decisions,
+- **Projects and the vault are walled off.** A project's status, decisions,
   lessons and run reports are committed in its own repo
   (`docs/CURRENT_STATE.md`, `docs/decisions/`, `docs/lessons/`,
   `docs/runs/`), and `git log` is its history. A project session never reads
-  or writes the brain. To see every project at once, they run
+  or writes the vault. To see every project at once, they run
   `node scripts/project-doctor.mjs --board` in the vault: one row per repo,
   read live, nothing written. To give a project those files:
   `.claude/templates/project-repo/README.md`.
@@ -381,7 +376,7 @@ Tell your user, concretely:
   wrong is the most useful thing that will happen this week. One file per
   recurring behaviour collects the corrections, and the second one on the same
   behaviour is where the agent proposes a rule or a check.
-- `node scripts/brain-doctor.mjs` whenever something feels off, and
+- `node scripts/vault-doctor.mjs` whenever something feels off, and
   `node scripts/project-doctor.mjs` from the vault now and then — it reads
   every repo a project card names and reports uncommitted project memory,
   stale STATE and leftover worktrees.
@@ -406,7 +401,7 @@ For a human setting up by hand. An agent following this file skips this
 section: Steps 0–7 above are the whole install.
 
 1. On this repository's GitHub page, click **Use this template** and create
-   your own repository — **choose Private.** This will be your actual brain;
+   your own repository — **choose Private.** This will be your actual vault;
    it should never be public.
 2. Clone it.
 3. Run `node install.mjs`. It interviews you, writes `core/USER.md`, fills the
@@ -416,13 +411,13 @@ section: Steps 0–7 above are the whole install.
    Codex wiring for you to paste. It does not touch your user-level settings
    itself, and it does not commit.
 4. Commit the personalization yourself:
-   `git add core/USER.md core/IDENTITY.md notes/todo.md` then
-   `git commit -m "setup: personalize brain"` and `git push`.
+   `git add core/USER.md core/IDENTITY.md notes/todo.md .obsidian/app.json` then
+   `git commit -m "setup: personalize vault"` and `git push`.
 5. Open the folder as an Obsidian vault (optional).
 6. `cd` in, run `claude` or `codex`, say hello. Claude Code loads the rules
    (`CLAUDE.md` → `AGENTS.md`) and `core/` through this repo's own hook.
    Codex reads `AGENTS.md` natively but gets `core/` only once its
    hook is wired — see [Step 5](#step-5--runtime-wiring).
-7. Check the wiring: `node scripts/brain-doctor.mjs`.
+7. Check the wiring: `node scripts/vault-doctor.mjs`.
 8. Optional: `node install.mjs --list-packs`, then `--pack <name>` for any
    skill pack you want in every project (research, build, release, ideas).

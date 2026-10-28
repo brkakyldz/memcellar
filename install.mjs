@@ -492,7 +492,7 @@ function bail(msg) {
 }
 
 if (!fs.existsSync(CORE)) {
-  bail('No core/ directory here. Run this from the root of your brain clone.');
+  bail('No core/ directory here. Run this from the root of your vault clone.');
 }
 
 if (fs.existsSync(MARKER)) {
@@ -626,19 +626,19 @@ const codexBlock = JSON.stringify(
 const indent = (s) => s.split('\n').map((l) => `    ${l}`).join('\n');
 
 stdout.write(`
-Done. Your brain is live in this folder.
+Done. Your vault is live in this folder.
 
 Commit the personalization yourself, with explicit paths — nothing here commits
 for you, and nothing ever stages the whole tree:
 
-    git add core/USER.md core/IDENTITY.md notes/todo.md
-    git commit -m "setup: personalize brain"
+    git add core/USER.md core/IDENTITY.md notes/todo.md .obsidian/app.json
+    git commit -m "setup: personalize vault"
 ${focus.length ? `
 Your current-focus projects have no card in notes/ yet. Open a session in
 this folder and ask for a card for each (.claude/templates/project.md), then
 link it from USER.md. \`node scripts/project-doctor.mjs --board\` shows them all live.
 ` : ''}
-How the brain is wired
+How the vault is wired
 ----------------------
 There is exactly one hook per runtime: SessionStart. Nothing commits at Stop,
 SessionEnd or PreCompact — commits are made by the task that wrote the files.
@@ -658,14 +658,14 @@ other projects nothing. Do not also add it to a project-level
 
 ${indent(codexBlock)}
 
-The scripts resolve the brain root themselves (their own location, or BRAIN_DIR
+The scripts resolve the vault root themselves (their own location, or BRAIN_DIR
 if you set it), so they are correct from any working directory.
 
 Optional — /closeout and /lesson in your other projects. /closeout ends project
 work (state file, run report, one commit of exactly the task's paths) and
 /lesson keeps a correction in your user-level kit, or in that project's
 docs/lessons/ when it is tied to the project's code (ADR 0056). Neither touches
-the brain. To make them loadable everywhere — opt-in, and undone by
+the vault. To make them loadable everywhere — opt-in, and undone by
 --unlink-global-skills:
 
     node install.mjs --link-global-skills
@@ -677,7 +677,7 @@ project and in this vault:
     node install.mjs --list-packs
     node install.mjs --pack research
 
-Check the wiring any time with:  node scripts/brain-doctor.mjs
+Check the wiring any time with:  node scripts/vault-doctor.mjs
 
 Now open this folder as an Obsidian vault (optional), start \`claude\` or
 \`codex\` in it, and say hello. Claude Code reads AGENTS.md through CLAUDE.md

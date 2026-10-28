@@ -121,7 +121,7 @@ For each approved group:
 
 ## 5. Finish
 
-- `node scripts/brain-doctor.mjs` and `node scripts/link-sweep.mjs` (it changes
+- `node scripts/vault-doctor.mjs` and `node scripts/link-sweep.mjs` (it changes
   no page; its report goes to `logs/`); fix dead links this import made.
 - Report: per type, how many files went where; what was NOOP and why in one
   line per reason; the flags the owner decided; the tag to diff against.

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// brain-doctor.mjs — read-only operational diagnosis for the brain path of
+// vault-doctor.mjs — read-only operational diagnosis for the vault path of
 // both runtimes, Claude Code and Codex (ADR 0044). It composes existing
 // evidence; it never repairs, stages, commits, writes a report, or updates a
 // sidecar.
@@ -101,9 +101,9 @@ function vaultPathSpellings(root) {
   return [...new Set([forward, forward.replaceAll('/', '\\'), forward.replaceAll('/', '\\\\')])];
 }
 
-const USAGE_LINE = 'Usage: node scripts/brain-doctor.mjs [--kit DIR ...] [--json] [--strict] [--help]';
+const USAGE_LINE = 'Usage: node scripts/vault-doctor.mjs [--kit DIR ...] [--json] [--strict] [--help]';
 if (unknownArgs.length > 0 && !help) {
-  console.error(`brain-doctor: unknown argument ${unknownArgs.join(' ')}\n${USAGE_LINE}`);
+  console.error(`vault-doctor: unknown argument ${unknownArgs.join(' ')}\n${USAGE_LINE}`);
   process.exit(2);
 }
 if (help) {
@@ -379,13 +379,13 @@ if (codexUser.invalid || codexProject.invalid) {
 } else if (codexRetired.length > 0) {
   add(results, 'Codex hooks', 'FAIL', `retired hook still wired (${codexRetired.join(', ')}) — remove it`);
 } else if (codexGlobalStarts.length + codexProjectStarts.length > 1) {
-  add(results, 'Codex hooks', 'FAIL', `${codexGlobalStarts.length} global and ${codexProjectStarts.length} project brain SessionStart handler(s) — Codex adds the layers, so it fires twice`);
+  add(results, 'Codex hooks', 'FAIL', `${codexGlobalStarts.length} global and ${codexProjectStarts.length} project vault SessionStart handler(s) — Codex adds the layers, so it fires twice`);
 } else if (codexGlobalStarts.length === 0 && codexProjectStarts.length === 0) {
   add(results, 'Codex hooks', 'WARN', codexUser.missing
     ? `no ${codexUserPath} (fine if you do not use Codex)`
-    : 'no brain SessionStart wired for Codex (fine if you do not use Codex)');
+    : 'no vault SessionStart wired for Codex (fine if you do not use Codex)');
 } else {
-  add(results, 'Codex hooks', 'PASS', 'exactly one brain SessionStart through the adapter');
+  add(results, 'Codex hooks', 'PASS', 'exactly one vault SessionStart through the adapter');
 }
 
 // --- One skills copy: .claude/skills must be a link to .agents/skills.
@@ -638,7 +638,7 @@ const summary = {
 if (jsonMode) {
   console.log(JSON.stringify({ repoRoot, summary, results }, null, 2));
 } else {
-  console.log('# Brain doctor\n');
+  console.log('# Vault doctor\n');
   console.log('| Area | Status | Detail |');
   console.log('|---|---|---|');
   for (const row of results) {
