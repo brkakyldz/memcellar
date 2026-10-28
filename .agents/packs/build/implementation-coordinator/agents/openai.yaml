@@ -1,6 +1,0 @@
-interface:
-  display_name: "Implementation Coordinator"
-  short_description: "Chooses safe sequential or multi-lane execution and writes the packet"
-  default_prompt: "Use $implementation-coordinator only when a feature may have two or more independently owned workstreams; otherwise keep it sequential."
-policy:
-  allow_implicit_invocation: false

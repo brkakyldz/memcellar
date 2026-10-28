@@ -532,8 +532,8 @@ How the pieces meet:
   in `.agents/skills/` works on the vault and stays vault-scoped.
 - **Optional skill packs cross too, on request** (ADR 0062). Four packs live
   in `.agents/packs/`: `research` (research, reports-architecture), `build`
-  (repo-bootstrap through software-factory: the contract, the coordinator
-  and its lanes, unattended runs, held-out scenarios, review, ADRs),
+  (repo-bootstrap, adr, scenario-author, unattended-run, slice-reviewer:
+  the contract, ADRs, held-out scenarios, unattended runs, review),
   `release` (ship, bug-sweep) and `ideas` (product-idea-research,
   idea-import, evolve). `node install.mjs --pack <name>` links a pack's
   skills into each runtime's user-level folder by the same rules as above;

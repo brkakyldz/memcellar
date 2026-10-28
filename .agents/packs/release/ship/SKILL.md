@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Releases a finished, verified repository to GitHub from a template — the agent fills README, LICENSE, CHANGELOG and a CI workflow, then a script runs the preflight (branch, clean tree, the four files, the CHANGELOG entry, tag absent, secret scan), creates a PRIVATE repo with gh only if none exists, pushes without force, tags and publishes the release. Making the repo public happens only on the owner's explicit yes. Use when the owner says "ship it", "put this on GitHub", "cut a release", "release v1.2.0", or the same request in the owner's language, and as the ship station of software-factory when the build pack is installed. Not for opening a PR on an existing shared repo.
+description: Releases a finished, verified repository to GitHub from a template — the agent fills README, LICENSE, CHANGELOG and a CI workflow, then a script runs the preflight (branch, clean tree, the four files, the CHANGELOG entry, tag absent, secret scan), creates a PRIVATE repo with gh only if none exists, pushes without force, tags and publishes the release. Making the repo public happens only on the owner's explicit yes. Use when the owner says "ship it", "put this on GitHub", "cut a release", "release v1.2.0", or the same request in the owner's language. Not for opening a PR on an existing shared repo.
 ---
 
 # Ship

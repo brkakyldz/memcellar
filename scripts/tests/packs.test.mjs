@@ -48,8 +48,7 @@ test('the four packs ship with the skills ADR 0061 names', () => {
   assert.deepEqual(skillsOf('research'), ['reports-architecture', 'research']);
   assert.deepEqual(skillsOf('release'), ['bug-sweep', 'ship']);
   assert.deepEqual(skillsOf('ideas'), ['evolve', 'idea-import', 'product-idea-research']);
-  assert.deepEqual(skillsOf('build'), ['adr', 'implementation-coordinator', 'integration-gate', 'parallel-lane-runner',
-    'repo-bootstrap', 'scenario-author', 'slice-reviewer', 'software-factory', 'unattended-run']);
+  assert.deepEqual(skillsOf('build'), ['adr', 'repo-bootstrap', 'scenario-author', 'slice-reviewer', 'unattended-run']);
 });
 
 test('every pack skill has a matching name, a description and a Codex policy file', () => {

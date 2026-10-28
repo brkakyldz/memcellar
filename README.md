@@ -253,7 +253,7 @@ every project and in the vault
 | Pack | Skills | For |
 |---|---|---|
 | `research` | `research`, `reports-architecture` | delegated web research that ends in a short dated report; a research store for any repo |
-| `build` | `repo-bootstrap`, `adr`, `implementation-coordinator`, `parallel-lane-runner`, `integration-gate`, `scenario-author`, `slice-reviewer`, `unattended-run`, `software-factory` | taking a repo from intent to plan, held-out acceptance scenarios, parallel lanes and autonomous runs with a review per milestone |
+| `build` | `repo-bootstrap`, `adr`, `scenario-author`, `unattended-run`, `slice-reviewer` | preparing a repo, recording decisions, independent held-out acceptance scenarios, autonomous runs with a review per milestone |
 | `release` | `ship`, `bug-sweep` | a templated GitHub release with preflight checks; a parallel bug hunt that files issues and fixes them in PRs |
 | `ideas` | `product-idea-research`, `idea-import`, `evolve` | scoping a product idea before research; adopting only the gaps from an outside design; ranked proposals for the system itself |
 

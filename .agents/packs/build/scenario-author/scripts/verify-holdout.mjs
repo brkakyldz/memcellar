@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * verify-holdout — the held-out verification: the final milestone, a release,
- * or the software factory's verify station.
+ * verify-holdout — the held-out verification: the final milestone or a
+ * release.
  *
  * Runs the held-out acceptance command N times and decides VERIFIED only when
  * every expected scenario actually executed in every run, each scenario passed

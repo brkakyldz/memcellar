@@ -2,13 +2,12 @@
 
 The rules the build pack follows whenever it writes, changes, reviews or runs
 tests: `scenario-author` when it briefs and checks the author,
-`unattended-run` and `parallel-lane-runner` when they write unit and e2e
-tests, `slice-reviewer` when it reviews a milestone, `repo-bootstrap` when it
+`unattended-run` when it writes unit and e2e tests, `slice-reviewer` when it reviews a milestone, `repo-bootstrap` when it
 writes the testing contract.
 
 ## Why
 
-In the reference instance, repositories built through the factory and
+In the reference instance, repositories built through the
 unattended-run chain ended up with more test code than product code; those
 built without it carried about a tenth. One held-out suite went from 51 to 193
 scenarios in nine days and took 23 of the browser job's 24 CI minutes on

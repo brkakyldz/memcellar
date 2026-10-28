@@ -1,6 +1,6 @@
 ---
 name: scenario-author
-description: Writes a product's held-out acceptance scenarios with an author outside the builder's context — a fresh subagent that never saw the code, or the other runtime when the owner uses both — from the spec and contracts alone, checks them statically, and lands them under a hash lock (LOCK.json) that later verification refuses to run past if anything changed. Also runs the trim round when the suite would pass its budget of 40 or a requirement is removed, and the revision round for a scenario reported as a wrong oracle. Use after repo-bootstrap FINALIZE and before the first milestone with a product-level surface, as the software factory's scenarios station, when unattended-run PREPARE finds none, or when the owner asks for independent acceptance tests — or the same request in their language. Not for unit tests, and never run by the agent that builds the product as the author.
+description: Writes a product's held-out acceptance scenarios with an author outside the builder's context — a fresh subagent that never saw the code, or the other runtime when the owner uses both — from the spec and contracts alone, checks them statically, and lands them under a hash lock (LOCK.json) that later verification refuses to run past if anything changed. Also runs the trim round when the suite would pass its budget of 40 or a requirement is removed, and the revision round for a scenario reported as a wrong oracle. Use after repo-bootstrap FINALIZE and before the first milestone with a product-level surface, when unattended-run PREPARE finds none, or when the owner asks for independent acceptance tests — or the same request in their language. Not for unit tests, and never run by the agent that builds the product as the author.
 ---
 
 # Scenario author
@@ -26,9 +26,7 @@ on timeouts. Every rule below answers one of those. The full rule set is
 
 ## When it runs
 
-- **Factory:** the scenarios station — the whole spec, before any product
-  code.
-- **Ordinary plan:** after FINALIZE, before the first milestone in scope
+- **Plan:** after FINALIZE, before the first milestone in scope
   with a product-level surface; `unattended-run` PREPARE runs it when the
   milestones it is about to launch have none.
 - **Trim round:** a new batch would pass the budget, or a requirement was
@@ -41,8 +39,8 @@ on timeouts. Every rule below answers one of those. The full rule set is
 
 ## Preconditions — stop and name the gap if one is missing
 
-- A requirement source with stable IDs: `docs/spec.md` in a factory run;
-  otherwise the intent document plus the plan's acceptance IDs and their
+- A requirement source with stable IDs: `docs/spec.md` when the repo has
+  one; otherwise the intent document plus the plan's acceptance IDs and their
   wording (acceptance sections only, never implementation steps).
 - `docs/contracts/` naming every black-box surface: endpoints, UI test ids,
   CLI commands, file formats, fixture behaviour, how to start the system on
@@ -118,8 +116,7 @@ on timeouts. Every rule below answers one of those. The full rule set is
 
 - The builder may **read** the scenarios to learn the journeys, never edit,
   move or delete them. `node <skill-dir>/scripts/lock.mjs check` says whether
-  anything changed; `verify-holdout.mjs`, `slice-reviewer` and the factory's
-  verify station refuse to pass a broken lock. The template ships no hook
+  anything changed; `verify-holdout.mjs` and `slice-reviewer` refuse to pass a broken lock. The template ships no hook
   that blocks the write itself; a user who wants one can add a pre-commit
   check that runs `lock.mjs check`.
 - **Running them:** a milestone runs its own subset by requirement prefix

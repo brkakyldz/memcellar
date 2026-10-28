@@ -20,7 +20,7 @@ exist, **finalize** adds the execution layer runs and reviews depend on.
 - **FINALIZE** — research, accepted decisions and an implementation plan are
   ready to become a verified repository contract and execution layer.
 - **REPAIR** — an explicit request targets missing or broken agent context,
-  commands, ownership, coordination boundaries or execution layer.
+  commands, ownership or execution layer.
 
 Not for a feature, a bugfix, an unresearched plan or a new session. Once
 finalized, run it again only when the repository contract materially changed.
@@ -44,7 +44,7 @@ The held-out README is the `scenario-author` skill's
 ## Operating rules
 
 - Inspect before writing: tree, git state, existing `AGENTS.md` / `CLAUDE.md`,
-  README, manifests, CI, tests, ADRs, research, coordination artefacts.
+  README, manifests, CI, tests, ADRs, research.
 - Preserve existing conventions: never overwrite, rename, migrate or delete a
   file to make the preferred layout fit; document the equivalent.
 - Uncommitted work belongs to the user. No reset, stash, clean, force-push,
@@ -57,9 +57,7 @@ The held-out README is the `scenario-author` skill's
   missing, never an invented green check.
 - Owner input the phase needs (scope, a missing acceptance criterion, an
   ownership call) is asked at the start, all together, with selectable options
-  (AskUserQuestion in Claude Code; a numbered list of options elsewhere). In a
-  `software-factory` run nothing is asked: each answer becomes an assumption
-  in the run report.
+  (AskUserQuestion in Claude Code; a numbered list of options elsewhere).
 - Write files in the language the repo's docs are written in; talk to the
   owner in theirs.
 
@@ -95,8 +93,8 @@ Only the stable orientation and artefact homes
 - the research store when research will happen in the repo — `reports-architecture`
   if the research pack is installed, otherwise `reports/research/` with a
   two-line README saying it holds dated `YYYY-MM-DD_<slug>.md` research only;
-- minimal `docs/` homes for architecture, decisions, contracts and
-  coordination, using existing conventions when present;
+- minimal `docs/` homes for architecture, decisions and contracts, using
+  existing conventions when present;
 - a `.gitignore` addition for local secrets, caches and temporary output;
 - `docs/CURRENT_STATE.md` from the formats, an empty milestone table, and
   `BOOTSTRAP_SEEDED` plus what FINALIZE still needs in its Next section.
@@ -117,8 +115,7 @@ later is spiked before the plan names it. Procedure and what FINALIZE checks:
 
 FINALIZE reads the actual research, decisions and plan and completes two
 layers. The **repository contract** — architecture, source-of-truth and
-ownership maps, contracts, lane boundaries, integration ownership,
-generated-file rules, verified command matrix — is
+ownership maps, contracts, generated-file rules, verified command matrix — is
 `references/repository-contract.md`. The **execution layer** —
 `AGENTS.md`, `CLAUDE.md`, STATE and the run-report template from the formats,
 plus the checks every milestone commit runs — is
@@ -144,8 +141,7 @@ The rules most often broken:
   in `scenario-author`'s landing commit.
 
 If the plan or decisions are not ready, record `BOOTSTRAP_INCOMPLETE` in
-STATE's Next and name the missing piece. In a `software-factory` run FINALIZE
-comes before any code exists: `references/execution-layer.md` § 5.
+STATE's Next and name the missing piece.
 
 ## Procedure
 
@@ -172,19 +168,16 @@ FINALIZE is complete only when a fresh agent can answer, from the repo:
 1. What are we building, and what is deliberately out of scope?
 2. Where do I look before coding, and where is status stated?
 3. Which file or owner is authoritative for this decision or interface?
-4. What paths may I change in my lane?
-5. Which command proves my change, which proves integration, which proves a
-   milestone at product level?
-6. What does one launch authorize, and exactly when must a run stop?
-7. When must I stop and ask for a coordination decision?
+4. Which command proves my change, which proves a milestone at product
+   level?
+5. What does one launch authorize, and exactly when must a run stop?
+6. When must I stop and ask the owner?
 
 An answer that depends on unwritten knowledge leaves the repo
 `BOOTSTRAP_INCOMPLETE` with the missing fact listed. SEED is complete when a
 fresh agent can find the intent, the research store, the decision and
 architecture homes and the facts still unknown; next is the M0 spike.
 
-After FINALIZE: `scenario-author` lands the held-out scenarios; a sequential
-plan goes to `unattended-run` (PREPARE), a feature with two or more
-independently owned workstreams to `implementation-coordinator`;
-`slice-reviewer` reviews each milestone commit; `/closeout` ends every
-session that changed the repo.
+After FINALIZE: `scenario-author` lands the held-out scenarios; the plan goes
+to `unattended-run` (PREPARE); `slice-reviewer` reviews each milestone commit;
+`/closeout` ends every session that changed the repo.

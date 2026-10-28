@@ -32,7 +32,7 @@ slots plus the execution sections.
 
 `README.md` is the human-facing orientation: what the project does, how to run
 it locally, the shortest useful architecture explanation, and links to
-`AGENTS.md`, architecture, research, decisions, contracts and coordination.
+`AGENTS.md`, architecture, research, decisions and contracts.
 Not a second task plan, and no status line — status lives only in
 `docs/CURRENT_STATE.md`.
 
@@ -50,7 +50,6 @@ docs/
   architecture.md       # system model, boundaries and important flows
   decisions/            # expensive-to-reverse choices as ADRs (adr skill)
   contracts/            # versioned cross-boundary interfaces and fixtures
-  coordination/         # feature execution packets and lane reports
   CURRENT_STATE.md      # the only file that states status (execution layer)
   runs/                 # one report per autonomous run (execution layer)
   reviews/findings.md   # slice-reviewer output, append-only (execution layer)
@@ -65,8 +64,8 @@ transcript, session log or personal memory. Scaffold it with
 `reports-architecture` when the research pack is installed.
 
 Architecture explains the current system. A decision record explains why an
-expensive choice was made. Contracts define what independently owned lanes
-may rely on. A coordination packet defines one feature's execution. STATE says
+expensive choice was made. Contracts define what each side of a boundary
+may rely on. STATE says
 where the work stands. A fact belongs in one of these; the others link to it.
 
 ## 3. Machine-readable project map
@@ -79,8 +78,7 @@ where the work stands. A fact belongs in one of these; the others link to it.
 | Research | actual reports path | research workflow | report check |
 | Architecture | actual path | project owner | focused test or review |
 | Cross-boundary contract | actual path | named owner | contract/fixture test |
-| Implementation | actual source paths | lane owner | focused command |
-| Integration | actual path/branch | single integrator | full check suite |
+| Implementation | actual source paths | owner/role | focused command |
 
 FINALIZE adds the execution-layer rows from `AGENTS.template.md` (status,
 history, runs, findings, evidence, held-out acceptance). Fill it from the
@@ -89,25 +87,7 @@ owner, every shared or generated file one writer. Ownership that is genuinely
 undecided is marked `OPEN` and reported, never left as an invisible
 assumption.
 
-## 4. Parallel-work readiness
-
-Add a short lane-readiness section to `docs/coordination/README.md` or its
-equivalent. Each future feature packet must state:
-
-- frozen contract name and version;
-- lane name, owner, base revision and exact allowed paths;
-- forbidden paths and shared resources with a single writer;
-- dependencies and merge order;
-- focused commands and acceptance evidence;
-- the conditions that make work sequential instead of parallel;
-- the integration owner and unresolved human gates.
-
-Parallel work is allowed only with stable interfaces, disjoint ownership,
-isolated worktrees and independently meaningful checks. Shared domain models,
-migrations, changing interfaces, unknown architecture and generated-output
-collisions stay sequential until a safe seam exists.
-
-## 5. Verification surface
+## 4. Verification surface
 
 Derive commands from the actual stack. It must be possible to run the
 smallest relevant check and the complete suite without rediscovering the
@@ -122,7 +102,7 @@ lint / format check:            <verified command>
 full suite:                     <verified command>
 ```
 
-Separate API, frontend and other lane checks when the repository supports it.
+Separate API, frontend and other checks when the repository supports it.
 Do not claim a check is independent unless it was shown to run independently.
 Add a minimal smoke test only when the repo has no reliable way to prove that
 the documented setup works; scaffolding does not manufacture coverage.

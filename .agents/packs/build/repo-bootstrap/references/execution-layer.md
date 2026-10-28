@@ -149,18 +149,7 @@ ticked checklists — is a MIGRATE case: list every place that states status and
 the smallest consolidation into one STATE, and change nothing until the owner
 asks.
 
-## 5. Software-factory exception
-
-In a `software-factory` run FINALIZE comes before any product code exists, so
-no command can have run green yet. Write the Commands rows the plan names,
-mark each `UNVERIFIED` in STATE, and make the first milestone the proof: its
-acceptance creates the offline suite and records the full offline gate
-passing in the run report. The final milestone's product-level acceptance is
-the held-out verification
-(`node <scenario-author skill folder>/scripts/verify-holdout.mjs`), which the
-factory names.
-
-## 6. Deliberately left out
+## 5. Deliberately left out
 
 - Budgets, model choices, ports, product invariants: slots, never defaults.
 - A second status file, a progress-report document, ticks in the plan, a

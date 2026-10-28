@@ -1,6 +1,0 @@
-interface:
-  display_name: "Integration Gate"
-  short_description: "Integrates and verifies completed parallel lanes as the single writer"
-  default_prompt: "Use $integration-gate only after two or more packet-defined parallel lanes have completed with reports."
-policy:
-  allow_implicit_invocation: false
