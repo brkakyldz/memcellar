@@ -59,15 +59,18 @@ short list, whichever fits the conversation:
 10. Which agent runtimes they use: Claude Code, Codex, or both. Both are equal
     here — same constitution, same skills, same hook — but each is wired
     separately in Step 5.
-11. Whether they want `/closeout` and `/lesson` in their other projects.
-    Explain it briefly: the brain itself loads only in sessions inside the
-    vault, and a project never reads or writes it — each project keeps its own
-    state, decisions and lessons in its own repo, and from the vault
-    `node scripts/project-doctor.mjs --board` shows every project's state,
-    read live. The two skills help a project do that bookkeeping. `/lesson`
-    writes to their user-level kit by default (a private `lessons/` folder
-    next to their user-level instruction file, or `BRAIN_KIT_DIR`), and
-    `/closeout` may add a trap any repo could hit to the kit's `reference/`.
+11. Whether they want `/closeout` and `/lesson` in their other projects —
+    recommend yes. Explain the three homes briefly: the vault loads only in
+    sessions inside it, and a project never reads or writes it; each project
+    keeps its own state, decisions and lessons in its own repo, and from the
+    vault `node scripts/project-doctor.mjs --board` shows every project's
+    state, read live. The third home is their user-level kit: their
+    user-level instruction file plus `lessons/` and `reference/` folders next
+    to it (or `BRAIN_KIT_DIR`), created on first use. It is the only home
+    every session reads, so it is how a correction given in one project
+    reaches the next. `/lesson` writes there by default and `/closeout` may
+    add a trap any repo could hit to its `reference/`. Without these two
+    skills linked, they run in the vault alone and the kit stays empty.
     Neither ever touches the vault.
 12. Which optional skill packs they want, if any (several may be picked; none
     is a fine answer): **research** — web research that ends in one short,

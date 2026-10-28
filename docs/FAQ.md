@@ -102,6 +102,14 @@ repo could hit go to your user-level kit, which every session can reach
 (ADR 0056). To see every project from the vault, run
 `node scripts/project-doctor.mjs --board`.
 
+**I picked a framework in one project. Will the next project use it?** No,
+and on purpose: a project's choices are recorded in its own
+`docs/decisions/`, and another project is free to choose differently. A rule
+you want everywhere ("never add a dependency without asking") belongs in your
+user-level instruction file. To ask what you chose where, ask from the vault:
+the session reads the project repos live, read-only, and copies nothing into
+the vault, so the answer never goes stale.
+
 **What happens if a memory file gets too big?** `MEMORY.md` and `USER.md` have
 character budgets. Going over never silently truncates — the session-start
 header shows usage before you write, marks a file that is over budget, and

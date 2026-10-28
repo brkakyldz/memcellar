@@ -116,10 +116,16 @@ budgets and the reasoning behind each part are in
   <img src="docs/assets/where-things-live-coast.png" width="100%" alt="Three homes. A project session works only in its repo: AGENTS.md with the rules, docs/CURRENT_STATE.md as the only status, docs/lessons and docs/runs, and git log as its history. Your user-level kit holds your working rules, lessons from every project and traps any repo could hit; project sessions read it. The vault holds your knowledge, one card per project and the vault's own lessons. From a vault session, project-doctor --board reads every project's state live and read-only; a project session never reads or writes the vault.">
 </p>
 
-[ADR 0056](docs/decisions/0056-three-homes-repo-user-kit-vault.md) splits
-what a session needs into three homes:
+Your memory lives in three places, and each session loads only the ones it
+needs ([ADR 0056](docs/decisions/0056-three-homes-repo-user-kit-vault.md)):
 
-| The vault | Each project's repo | Your user-level kit (optional) |
+- **the vault** — what you know, think and decide; read in vault sessions;
+- **each project's repo** — that project's state, decisions and lessons; read
+  only in that project;
+- **your kit** — how you want work done, carried into every session, in the
+  vault and in every project.
+
+| The vault | Each project's repo | Your user-level kit |
 |---|---|---|
 | topic pages, decisions, reports, deliverables, the vault's own lessons | `AGENTS.md` — the contract: timeless, no status | your working rules, in the user-level instruction file every session loads |
 | one thin card per project, `notes/<project_id>.md`: why it exists, where it lives, what it taught | `docs/CURRENT_STATE.md` — the only file that states status | lessons about how you want work done, from every project, in `lessons/` |
@@ -132,10 +138,23 @@ To see every project at once, run `node scripts/project-doctor.mjs --board`
 from the vault. It prints one row per repo, read live: the last commit, the
 active milestone and the state file's Next line. It writes nothing.
 
-The kit is a private folder or repo next to your user-level instruction file,
-or wherever `BRAIN_KIT_DIR` points. Keep it private: lessons quote you word for
-word. The template ships no kit of its own; if you have none, `/lesson` and
-`/closeout` use plain `lessons/` and `reference/` folders next to that file.
+**What the kit is.** Your user-level instruction file
+(`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`) plus two folders next to it,
+`lessons/` and `reference/`. You don't create it: the first time `/lesson` or
+`/closeout` saves something, the folder appears. To keep it in a git repo of
+its own, point `BRAIN_KIT_DIR` at that folder. Keep it private: lessons quote
+you word for word.
+
+The kit is the only home that crosses projects: a correction you give in one
+repo is there when you open the next. It fills only if `/lesson` and
+`/closeout` run in your projects, so link them once with
+`node install.mjs --link-global-skills`. Without that, they run in the vault
+alone and the kit stays empty.
+
+A choice made in one project, such as its framework, stays in that project's
+`docs/decisions/`; another project is free to choose differently. From the
+vault you can still ask about any project: the session reads its repo live,
+read-only, and copies nothing back.
 
 Formats and adoption steps:
 [`.claude/templates/project-repo/`](.claude/templates/project-repo/README.md).
@@ -210,9 +229,11 @@ touching your user-level settings or committing anything.
   `~/.codex/hooks.json`. Don't also add one in a project-level
   `.codex/hooks.json`: Codex adds the layers together. Details:
   [`SETUP.md`, Step 5](SETUP.md#step-5--runtime-wiring).
-- To use `/closeout` and `/lesson` in your other projects, run
+- **Link `/closeout` and `/lesson` into your projects:**
   `node install.mjs --link-global-skills` (`--unlink-global-skills` undoes
-  it). They write into the project or your kit, never into the vault.
+  it). This is what fills your kit: without it, nothing learned in one project
+  reaches the next. They write into the project or your kit, never into the
+  vault.
 
 ## Everyday commands
 
