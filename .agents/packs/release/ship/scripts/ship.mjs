@@ -21,7 +21,7 @@
  * The pure parts (argument checks, CHANGELOG extraction, secret scan,
  * preflight) are exported so they can be tested without GitHub.
  */
-import { existsSync, readFileSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdtempSync, rmSync, realpathSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
@@ -234,4 +234,16 @@ function main(argv) {
   }
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main(process.argv.slice(2));
+// True when this file is the script node was asked to run. Compared as real
+// paths: called through a skill link (a junction or symlink), argv[1] is the
+// link's path while import.meta.url is the target's, and a plain comparison
+// would make the script exit silently.
+function isMain() {
+  try {
+    return Boolean(process.argv[1]) && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+}
+
+if (isMain()) main(process.argv.slice(2));

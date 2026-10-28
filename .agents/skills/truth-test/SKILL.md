@@ -84,8 +84,11 @@ offers to write it; the owner can write or edit it by hand. Format:
    `answers.json` and add each answer's `score` and `cause` pages) and
    `YYYY-MM-DD.md`: the score line (`12/15 correct, 2 stale, 1 wrong; traps
    9/11`), one row per question, and the cause-page list. The JSON keeps the
-   cost per question that the next dry run estimates from. Commit those two
-   files only. `/audit` names the latest result.
+   cost per question that the next dry run estimates from. Claude Code
+   treats `.claude/` as a protected folder and asks before a write there:
+   that prompt is expected — ask the owner to approve it, and never route
+   around it through the shell. Commit those two files only. `/audit` names
+   the latest result.
 6. **Report** in chat: the score, every stale answer with its cause pages,
    the recommended fixes, and the scratch folder (the owner may delete it).
 

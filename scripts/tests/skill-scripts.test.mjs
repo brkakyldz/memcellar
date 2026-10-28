@@ -179,6 +179,33 @@ test('import inventory: reads notes and attachments, flags problems, never write
   assert.match(inv.table(r), /\| Projects\/Garden\.md \| \d+ \|/);
 });
 
+// A pack skill reaches a project through a user-level link, and a vault skill
+// through the .claude/skills link. Called through either, a script must still
+// run: a held-out session found two that exited silently, because their
+// "am I the main module" check compared the link path with the real one.
+test('every skill script runs when called through a link to its skill folder', () => {
+  const linkRoot = dir('links');
+  const link = (rel, name) => {
+    const target = path.join(ROOT, rel);
+    const at = path.join(linkRoot, name);
+    fs.symlinkSync(target, at, process.platform === 'win32' ? 'junction' : 'dir');
+    return at;
+  };
+  const empty = dir('empty-target');
+  const cases = [
+    [link('.agents/skills/import', 'import'), 'scripts/inventory.mjs', [empty], /# Inventory/],
+    [link('.agents/skills/truth-test', 'truth-test'), 'scripts/run.mjs', ['--vault', empty, '--dry-run'], /no answer key/],
+    [link('.agents/packs/research/reports-architecture', 'reports-architecture'), 'scripts/scaffold.mjs', [dir('scaffold-target')], /research store ready/],
+    [link('.agents/packs/build/scenario-author', 'scenario-author'), 'scripts/lock.mjs', [], /usage: lock\.mjs/],
+    [path.join(linkRoot, 'scenario-author'), 'scripts/check-scenarios.mjs', [], /usage: check-scenarios\.mjs/],
+    [link('.agents/packs/release/ship', 'ship'), 'scripts/ship.mjs', [], /--repo <owner>\/<name> is required/],
+  ];
+  for (const [skillDir, script, args, expect] of cases) {
+    const r = spawnSync(process.execPath, [path.join(skillDir, script), ...args], { encoding: 'utf8', windowsHide: true });
+    assert.match(`${r.stdout}${r.stderr}`, expect, `${path.basename(skillDir)}/${script} through a link`);
+  }
+});
+
 test('reports-architecture scaffold: idempotent in a project, refuses a vault', () => {
   const repo = dir('project');
   const first = scaffoldMod.scaffold(repo);

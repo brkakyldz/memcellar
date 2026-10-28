@@ -117,7 +117,19 @@ export function checkScenarios(dir, { budget = 40 } = {}) {
   return { errors, warnings, ids: [...ids.keys()].sort() };
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+// True when this file is the script node was asked to run. Compared as real
+// paths: called through a skill link (a junction or symlink), argv[1] is the
+// link's path while import.meta.url is the target's, and a plain comparison
+// would make the script exit silently.
+function isMain() {
+  try {
+    return Boolean(process.argv[1]) && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+}
+
+if (isMain()) {
   const args = process.argv.slice(2);
   const dir = args.find((a) => !a.startsWith('--'));
   const bi = args.indexOf('--budget');

@@ -78,7 +78,19 @@ export function scaffold(root, now = new Date()) {
   return { created, skipped };
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+// True when this file is the script node was asked to run. Compared as real
+// paths: called through a skill link (a junction or symlink), argv[1] is the
+// link's path while import.meta.url is the target's, and a plain comparison
+// would make the script exit silently.
+function isMain() {
+  try {
+    return Boolean(process.argv[1]) && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+}
+
+if (isMain()) {
   const root = path.resolve(process.argv[2] || process.cwd());
   try {
     const { created, skipped } = scaffold(root);
