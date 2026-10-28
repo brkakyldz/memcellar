@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Scaffolds the reports/ research store into a project repo. Idempotent: it
-// never overwrites an existing file, and it refuses to run in a Second Brain
-// OS vault, whose reports/ folder has a contract of its own.
+// never overwrites an existing file, and it refuses to run in a memcellar
+// vault, whose reports/ folder has a contract of its own.
 // Usage: node scaffold.mjs [project-root]
 
 import fs from 'node:fs';
@@ -58,7 +58,7 @@ export function isVault(root) {
 // Returns { created: [...relative paths], skipped: [...] }; throws in a vault.
 export function scaffold(root, now = new Date()) {
   if (isVault(root)) {
-    throw new Error(`${root} is a Second Brain OS vault — its reports/ folder has its own contract; nothing written`);
+    throw new Error(`${root} is a memcellar vault — its reports/ folder has its own contract; nothing written`);
   }
   const created = [];
   const skipped = [];

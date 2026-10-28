@@ -23,7 +23,7 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const HEADER = '## Second Brain — session context (auto-injected)';
+const HEADER = '## memcellar — session context (auto-injected)';
 
 // Brain-root resolution precedence (ADR 0008): BRAIN_DIR env → the script's
 // own location. This file always lives at

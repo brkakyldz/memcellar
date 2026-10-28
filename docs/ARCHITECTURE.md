@@ -512,7 +512,7 @@ The kit is already loaded in every session, so rules and traps reach projects
 without a project ever opening the vault, and each home is written by the
 session that holds the knowledge, at the moment it has it (ADR 0056).
 
-Why the wall: until v1.2 a project session received the vault's `USER.md`,
+Why the wall: until v2 a project session received the vault's `USER.md`,
 the whole of `MEMORY.md` and a block of standing rules, and wrote a short log
 back. Read on the day it was questioned, almost none of that `MEMORY.md` had
 anything to do with the repo being worked on, and the agent treated all of it

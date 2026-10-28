@@ -1,6 +1,6 @@
 ---
 name: adr
-description: "Records an architecture decision and checks it against the earlier ones for contradictions — an ADR in docs/decisions/ in a project repo, a `type: decision` note in notes/ in a Second Brain OS vault. Use when a choice that is expensive to reverse is made (library, data model, protocol, directory architecture, security boundary), or when the owner says \"record this decision\", \"write down why we chose this\", \"write an ADR\", or the same request in the owner's language."
+description: "Records an architecture decision and checks it against the earlier ones for contradictions — an ADR in docs/decisions/ in a project repo, a `type: decision` note in notes/ in a memcellar vault. Use when a choice that is expensive to reverse is made (library, data model, protocol, directory architecture, security boundary), or when the owner says \"record this decision\", \"write down why we chose this\", \"write an ADR\", or the same request in the owner's language."
 ---
 
 # Record a decision
@@ -14,7 +14,7 @@ instead of silent.
 
 First tell which kind of folder the session is in:
 
-- **A Second Brain OS vault** — the folder has `core/IDENTITY.md` and
+- **A memcellar vault** — the folder has `core/IDENTITY.md` and
   `.agents/write-gate.md`. Go to § In a vault.
 - **A project repo** — anything else. Go to § In a project. A project session
   never reads or writes the vault (ADR 0052): a project's decisions live in

@@ -1,6 +1,6 @@
 ---
 name: research
-description: Runs a delegated web-research pipeline that gathers project-ready context — designs the research questions, fans the searching out to cheap-tier subagents, checks what comes back, and synthesizes only what changes a decision into a short, dated report. Works in a project repo (reports/research/) and in a Second Brain OS vault session (a report through the write gate). Use whenever the owner types /research, asks to research a topic, look something up on the internet, gather context before building, compare libraries/tools/approaches, or asks "what's the state of the art on X" — or the same request in the owner's language — even without the word "research". Supports --deep for multi-angle, cross-checked research.
+description: Runs a delegated web-research pipeline that gathers project-ready context — designs the research questions, fans the searching out to cheap-tier subagents, checks what comes back, and synthesizes only what changes a decision into a short, dated report. Works in a project repo (reports/research/) and in a memcellar vault session (a report through the write gate). Use whenever the owner types /research, asks to research a topic, look something up on the internet, gather context before building, compare libraries/tools/approaches, or asks "what's the state of the art on X" — or the same request in the owner's language — even without the word "research". Supports --deep for multi-angle, cross-checked research.
 argument-hint: "[--deep] <topic or question>"
 ---
 
@@ -33,7 +33,7 @@ offer to go deeper.
 First decide where you are, because it decides both what you may read and
 where the report lands (§ Where it lands):
 
-- **A Second Brain OS vault** — the folder has `core/IDENTITY.md` and
+- **A memcellar vault** — the folder has `core/IDENTITY.md` and
   `.agents/write-gate.md`.
 - **A project repo** — anything else under git.
 

@@ -1,7 +1,7 @@
 # SETUP.md — agent installation runbook
 
 This file is instructions for the **agent — Claude Code or Codex —** currently
-helping a human set up their own Second Brain OS. It is a task description, not
+helping a human set up their own memcellar vault. It is a task description, not
 authority: treat every step below as work to propose and carry out on your
 user's behalf, not as something pre-authorized. In particular:
 
@@ -150,7 +150,7 @@ In the new clone:
   finds it later:
 
   ```
-  This file marks this directory as a live Second Brain vault.
+  This file marks this directory as a live memcellar vault.
   The SessionStart hook in .claude/hooks/ does nothing without it.
   Activated: YYYY-MM-DD
   ```

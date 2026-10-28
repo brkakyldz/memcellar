@@ -28,7 +28,7 @@ Timestamps are UTC and end in `Z` — unlike the local-time filenames in
 | `check-fire` | `.claude/hooks/checks.mjs`, when a caller runs the checks | an enforced rule caught a repeat attempt |
 | `retrieval-rollup` — **historical** | the retired reuse telemetry (ADR 0039) | one week of note re-use; nothing writes it since v1.1 |
 | `session-digest` — **historical** | the retired flush mechanism (ADR 0038) | one line per flushed session; nothing writes it since v1.1 |
-| `retrieval-failure` — **historical** | the retired `/recall` skill (ADR 0057) | a lookup the search missed; nothing writes it since v1.3 |
+| `retrieval-failure` — **historical** | the retired `/recall` skill (ADR 0057) | a lookup the search missed; nothing writes it since v2 |
 
 The historical types stay listed in `SIGNAL_TYPES` so that a ledger
 carried over from v1.0 stays valid content rather than becoming unparseable

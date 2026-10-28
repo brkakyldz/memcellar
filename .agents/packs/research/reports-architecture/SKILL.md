@@ -1,6 +1,6 @@
 ---
 name: reports-architecture
-description: Scaffolds the reports/ research store into a project repo — one place where research output lands as dated Markdown so a later session reads it back instead of searching again. Use when the owner says "set up reports", "scaffold the research store", "add the reports folder", or the same in their language, or before the first `research` run in a project that has no reports/ folder yet. Not for a Second Brain OS vault, which has its own reports/ folder with its own rules.
+description: Scaffolds the reports/ research store into a project repo — one place where research output lands as dated Markdown so a later session reads it back instead of searching again. Use when the owner says "set up reports", "scaffold the research store", "add the reports folder", or the same in their language, or before the first `research` run in a project that has no reports/ folder yet. Not for a memcellar vault, which has its own reports/ folder with its own rules.
 ---
 
 # Scaffold the reports/ research store
@@ -13,7 +13,7 @@ It is not a working record. Where the project stands lives in
 `git log`, lessons in `docs/lessons/` (ADR 0050). A second record beside
 those is never read and goes stale.
 
-**Never run it in a Second Brain OS vault** (a folder with
+**Never run it in a memcellar vault** (a folder with
 `core/IDENTITY.md` and `.agents/write-gate.md`). The vault already has a
 flat `reports/` with its own contract (`reports/README.md`), and the
 `research` skill writes there through the write gate.

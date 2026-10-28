@@ -2,7 +2,7 @@
 
 The repo half of ADR 0045 (`docs/decisions/0045-project-execution-state-lives-in-the-repo.md`):
 a project's execution state lives in the project's own repo, committed. Since
-v1.2 the project also keeps the lessons tied to it, and a project session neither
+v2 the project also keeps the lessons tied to it, and a project session neither
 reads nor writes the brain (ADR 0052); a vault session reads the repo
 read-only when you want the cross-project view (`scripts/project-doctor.mjs --board`,
 ADR 0056). These files are the formats

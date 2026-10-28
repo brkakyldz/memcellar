@@ -89,6 +89,7 @@ tells you what it was protecting.
 | 0060 | accepted | The owner's own pages live in `notes/` marked by `author:`, guarded by a check; `my-notes/` is retired; Obsidian opens on a home page and hides `archive/`, `logs/`, `raw/` (supersedes 0037, 0040; amends 0055) — [full record](decisions/0060-owner-pages-live-in-notes.md) |
 | 0061 | accepted | The next public release is v2.0: v1.2, the v1.3 change set (0055–0060), optional skill packs (`research`, `build`, `release`, `ideas`, installed with `install.mjs --pack`) and the new `/truth`, `/truth-test` and `/import` ship together; version references move to v2 at release time (amends 0058) — [full record](decisions/0061-next-release-is-v2.md) |
 | 0062 | accepted | Optional skill packs live in `.agents/packs/<pack>/<skill>/` and are linked into the user-level skills folders by `install.mjs --pack` / `--unpack` / `--list-packs`; the build pack ships no hooks, and held-out scenarios are locked by a `LOCK.json` manifest with a 40-scenario budget — [full record](decisions/0062-skill-packs-live-in-agents-packs.md) |
+| 0063 | accepted | The template is renamed memcellar; v2.0 is its first release under that name, the numbering continues after v1.1, and earlier records keep the old name (amends 0061) — [full record](decisions/0063-renamed-to-memcellar.md) |
 
 There is no 0031: the number was allocated to a decision that was abandoned
 before it was written. Gaps are left in place rather than renumbered — a

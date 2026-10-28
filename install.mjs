@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Second Brain OS — one-time personalization for a fresh clone.
+// memcellar — one-time personalization for a fresh clone.
 //
 // What it does, and nothing more:
 //   1. asks a short interview,
@@ -75,7 +75,7 @@ function samePath(a, b) {
 // project repo the session is in, never into the vault. Everything else in
 // .agents/skills works on the vault itself and stays vault-scoped.
 const GLOBAL_SKILLS = ['closeout', 'lesson'];
-// Linked at user level by v1.1 and vault-only since v1.2. Both
+// Linked at user level by v1.1 and vault-only since v2. Both
 // --link-global-skills and --unlink-global-skills remove such a link, and
 // only when it points into this vault.
 const RETIRED_GLOBAL_SKILLS = ['recall'];
@@ -131,7 +131,7 @@ function linkTarget(link) {
 // this layout exists to prevent — so it is reported, not overwritten.
 function linkSkills() {
   if (!fs.existsSync(SKILLS_TARGET)) {
-    return { ok: false, note: '.agents/skills/ is missing — is this a Second Brain OS clone?' };
+    return { ok: false, note: '.agents/skills/ is missing — is this a memcellar clone?' };
   }
   let st = null;
   try {
@@ -263,7 +263,7 @@ function globalSkills(remove) {
       const r = unlinkGlobalSkill(dir, name);
       if (!r.ok) ok = false;
       if (r.note !== 'not linked') {
-        stdout.write(`${runtime}: ${path.join(dir, name)} (vault-only since v1.2) — ${r.ok ? r.note : `FAILED: ${r.note}`}\n`);
+        stdout.write(`${runtime}: ${path.join(dir, name)} (vault-only since v2) — ${r.ok ? r.note : `FAILED: ${r.note}`}\n`);
       }
     }
   }
@@ -369,7 +369,7 @@ function obsidianIgnore() {
   return { ok: true, note: `now hides ${missing.join(', ')}` };
 }
 
-const USAGE = `Second Brain OS — install.mjs
+const USAGE = `memcellar — install.mjs
 
   node install.mjs                         one-time setup: interview, core/USER.md,
                                            core/.vault-active, skills link, rerere;
@@ -507,7 +507,7 @@ if (fs.existsSync(MARKER)) {
 }
 
 stdout.write(`
-Second Brain OS — setup
+memcellar — setup
 -----------------------
 Answer what you can. Leave anything blank rather than guessing: a blank line
 is honest, an invented one is read as true by every future session.

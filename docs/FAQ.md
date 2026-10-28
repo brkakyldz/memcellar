@@ -36,7 +36,7 @@ tested it with a set of queries and found no paraphrase misses: every miss was
 a vocabulary mismatch, which an `aliases:` entry fixes. It later built a
 ranker and a search skill on top, and real sessions almost never used them;
 fresh sessions found their answers with plain `grep` and file reads. Both were
-removed in v1.3 (ADR 0057). What goes wrong at this size is stale pages, not
+removed in v2 (ADR 0057). What goes wrong at this size is stale pages, not
 missed ones, and the page types handle that when a page is written.
 
 **What is the difference between a topic page, a report and a deliverable?**
@@ -93,7 +93,7 @@ without an audit, a lesson waiting to be routed, deliverables past their
 expiry date — and ask. Nothing runs until
 you say yes (ADR 0049).
 
-**Why doesn't my project session know who I am any more?** Since v1.2 the
+**Why doesn't my project session know who I am any more?** Since v2 the
 vault and your projects are walled off (ADR 0052): a session in a project gets
 nothing from the vault, because most of what the vault holds is noise for the
 repo at hand. Put how you want every session to work in your runtime's own

@@ -10,7 +10,7 @@ retired in the reference instance (ADR 0033): a job that runs with nobody
 watching produces work nobody reads, and every defect it hit lived in the
 supervision layer that only exists because nobody is watching. Every script
 below is run by hand or by a skill, in a session someone is sitting in front
-of. Since v1.2 the session start may *say* that upkeep is due — once a day,
+of. Since v2 the session start may *say* that upkeep is due — once a day,
 computed from state — and the agent asks before anything runs
 (`maintenance.mjs` below, ADR 0049).
 
@@ -106,7 +106,7 @@ survives as a convention for the skills and feeds nothing that scores them.
   `confidence:` and undated `MEMORY.md` bullets warn); the last recorded
   session-start payload; **retired terms** (references in skill and hook
   files to machinery that no longer exists, from the list at the top of the
-  script — since v1.3 that includes `retrieval-eval`, `golden-set`, the
+  script — since v2 that includes `retrieval-eval`, `golden-set`, the
   recall and harvest skills and `harvested_at`); top-level entries against
   the `AGENTS.md` folder map, which now includes `reports/` and `outputs/`;
   and Git delivery state.
@@ -210,7 +210,7 @@ survives as a convention for the skills and feeds nothing that scores them.
   `notes/` page that still says `knowledge` or `memory` fires `legacy-type`
   (lesson files excepted). `lifetime-sweep` lists what time made stale, for
   the files it is handed. It lives beside the
-  hook because the Stop checkpoint ran it until v1.1. Since v1.2
+  hook because the Stop checkpoint ran it until v1.1. Since v2
   `maintenance.mjs run` is its caller again (ADR 0049).
 - **When:** before a commit — `node .claude/hooks/checks.mjs` for the working
   tree's changes, `--staged` for what is staged, `--all` for the whole vault.
@@ -271,9 +271,9 @@ with `node scripts/tests/<name>.test.mjs`; each exits 1 on a failure.
 | Session flush (`flush.mjs`) | v1.1 | Reconstructed a missing session log from the transcript; in the reference instance it failed 779 times in a row unnoticed (ADR 0038) |
 | Reuse telemetry (`reuse-telemetry.mjs`, `--rollup`) | v1.1 | Counted that a note was opened, never that opening it helped; informed no decision (ADR 0039) |
 | Proposals sweep (`proposals.mjs`), `/flywheel`, the acceptance rate | v1.1 | The queue aged instead of being answered (ADR 0038) |
-| Maintenance due line (`maintenance-stamp.mjs`) | v1.1 | Measured staleness against a schedule nothing ran (ADR 0038). v1.2's `maintenance.mjs` is a different design: due is computed from outstanding work, with no stamp, and nothing runs without a yes (ADR 0049) |
-| Global-mode injection into project sessions | v1.2 | Project sessions received the vault's `USER.md` and `MEMORY.md`, mostly noise for the work at hand (ADR 0052) |
-| Retrieval-eval arms `bm25`, `alias-addonly`, `prefix5` | v1.2 | Each failed the sign-test gate on the reference instance; the rest of the eval went in v1.3 |
-| Retrieval eval (`retrieval-eval.mjs`), its golden, real-prompt and expansion sets, the recall skill and the retrieval-failure signal | v1.3 | Real sessions almost never called the ranker; fresh sessions answered with plain grep and reads, and the one wrong answer was not a search miss. Quality is now judged by answers (ADR 0057) |
-| The harvest skill and the cards' `harvested_at` / `harvested_on` | v1.3 | It never ran in the reference instance; lessons now go to their home at capture, cross-project traps to the kit at closeout, and project status is read live by `project-doctor.mjs --board` (ADR 0056) |
+| Maintenance due line (`maintenance-stamp.mjs`) | v1.1 | Measured staleness against a schedule nothing ran (ADR 0038). v2's `maintenance.mjs` is a different design: due is computed from outstanding work, with no stamp, and nothing runs without a yes (ADR 0049) |
+| Global-mode injection into project sessions | v2 | Project sessions received the vault's `USER.md` and `MEMORY.md`, mostly noise for the work at hand (ADR 0052) |
+| Retrieval-eval arms `bm25`, `alias-addonly`, `prefix5` | v2 | Each failed the sign-test gate on the reference instance; the rest of the eval went in v2 |
+| Retrieval eval (`retrieval-eval.mjs`), its golden, real-prompt and expansion sets, the recall skill and the retrieval-failure signal | v2 | Real sessions almost never called the ranker; fresh sessions answered with plain grep and reads, and the one wrong answer was not a search miss. Quality is now judged by answers (ADR 0057) |
+| The harvest skill and the cards' `harvested_at` / `harvested_on` | v2 | It never ran in the reference instance; lessons now go to their home at capture, cross-project traps to the kit at closeout, and project status is read live by `project-doctor.mjs --board` (ADR 0056) |
 | Scheduled maintenance, off-site bundle, daily resurfacer | before v1.0 — the code was never in the v1.0 tree, though its `scripts/README.md` still described it | ADRs 0021, 0032, 0033 |

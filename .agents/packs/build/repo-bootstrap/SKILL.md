@@ -28,7 +28,7 @@ finalized, run it again only when the repository contract materially changed.
 ## The formats have one home
 
 The repo-side formats — `AGENTS.md` contract, `CLAUDE.md` shim,
-`docs/CURRENT_STATE.md`, `docs/runs/TEMPLATE.md` — live in the Second Brain OS
+`docs/CURRENT_STATE.md`, `docs/runs/TEMPLATE.md` — live in the memcellar
 checkout this pack is installed from, in `<brain>/.claude/templates/project-repo/`.
 `/closeout` reads the same folder; this skill keeps no copy of its own. To find
 `<brain>`: resolve this skill's folder to its real path (the user-level skills

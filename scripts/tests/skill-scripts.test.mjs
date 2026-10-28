@@ -218,6 +218,6 @@ test('reports-architecture scaffold: idempotent in a project, refuses a vault', 
   const vault = dir('vault');
   write(vault, 'core/IDENTITY.md', '#');
   write(vault, '.agents/write-gate.md', '#');
-  assert.throws(() => scaffoldMod.scaffold(vault), /Second Brain OS vault/);
+  assert.throws(() => scaffoldMod.scaffold(vault), /memcellar vault/);
   assert.ok(!fs.existsSync(path.join(vault, 'reports')));
 });
