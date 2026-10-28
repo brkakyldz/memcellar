@@ -1,6 +1,6 @@
 ---
 name: unattended-run
-description: Use only to carry an accepted plan's remaining milestones through one autonomous run in its own worktree and branch, in a repo whose execution layer exists (repo-bootstrap FINALIZE — CURRENT_STATE, AGENTS.md commands, acceptance commands). PREPARE resolves scope and emits the paste-ready launch prompt, RUN executes it, RESUME finishes an interrupted run. Triggers: "prepare an unattended run", "run the next milestones without me", "resume the interrupted run", or the same request in the owner's language. Do not use for a single change, for planning, or in a repo without that layer.
+description: "Use only to carry an accepted plan's remaining milestones through one autonomous run in its own worktree and branch, in a repo whose execution layer exists (repo-bootstrap FINALIZE — CURRENT_STATE, AGENTS.md commands, acceptance commands). PREPARE resolves scope and emits the paste-ready launch prompt, RUN executes it, RESUME finishes an interrupted run. Triggers: \"prepare an unattended run\", \"run the next milestones without me\", \"resume the interrupted run\", or the same request in the owner's language. Do not use for a single change, for planning, or in a repo without that layer."
 ---
 
 # Unattended run

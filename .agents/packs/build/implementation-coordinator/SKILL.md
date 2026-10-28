@@ -1,6 +1,6 @@
 ---
 name: implementation-coordinator
-description: Use only for a feature that may need two or more independently owned workstreams, or an explicit decision about multi-agent execution — prepares the contract-first coordination packet and chooses sequential versus parallel work. Triggers: "can we split this across agents", "plan the parallel lanes", "coordinate this feature", or the same request in the owner's language. Do not use for a one-agent change, a one-line fix, or a repository bootstrap.
+description: "Use only for a feature that may need two or more independently owned workstreams, or an explicit decision about multi-agent execution — prepares the contract-first coordination packet and chooses sequential versus parallel work. Triggers: \"can we split this across agents\", \"plan the parallel lanes\", \"coordinate this feature\", or the same request in the owner's language. Do not use for a one-agent change, a one-line fix, or a repository bootstrap."
 ---
 
 # Implementation coordinator

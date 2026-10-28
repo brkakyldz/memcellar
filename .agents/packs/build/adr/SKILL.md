@@ -1,6 +1,6 @@
 ---
 name: adr
-description: Records an architecture decision and checks it against the earlier ones for contradictions — an ADR in docs/decisions/ in a project repo, a `type: decision` note in notes/ in a Second Brain OS vault. Use when a choice that is expensive to reverse is made (library, data model, protocol, directory architecture, security boundary), or when the owner says "record this decision", "write down why we chose this", "write an ADR", or the same request in the owner's language.
+description: "Records an architecture decision and checks it against the earlier ones for contradictions — an ADR in docs/decisions/ in a project repo, a `type: decision` note in notes/ in a Second Brain OS vault. Use when a choice that is expensive to reverse is made (library, data model, protocol, directory architecture, security boundary), or when the owner says \"record this decision\", \"write down why we chose this\", \"write an ADR\", or the same request in the owner's language."
 ---
 
 # Record a decision

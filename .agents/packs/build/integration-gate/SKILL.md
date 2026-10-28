@@ -1,6 +1,6 @@
 ---
 name: integration-gate
-description: Use only after a coordination packet has produced two or more completed parallel-lane reports — integrates them in a single-writer worktree and verifies the combined result. Triggers: "integrate the lanes", "merge the parallel work and verify it", or the same request in the owner's language. Do not use after ordinary single-agent work, for decomposition, or as a generic final review.
+description: "Use only after a coordination packet has produced two or more completed parallel-lane reports — integrates them in a single-writer worktree and verifies the combined result. Triggers: \"integrate the lanes\", \"merge the parallel work and verify it\", or the same request in the owner's language. Do not use after ordinary single-agent work, for decomposition, or as a generic final review."
 ---
 
 # Integration gate

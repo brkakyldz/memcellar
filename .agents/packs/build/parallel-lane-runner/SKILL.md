@@ -1,6 +1,6 @@
 ---
 name: parallel-lane-runner
-description: Use only to execute one named lane from an existing coordination packet, with a frozen contract, an isolated worktree and independent checks. Triggers: "run lane <name> from the packet", "execute the API lane", or the same request in the owner's language. Do not use to decide decomposition, to start parallel work without a packet, or for ordinary single-agent implementation.
+description: "Use only to execute one named lane from an existing coordination packet, with a frozen contract, an isolated worktree and independent checks. Triggers: \"run lane <name> from the packet\", \"execute the API lane\", or the same request in the owner's language. Do not use to decide decomposition, to start parallel work without a packet, or for ordinary single-agent implementation."
 ---
 
 # Parallel lane runner

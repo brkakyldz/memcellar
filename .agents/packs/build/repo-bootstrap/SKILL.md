@@ -1,6 +1,6 @@
 ---
 name: repo-bootstrap
-description: Use only at a repository lifecycle boundary — SEED before research in a new or empty repo, FINALIZE after accepted research, decisions and an implementation plan, or an explicit REPAIR of missing agent context or execution layer. Triggers: "bootstrap this repo", "seed the repo", "finalize the repo before we build", "set up the execution layer", or the same request in the owner's language. Do not use for ordinary feature work or merely because a new session began.
+description: "Use only at a repository lifecycle boundary — SEED before research in a new or empty repo, FINALIZE after accepted research, decisions and an implementation plan, or an explicit REPAIR of missing agent context or execution layer. Triggers: \"bootstrap this repo\", \"seed the repo\", \"finalize the repo before we build\", \"set up the execution layer\", or the same request in the owner's language. Do not use for ordinary feature work or merely because a new session began."
 ---
 
 # Agent-readable repository bootstrap

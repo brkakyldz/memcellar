@@ -1,6 +1,6 @@
 ---
 name: slice-reviewer
-description: Use only to review a completed milestone read-only in a fresh context — started by unattended-run after each milestone commit, or by the owner on a named commit — checking the diff since LAST_REVIEWED against the plan's acceptance and the project's silent-failure list, and appending CRITICAL / IMPORTANT / OPTIONAL findings to docs/reviews/findings.md. Triggers: "review milestone M3", "review this commit against the plan", or the same request in the owner's language. Do not use to fix code, as a timer-driven watcher, or as a generic style review.
+description: "Use only to review a completed milestone read-only in a fresh context — started by unattended-run after each milestone commit, or by the owner on a named commit — checking the diff since LAST_REVIEWED against the plan's acceptance and the project's silent-failure list, and appending CRITICAL / IMPORTANT / OPTIONAL findings to docs/reviews/findings.md. Triggers: \"review milestone M3\", \"review this commit against the plan\", or the same request in the owner's language. Do not use to fix code, as a timer-driven watcher, or as a generic style review."
 ---
 
 # Slice reviewer

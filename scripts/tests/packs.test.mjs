@@ -66,6 +66,25 @@ test('every pack skill has a matching name, a description and a Codex policy fil
   }
 });
 
+// An unquoted value holding ": " is not valid YAML, and a runtime that cannot
+// parse the frontmatter drops the skill without a word — seven build skills
+// were silently missing from a test session until their descriptions were
+// quoted.
+test('every skill frontmatter value with ": " in it is quoted', () => {
+  const files = [];
+  for (const pack of packs()) for (const s of skillsOf(pack)) files.push(path.join(PACKS, pack, s, 'SKILL.md'));
+  for (const s of fs.readdirSync(DEFAULT_SKILLS)) if (fs.existsSync(path.join(DEFAULT_SKILLS, s, 'SKILL.md'))) files.push(path.join(DEFAULT_SKILLS, s, 'SKILL.md'));
+  const bad = [];
+  for (const f of files) {
+    const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(fs.readFileSync(f, 'utf8'))?.[1] ?? '';
+    for (const line of fm.split(/\r?\n/)) {
+      const m = /^([\w-]+):\s+(.*)$/.exec(line);
+      if (m && !/^["'[{|>]/.test(m[2]) && /: /.test(m[2])) bad.push(`${path.relative(ROOT, f)}: ${m[1]}`);
+    }
+  }
+  assert.deepEqual(bad, []);
+});
+
 test('no skill name is used twice across packs and the default set', () => {
   const seen = new Map();
   for (const s of fs.readdirSync(DEFAULT_SKILLS)) if (fs.existsSync(path.join(DEFAULT_SKILLS, s, 'SKILL.md'))) seen.set(s, 'default');

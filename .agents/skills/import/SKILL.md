@@ -1,6 +1,6 @@
 ---
 name: import
-description: Brings an existing notes folder — another Obsidian vault, a Markdown or text export from a notes app — into this vault through the write gate. A dry run first (a table: source file → page type → destination → reason, unclear ones flagged), the owner approves group by group, then it applies; the source folder is never modified, and originals kept verbatim go to raw/. Use when the owner says "import my old vault", "bring my notes in", "migrate my Obsidian notes", the same in their language, or invokes /import. Not for one document (that is /ingest) and not for evaluating someone else's system design.
+description: "Brings an existing notes folder — another Obsidian vault, a Markdown or text export from a notes app — into this vault through the write gate. A dry run first (a table: source file → page type → destination → reason, unclear ones flagged), the owner approves group by group, then it applies; the source folder is never modified, and originals kept verbatim go to raw/. Use when the owner says \"import my old vault\", \"bring my notes in\", \"migrate my Obsidian notes\", the same in their language, or invokes /import. Not for one document (that is /ingest) and not for evaluating someone else's system design."
 argument-hint: "<source folder>"
 ---
 
