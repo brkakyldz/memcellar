@@ -54,8 +54,8 @@ test('a report is dated, typed and points at its topic page', (t) => {
 
 test('a deliverable is dated and carries expires:; non-Markdown outputs need only the name', (t) => {
   assert.deepEqual(fire(t, {
-    'outputs/2026-10-24_job-listings.md': fm('type: deliverable\ncreated: 2026-10-24\nexpires: 2026-11-23'),
-    'outputs/2026-10-24_job-listings.csv': 'a,b\n',
+    'outputs/2026-10-24_weekly-digest.md': fm('type: deliverable\ncreated: 2026-10-24\nexpires: 2026-11-23'),
+    'outputs/2026-10-24_weekly-digest.csv': 'a,b\n',
     'outputs/2026-10-24_board.PNG': '',
     'outputs/README.md': '# contract\n',
   }), []);

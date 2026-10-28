@@ -44,7 +44,7 @@ gh auth status
 Ask in whatever language your user is speaking to you. One at a time or as a
 short list, whichever fits the conversation:
 
-1. What should the private brain repo be called? Suggest `my-brain`.
+1. What should the private brain repo be called? Suggest `my-vault`.
 2. Where on disk should it live (the parent directory to clone into)?
 3. Their name — what the assistant should call them.
 4. Their role, one line.

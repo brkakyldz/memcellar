@@ -1,6 +1,5 @@
 <style>
-  .canvas { --w: 1600px; --h: 1300px; }
-  .stage > .grid { --cols: 320px 320px 320px 320px; --gap-x: 64px; --gap-y: 72px; }
+  .stage > .grid { --cols: 292px 290px 290px; --gap-x: 40px; --gap-y: 52px; }
 </style>
 <div class="canvas">
   <h1 class="title">A vault that <i>remembers</i></h1>
@@ -14,10 +13,10 @@
     </div>
     <div class="card data sm" id="core" data-icon="layers" style="grid-column: 2; grid-row: 1">
       <div class="head"><span class="name">core/</span></div>
-      <div class="body"><div class="fn">IDENTITY · USER · MEMORY</div><div class="note">Budgeted, loaded every time</div></div>
+      <div class="body"><div class="fn">IDENTITY · USER · MEMORY</div><div class="note">Loaded every time</div></div>
     </div>
 
-    <div class="zone" id="z-yes" style="grid-column: 4; grid-row: 1 / 3; --cols: 1fr; --gap-y: 84px">
+    <div class="zone" id="z-yes" style="grid-column: 3; grid-row: 1 / 3; --cols: 1fr; --gap-y: 56px">
       <div class="zone-label">On your yes</div>
       <div class="card gate sm" id="yes" data-icon="approve">
         <div class="head"><span class="name">Your yes</span></div>
@@ -29,39 +28,39 @@
       </div>
     </div>
 
-    <div class="card llm star" id="session" data-icon="spark" style="grid-column: 1 / 4; grid-row: 2">
+    <div class="card llm star" id="session" data-icon="spark" style="grid-column: 1 / 3; grid-row: 2">
       <div class="head"><span class="name">Agent session</span><span class="tag">LLM</span></div>
       <div class="body"><div class="fn">Claude Code · Codex</div><div class="note">One rulebook, one skills folder, the same files</div></div>
     </div>
 
     <div class="card tool sm" id="recall" data-icon="search" style="grid-column: 1; grid-row: 3">
       <div class="head"><span class="name">Read</span></div>
-      <div class="body"><div class="fn">INDEX.md → pages → grep</div><div class="note">Cites the page it read</div></div>
+      <div class="body"><div class="fn">INDEX.md → pages</div><div class="note">Cites the page it read</div></div>
     </div>
     <div class="card gate sm" id="distill" data-icon="filter" style="grid-column: 2; grid-row: 3">
       <div class="head"><span class="name">Write gate</span></div>
-      <div class="body"><div class="fn">/file · /ingest · /note</div><div class="note">Typed, neighbours checked</div></div>
+      <div class="body"><div class="fn">/file · /ingest</div><div class="note">Typed, neighbours checked</div></div>
     </div>
 
-    <div class="zone" id="z-vault" style="grid-column: 1 / 5; grid-row: 4; --cols: 1fr 1fr 1fr 1fr; --gap-x: 64px">
+    <div class="zone" id="z-vault" style="grid-column: 1 / 4; grid-row: 4; --cols: 1fr 1fr 1fr; --gap-x: 40px; --gap-y: 16px">
       <div class="zone-label">Vault</div>
-      <div class="card data sm" id="notes" data-icon="file" style="grid-column: 1 / 3; grid-row: 1">
+      <div class="card data sm" id="notes" data-icon="file" style="grid-column: 1 / 3; grid-row: 1 / 3">
         <div class="head"><span class="name">notes/</span></div>
-        <div class="body"><div class="fn">topics · decisions · project cards</div></div>
-      </div>
-      <div class="card data sm" id="logs" data-icon="clock" style="grid-column: 4; grid-row: 1">
-        <div class="head"><span class="name">outputs/</span></div>
-        <div class="body"><div class="fn">deliverables that expire</div></div>
+        <div class="body"><div class="fn">topics · decisions · cards</div><div class="note">Updated in place</div></div>
       </div>
       <div class="card data sm" id="raw" data-icon="book" style="grid-column: 3; grid-row: 1">
         <div class="head"><span class="name">reports/</span></div>
         <div class="body"><div class="fn">dated, written once</div></div>
       </div>
+      <div class="card data sm" id="logs" data-icon="clock" style="grid-column: 3; grid-row: 2">
+        <div class="head"><span class="name">outputs/</span></div>
+        <div class="body"><div class="fn">deliverables expire</div></div>
+      </div>
     </div>
 
-    <div class="card data sm" id="git" data-icon="db" style="grid-column: 1 / 5; grid-row: 5">
+    <div class="card data sm" id="git" data-icon="db" style="grid-column: 1 / 4; grid-row: 5">
       <div class="head"><span class="name">Git · the only database</span></div>
-      <div class="body"><div class="fn">each task commits its own paths · git revert is undo</div></div>
+      <div class="body"><div class="fn">each task commits its own paths · revert is undo</div></div>
     </div>
 
   </div></div>
@@ -76,8 +75,8 @@
   {"from": "recall",  "to": "notes",   "fs": "b", "ts": "t", "straight": true, "fa": 0.5, "hot": true, "step": 4, "label": "index first", "at": 0.3},
   {"from": "session", "to": "distill", "fs": "b", "ts": "t", "straight": true, "ta": 0.5, "hot": true, "step": 5, "label": "new fact"},
   {"from": "distill", "to": "notes",   "fs": "b", "ts": "t", "straight": true, "fa": 0.5, "hot": true, "step": 6, "label": "update", "at": 0.3},
-  {"from": "distill", "to": "raw",     "fs": "r", "ts": "t", "ta": 0.3, "label": "or a report"},
+  {"from": "distill", "to": "raw",     "fs": "r", "ts": "t", "ta": 0.25, "label": "or a report"},
   {"from": "z-vault", "to": "git",     "fs": "b", "ts": "t", "fa": 0.5, "straight": true, "hot": true, "step": 7, "label": "commit"},
   {"from": "yes",     "to": "upkeep",  "label": "yes"},
-  {"from": "upkeep",  "to": "z-vault", "fs": "b", "ts": "t", "fa": 0.5, "straight": true, "label": "reconcile"}
+  {"from": "upkeep",  "to": "z-vault", "fs": "b", "ts": "t", "fa": 0.75, "straight": true, "label": "reconcile"}
 ]</script>

@@ -25,17 +25,17 @@ const fm = (fields, body = '') => `---\n${fields}\n---\n\n${body}\n`;
 const keys = (found) => found.map((f) => `${f.file} ${f.detail}`).sort();
 
 const STALE = {
-  'core/USER.md': '# User\n\n## Current focus\n- **Until 10-18: learning only**\n<!-- 2026-09-02: until 09-10 nothing — a comment, not a fact -->\n',
+  'core/USER.md': '# User\n\n## Current focus\n- **Until 10-18: focus week**\n<!-- 2026-09-02: until 09-10 nothing — a comment, not a fact -->\n',
   'core/MEMORY.md': '# Memory\n\n- Every ADR (0001–0051) lives in archive/.\n',
   'docs/decisions/0054-latest.md': '# 0054\n',
-  'outputs/2026-10-04_job-listings.md': fm('type: deliverable\ncreated: 2026-10-04\nexpires: 2026-10-18'),
+  'outputs/2026-10-04_weekly-digest.md': fm('type: deliverable\ncreated: 2026-10-04\nexpires: 2026-10-18'),
   'reports/2026-10-20_model-prices.md': fm('type: report\ncreated: 2026-10-20\ntopic: "[[models]]"'),
   'reports/2026-09-01_orphan.md': fm('type: report\ncreated: 2026-09-01\ntopic: "[[nobody]]"'),
   'notes/models.md': fm('type: topic\ncreated: 2026-09-01\nupdated: 2026-10-01', 'See [[2026-10-20_model-prices]].'),
-  'notes/learning-focus.md': fm('type: memory\ncreated: 2026-10-11\nvalid_to: 2026-10-18\nstatus: seedling'),
+  'notes/focus-week.md': fm('type: memory\ncreated: 2026-10-11\nvalid_to: 2026-10-18\nstatus: seedling'),
   'notes/target-list.md': fm('type: topic\ncreated: 2026-09-29\nupdated: 2026-10-01'),
   'notes/target-list-v2.md': fm('type: topic\ncreated: 2026-10-10\nupdated: 2026-10-10'),
-  'notes/second-brain-os.md': fm('type: project\ncreated: 2026-08-18\nstatus: active', 'Every ADR (0001-0049) lives in `archive/`.'),
+  'notes/project-x.md': fm('type: project\ncreated: 2026-08-18\nstatus: active', 'Every ADR (0001-0049) lives in `archive/`.'),
 };
 
 test('every failure the 2026-10-24 cleanup found by hand is found', (t) => {
@@ -43,25 +43,25 @@ test('every failure the 2026-10-24 cleanup found by hand is found', (t) => {
   assert.deepEqual(keys(lifetimeFindings(root, { now: NOW })), [
     'core/MEMORY.md adr-range-stale',
     'core/USER.md date-passed',
-    'notes/learning-focus.md valid-to-passed',
+    'notes/focus-week.md valid-to-passed',
     'notes/models.md topic-behind-report',
-    'notes/second-brain-os.md adr-range-stale',
+    'notes/project-x.md adr-range-stale',
     'notes/target-list-v2.md version-name',
     'notes/target-list.md version-name',
-    'outputs/2026-10-04_job-listings.md deliverable-expired',
+    'outputs/2026-10-04_weekly-digest.md deliverable-expired',
     'reports/2026-09-01_orphan.md report-unlinked',
   ]);
 });
 
 test('the same vault after the fixes is quiet', (t) => {
   const root = vault(t, {
-    'core/USER.md': '# User\n\n## Current focus\n- Project X\n- The learning-only week (2026-10-11 → 10-18) is over.\n',
+    'core/USER.md': '# User\n\n## Current focus\n- Project X\n- The focus week (2026-10-11 → 10-18) is over.\n',
     'core/MEMORY.md': '# Memory\n\n- Every ADR (0001–0054) lives in archive/.\n',
     'docs/decisions/0054-latest.md': '# 0054\n',
-    'outputs/2026-10-20_job-listings.md': fm('type: deliverable\ncreated: 2026-10-20\nexpires: 2026-11-19'),
+    'outputs/2026-10-20_weekly-digest.md': fm('type: deliverable\ncreated: 2026-10-20\nexpires: 2026-11-19'),
     'reports/2026-10-20_model-prices.md': fm('type: report\ncreated: 2026-10-20\ntopic: "[[models]]"'),
     'notes/models.md': fm('type: topic\ncreated: 2026-09-01\nupdated: 2026-10-20', '| [[2026-10-20_model-prices\\|prices]] |'),
-    'notes/learning-focus.md': fm('type: memory\ncreated: 2026-10-11\nvalid_to: 2026-10-18\nsuperseded_by: "[[current-truth]]"'),
+    'notes/focus-week.md': fm('type: memory\ncreated: 2026-10-11\nvalid_to: 2026-10-18\nsuperseded_by: "[[current-truth]]"'),
     'notes/target-list.md': fm('type: topic\ncreated: 2026-09-29\nupdated: 2026-10-12'),
     'notes/lesson-asking.md': fm('type: memory\ncreated: 2026-10-02'),
     'notes/lesson-asking-v2.md': fm('type: memory\ncreated: 2026-10-08'),
